@@ -14,7 +14,153 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      journal_entries: {
+        Row: {
+          content: string | null
+          created_at: string
+          energy_score: number | null
+          entry_type: string | null
+          id: string
+          metadata: Json | null
+          mood_score: number | null
+          stress_score: number | null
+          tags: string[] | null
+          user_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          energy_score?: number | null
+          entry_type?: string | null
+          id?: string
+          metadata?: Json | null
+          mood_score?: number | null
+          stress_score?: number | null
+          tags?: string[] | null
+          user_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          energy_score?: number | null
+          entry_type?: string | null
+          id?: string
+          metadata?: Json | null
+          mood_score?: number | null
+          stress_score?: number | null
+          tags?: string[] | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          goals: string[] | null
+          id: string
+          last_check_in_date: string | null
+          onboarding_completed: boolean | null
+          streak_count: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          goals?: string[] | null
+          id?: string
+          last_check_in_date?: string | null
+          onboarding_completed?: boolean | null
+          streak_count?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          goals?: string[] | null
+          id?: string
+          last_check_in_date?: string | null
+          onboarding_completed?: boolean | null
+          streak_count?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      scanner_history: {
+        Row: {
+          action_plan: Json | null
+          ai_response: string | null
+          alert_level: string | null
+          created_at: string
+          id: string
+          recommended_tools: string[] | null
+          red_flags: string[] | null
+          situation_text: string
+          user_id: string
+        }
+        Insert: {
+          action_plan?: Json | null
+          ai_response?: string | null
+          alert_level?: string | null
+          created_at?: string
+          id?: string
+          recommended_tools?: string[] | null
+          red_flags?: string[] | null
+          situation_text: string
+          user_id: string
+        }
+        Update: {
+          action_plan?: Json | null
+          ai_response?: string | null
+          alert_level?: string | null
+          created_at?: string
+          id?: string
+          recommended_tools?: string[] | null
+          red_flags?: string[] | null
+          situation_text?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      trusted_contacts: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          is_primary: boolean | null
+          name: string
+          phone: string | null
+          relationship: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_primary?: boolean | null
+          name: string
+          phone?: string | null
+          relationship?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_primary?: boolean | null
+          name?: string
+          phone?: string | null
+          relationship?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
