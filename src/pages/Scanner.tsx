@@ -1,53 +1,31 @@
-import { useState } from "react";
-import { ArrowLeft, Shield } from "lucide-react";
+import { ArrowLeft, Shield, Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { SOSButton } from "@/components/layout/SOSButton";
 import { ScannerInput } from "@/components/scanner/ScannerInput";
-import { ScanResult, ScanResultData } from "@/components/scanner/ScanResult";
-
-// Mock AI response - in production this would come from the backend
-const mockAnalysis: ScanResultData = {
-  summary: "Identificamos patrones de comunicación que podrían afectar tu bienestar emocional. Es importante reconocer estas dinámicas.",
-  alertLevel: "medium",
-  redFlags: [
-    "Uso de frases que buscan generar inseguridad",
-    "Patrón de comparación negativa",
-    "Intento de aislar emocionalmente",
-  ],
-  observations: [
-    "Presta atención a cómo te sientes después de estas conversaciones",
-    "Observa si este patrón se repite en diferentes contextos",
-    "Nota si hay momentos donde la comunicación es más respetuosa",
-  ],
-  recommendedTools: [
-    { name: "H.E.R.O. Framework", reason: "Para reconocer patrones de manipulación" },
-    { name: "C.A.L.M. Technique", reason: "Para regular tu respuesta emocional" },
-    { name: "Scripts de Límites", reason: "Frases para establecer fronteras claras" },
-  ],
-  actionPlan: [
-    "Esta semana, practica identificar cómo te sientes después de cada interacción",
-    "Prepara una frase límite simple para usar la próxima vez",
-    "Habla con alguien de confianza sobre lo que estás experimentando",
-  ],
-};
+import { ScanResult } from "@/components/scanner/ScanResult";
+import { useScanner } from "@/hooks/useScanner";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Scanner = () => {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<ScanResultData | null>(null);
+  const { user } = useAuth();
+  const { isLoading, result, analyze, saveToJournal, reset } = useScanner();
 
   const handleSubmit = async (text: string) => {
-    setIsLoading(true);
-    // Simulate AI processing
-    await new Promise((resolve) => setTimeout(resolve, 2500));
-    setResult(mockAnalysis);
-    setIsLoading(false);
+    await analyze(text);
   };
 
-  const handleReset = () => {
-    setResult(null);
+  const handleSaveToJournal = async () => {
+    if (result) {
+      await saveToJournal(result);
+    }
+  };
+
+  const handleCreatePlan = () => {
+    // Navigate to journal with the result saved
+    navigate("/journal");
   };
 
   return (
@@ -82,6 +60,26 @@ const Scanner = () => {
               </p>
             </div>
 
+            {/* Not logged in warning */}
+            {!user && (
+              <div className="bg-warmth/10 border border-warmth/30 rounded-2xl p-4 flex items-start gap-3">
+                <Heart className="w-5 h-5 text-warmth flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm text-foreground">
+                    <strong>Consejo:</strong> Inicia sesión para guardar tus análisis y 
+                    hacer seguimiento de tu progreso.
+                  </p>
+                  <Button 
+                    variant="link" 
+                    className="p-0 h-auto text-warmth"
+                    onClick={() => navigate("/auth")}
+                  >
+                    Crear cuenta gratis →
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Scanner Input */}
             <ScannerInput onSubmit={handleSubmit} isLoading={isLoading} />
 
@@ -94,17 +92,27 @@ const Scanner = () => {
         ) : (
           <>
             <ScanResult
-              result={result}
-              onSaveToJournal={() => {
-                // TODO: Implement save to journal
-                console.log("Saving to journal");
+              result={{
+                ...result,
+                observations: result.observations 
+                  ? [result.observations] 
+                  : [],
+                actionPlan: result.actionPlan.map(p => p.action),
               }}
-              onCreatePlan={() => {
-                // TODO: Implement create plan
-                console.log("Creating plan");
-              }}
+              onSaveToJournal={handleSaveToJournal}
+              onCreatePlan={handleCreatePlan}
             />
-            <Button variant="ghost" className="w-full" onClick={handleReset}>
+
+            {/* Validation message */}
+            {result.validationMessage && (
+              <div className="bg-success/10 border border-success/30 rounded-2xl p-4">
+                <p className="text-sm text-foreground">
+                  💚 {result.validationMessage}
+                </p>
+              </div>
+            )}
+
+            <Button variant="ghost" className="w-full" onClick={reset}>
               Analizar otra situación
             </Button>
           </>
