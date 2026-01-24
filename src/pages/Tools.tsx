@@ -1,10 +1,12 @@
-import { useState } from "react";
-import { ArrowLeft, Search, Shield, Heart, MessageSquare, Zap, Brain, Users, Sparkles } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ArrowLeft, Search, Shield, Heart, MessageSquare, Zap, Brain, Users, Sparkles, Loader2, Lock, LucideIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { SOSButton } from "@/components/layout/SOSButton";
 import { ToolCard } from "@/components/tools/ToolCard";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const categories = [
   { id: "all", label: "Todos" },
@@ -13,62 +15,50 @@ const categories = [
   { id: "emotions", label: "Emociones" },
 ];
 
-const tools = [
-  {
-    id: "hero",
-    title: "H.E.R.O. Framework",
-    description: "Reconoce patrones de manipulación: Humillación, Exigencias, Rechazo, Órdenes",
-    icon: Shield,
-    color: "turquoise" as const,
-    category: "protection",
-  },
-  {
-    id: "calm",
-    title: "C.A.L.M. Technique",
-    description: "Regula tus emociones: Calma, Analiza, Libera, Muévete",
-    icon: Brain,
-    color: "coral" as const,
-    category: "emotions",
-  },
-  {
-    id: "limits-scripts",
-    title: "Scripts de Límites",
-    description: "Frases claras para establecer fronteras saludables",
-    icon: MessageSquare,
-    color: "secondary" as const,
-    category: "communication",
-  },
-  {
-    id: "sos-phrases",
-    title: "Tarjetas SOS",
-    description: "Qué decir, qué no decir, qué hacer en momentos difíciles",
-    icon: Zap,
-    color: "coral" as const,
-    category: "protection",
-    isPremium: true,
-  },
-  {
-    id: "self-care",
-    title: "Plan de Autocuidado",
-    description: "Construye tu rutina de bienestar emocional personalizada",
-    icon: Heart,
-    color: "turquoise" as const,
-    category: "emotions",
-  },
-  {
-    id: "support-network",
-    title: "Red de Apoyo",
-    description: "Identifica y organiza tus contactos de confianza",
-    icon: Users,
-    color: "secondary" as const,
-    category: "communication",
-  },
-];
+const iconMap: Record<string, LucideIcon> = {
+  Shield,
+  Heart,
+  MessageSquare,
+  Zap,
+  Brain,
+  Users,
+};
+
+interface Tool {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  color: string;
+  category: string;
+  is_premium: boolean;
+}
 
 const Tools = () => {
   const navigate = useNavigate();
+  const { isPremium } = useAuth();
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [tools, setTools] = useState<Tool[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTools = async () => {
+      const { data, error } = await supabase
+        .from("tools")
+        .select("id, title, description, icon, color, category, is_premium")
+        .order("order_index");
+
+      if (error) {
+        console.error("Error fetching tools:", error);
+      } else {
+        setTools(data || []);
+      }
+      setIsLoading(false);
+    };
+
+    fetchTools();
+  }, []);
 
   const filteredTools = tools.filter((tool) => {
     const matchesCategory = activeCategory === "all" || tool.category === activeCategory;
@@ -124,22 +114,31 @@ const Tools = () => {
           ))}
         </div>
 
-        {/* Tools Grid */}
-        <div className="space-y-3">
-          {filteredTools.map((tool) => (
-            <ToolCard
-              key={tool.id}
-              title={tool.title}
-              description={tool.description}
-              icon={tool.icon}
-              color={tool.color}
-              isPremium={tool.isPremium}
-              onClick={() => navigate(`/tools/${tool.id}`)}
-            />
-          ))}
-        </div>
+        {/* Loading */}
+        {isLoading && (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        )}
 
-        {filteredTools.length === 0 && (
+        {/* Tools Grid */}
+        {!isLoading && (
+          <div className="space-y-3">
+            {filteredTools.map((tool) => (
+              <ToolCard
+                key={tool.id}
+                title={tool.title}
+                description={tool.description}
+                icon={iconMap[tool.icon] || Shield}
+                color={tool.color as "turquoise" | "coral" | "secondary"}
+                isPremium={tool.is_premium && !isPremium}
+                onClick={() => navigate(`/tools/${tool.id}`)}
+              />
+            ))}
+          </div>
+        )}
+
+        {!isLoading && filteredTools.length === 0 && (
           <div className="text-center py-12">
             <p className="text-muted-foreground">No se encontraron herramientas</p>
           </div>

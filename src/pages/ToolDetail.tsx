@@ -1,0 +1,420 @@
+import { useState, useEffect } from "react";
+import { ArrowLeft, Lock, Crown, Loader2 } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { MobileNav } from "@/components/layout/MobileNav";
+import { SOSButton } from "@/components/layout/SOSButton";
+
+interface ToolContent {
+  intro?: string;
+  closing?: string;
+  sections?: Array<{
+    letter?: string;
+    title: string;
+    description?: string;
+    examples?: string[];
+    action?: string;
+    steps?: string[];
+    tip?: string;
+  }>;
+  categories?: Array<{
+    name: string;
+    scripts: string[];
+  }>;
+  tips?: string[];
+  scenarios?: Array<{
+    situation: string;
+    do_say: string[];
+    dont_say: string[];
+    do_action: string;
+    dont_action: string;
+  }>;
+  emergency?: {
+    title: string;
+    steps: string[];
+  };
+  pillars?: Array<{
+    name: string;
+    icon: string;
+    ideas: string[];
+  }>;
+  weekly_planner?: Record<string, string>;
+  circles?: Array<{
+    level: number;
+    name: string;
+    description: string;
+    criteria: string[];
+  }>;
+  action_plan?: {
+    title: string;
+    items: string[];
+  };
+}
+
+interface Tool {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  color: string;
+  category: string;
+  is_premium: boolean;
+  content: ToolContent;
+}
+
+const colorClasses: Record<string, string> = {
+  turquoise: "from-turquoise to-turquoise-light",
+  coral: "from-coral to-coral-light",
+  secondary: "from-secondary to-primary",
+  primary: "from-primary to-secondary",
+};
+
+const ToolDetail = () => {
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const { isPremium } = useAuth();
+  const [tool, setTool] = useState<Tool | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTool = async () => {
+      if (!id) return;
+      
+      const { data, error } = await supabase
+        .from("tools")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching tool:", error);
+      } else if (data) {
+        setTool(data as unknown as Tool);
+      }
+      setIsLoading(false);
+    };
+
+    fetchTool();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!tool) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="text-center space-y-4">
+          <p className="text-muted-foreground">Herramienta no encontrada</p>
+          <Button onClick={() => navigate("/tools")}>Volver a herramientas</Button>
+        </div>
+      </div>
+    );
+  }
+
+  const isLocked = tool.is_premium && !isPremium;
+
+  if (isLocked) {
+    return (
+      <div className="min-h-screen bg-background pb-24">
+        <header className="sticky top-0 z-40 glass border-b border-border/50">
+          <div className="container flex items-center gap-4 py-4">
+            <Button variant="ghost" size="icon-sm" onClick={() => navigate(-1)}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div className="flex-1">
+              <h1 className="text-lg font-display font-bold text-foreground">{tool.title}</h1>
+            </div>
+          </div>
+        </header>
+
+        <main className="container py-12 text-center space-y-6">
+          <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-coral/20 to-coral-light/20 flex items-center justify-center">
+            <Lock className="w-10 h-10 text-coral" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-display font-bold text-foreground">Contenido Premium</h2>
+            <p className="text-muted-foreground max-w-sm mx-auto">
+              Esta herramienta está disponible exclusivamente para miembros Premium.
+            </p>
+          </div>
+          <Button variant="warmth" onClick={() => navigate("/premium")}>
+            <Crown className="w-5 h-5" />
+            Desbloquear Premium
+          </Button>
+        </main>
+
+        <MobileNav />
+        <SOSButton />
+      </div>
+    );
+  }
+
+  const content = tool.content;
+
+  return (
+    <div className="min-h-screen bg-background pb-24">
+      {/* Header */}
+      <header className="sticky top-0 z-40 glass border-b border-border/50">
+        <div className="container flex items-center gap-4 py-4">
+          <Button variant="ghost" size="icon-sm" onClick={() => navigate(-1)}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div className="flex-1">
+            <h1 className="text-lg font-display font-bold text-foreground">{tool.title}</h1>
+          </div>
+        </div>
+      </header>
+
+      <main className="container py-6 space-y-6">
+        {/* Hero */}
+        <div className={cn(
+          "rounded-2xl p-6 bg-gradient-to-br text-white",
+          colorClasses[tool.color] || colorClasses.primary
+        )}>
+          <h2 className="text-2xl font-display font-bold mb-2">{tool.title}</h2>
+          <p className="text-white/80">{tool.description}</p>
+        </div>
+
+        {/* Intro */}
+        {content.intro && (
+          <div className="bg-card rounded-2xl p-5 shadow-soft">
+            <p className="text-foreground leading-relaxed">{content.intro}</p>
+          </div>
+        )}
+
+        {/* Sections (H.E.R.O. / C.A.L.M. style) */}
+        {content.sections && (
+          <div className="space-y-4">
+            {content.sections.map((section, index) => (
+              <div key={index} className="bg-card rounded-2xl p-5 shadow-soft space-y-3">
+                <div className="flex items-center gap-3">
+                  {section.letter && (
+                    <div className={cn(
+                      "w-12 h-12 rounded-xl flex items-center justify-center text-2xl font-display font-bold text-white bg-gradient-to-br",
+                      colorClasses[tool.color] || colorClasses.primary
+                    )}>
+                      {section.letter}
+                    </div>
+                  )}
+                  <h3 className="text-lg font-display font-bold text-foreground">{section.title}</h3>
+                </div>
+                
+                {section.description && (
+                  <p className="text-muted-foreground">{section.description}</p>
+                )}
+                
+                {section.examples && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-foreground">Ejemplos:</p>
+                    <ul className="space-y-1.5">
+                      {section.examples.map((example, i) => (
+                        <li key={i} className="text-sm text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
+                          {example}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {section.steps && (
+                  <ol className="space-y-2">
+                    {section.steps.map((step, i) => (
+                      <li key={i} className="flex items-start gap-3">
+                        <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-sm font-medium flex items-center justify-center flex-shrink-0">
+                          {i + 1}
+                        </span>
+                        <span className="text-foreground text-sm">{step}</span>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+
+                {section.action && (
+                  <div className="bg-turquoise/10 border border-turquoise/20 rounded-xl p-4">
+                    <p className="text-sm text-turquoise font-medium">💡 {section.action}</p>
+                  </div>
+                )}
+
+                {section.tip && (
+                  <div className="bg-primary/10 border border-primary/20 rounded-xl p-4">
+                    <p className="text-sm text-primary font-medium">💡 {section.tip}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Categories (Scripts style) */}
+        {content.categories && (
+          <div className="space-y-4">
+            {content.categories.map((category, index) => (
+              <div key={index} className="bg-card rounded-2xl p-5 shadow-soft space-y-3">
+                <h3 className="font-display font-bold text-foreground">{category.name}</h3>
+                <ul className="space-y-2">
+                  {category.scripts.map((script, i) => (
+                    <li key={i} className="bg-secondary/10 border border-secondary/20 rounded-xl p-3 text-sm text-foreground">
+                      "{script}"
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Tips */}
+        {content.tips && (
+          <div className="bg-card rounded-2xl p-5 shadow-soft space-y-3">
+            <h3 className="font-display font-bold text-foreground">Consejos</h3>
+            <ul className="space-y-2">
+              {content.tips.map((tip, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-foreground">
+                  <span className="text-primary">•</span>
+                  {tip}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Scenarios (SOS Cards style) */}
+        {content.scenarios && (
+          <div className="space-y-4">
+            {content.scenarios.map((scenario, index) => (
+              <div key={index} className="bg-card rounded-2xl p-5 shadow-soft space-y-4">
+                <h3 className="font-display font-bold text-coral">{scenario.situation}</h3>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-success">✓ Qué decir</p>
+                    {scenario.do_say.map((text, i) => (
+                      <p key={i} className="text-xs bg-success/10 text-success p-2 rounded-lg">{text}</p>
+                    ))}
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-destructive">✕ No digas</p>
+                    {scenario.dont_say.map((text, i) => (
+                      <p key={i} className="text-xs bg-destructive/10 text-destructive p-2 rounded-lg">{text}</p>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border">
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-success">✓ Qué hacer</p>
+                    <p className="text-xs text-muted-foreground">{scenario.do_action}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-destructive">✕ No hagas</p>
+                    <p className="text-xs text-muted-foreground">{scenario.dont_action}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Emergency (SOS) */}
+        {content.emergency && (
+          <div className="bg-destructive/10 border-2 border-destructive/30 rounded-2xl p-5 space-y-3">
+            <h3 className="font-display font-bold text-destructive">{content.emergency.title}</h3>
+            <ol className="space-y-2">
+              {content.emergency.steps.map((step, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <span className="w-6 h-6 rounded-full bg-destructive text-white text-sm font-medium flex items-center justify-center flex-shrink-0">
+                    {i + 1}
+                  </span>
+                  <span className="text-foreground text-sm">{step}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+
+        {/* Pillars (Self-care style) */}
+        {content.pillars && (
+          <div className="grid grid-cols-2 gap-3">
+            {content.pillars.map((pillar, index) => (
+              <div key={index} className="bg-card rounded-2xl p-4 shadow-soft space-y-2">
+                <h4 className="font-display font-bold text-foreground">{pillar.name}</h4>
+                <ul className="space-y-1">
+                  {pillar.ideas.slice(0, 3).map((idea, i) => (
+                    <li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
+                      <span className="text-primary mt-0.5">•</span>
+                      {idea}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Circles (Support network style) */}
+        {content.circles && (
+          <div className="space-y-4">
+            {content.circles.map((circle, index) => (
+              <div key={index} className="bg-card rounded-2xl p-5 shadow-soft space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-secondary to-primary flex items-center justify-center text-white font-bold">
+                    {circle.level}
+                  </div>
+                  <div>
+                    <h4 className="font-display font-bold text-foreground">{circle.name}</h4>
+                    <p className="text-xs text-muted-foreground">{circle.description}</p>
+                  </div>
+                </div>
+                <ul className="space-y-1.5">
+                  {circle.criteria.map((criterion, i) => (
+                    <li key={i} className="text-sm text-foreground flex items-start gap-2">
+                      <span className="text-primary">✓</span>
+                      {criterion}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Action Plan */}
+        {content.action_plan && (
+          <div className="bg-turquoise/10 border-2 border-turquoise/30 rounded-2xl p-5 space-y-3">
+            <h3 className="font-display font-bold text-turquoise">{content.action_plan.title}</h3>
+            <ul className="space-y-2">
+              {content.action_plan.items.map((item, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <span className="w-5 h-5 rounded bg-turquoise text-white text-xs font-medium flex items-center justify-center flex-shrink-0">
+                    {i + 1}
+                  </span>
+                  <span className="text-foreground text-sm">{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Closing */}
+        {content.closing && (
+          <div className="bg-card rounded-2xl p-5 shadow-soft">
+            <p className="text-foreground leading-relaxed font-medium">{content.closing}</p>
+          </div>
+        )}
+      </main>
+
+      <MobileNav />
+      <SOSButton />
+    </div>
+  );
+};
+
+export default ToolDetail;

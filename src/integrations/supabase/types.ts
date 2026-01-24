@@ -53,6 +53,48 @@ export type Database = {
         }
         Relationships: []
       }
+      meditations: {
+        Row: {
+          audio_url: string | null
+          category: string
+          created_at: string
+          description: string | null
+          duration_seconds: number
+          id: string
+          is_free: boolean
+          narrator: string | null
+          order_index: number | null
+          thumbnail_url: string | null
+          title: string
+        }
+        Insert: {
+          audio_url?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number
+          id?: string
+          is_free?: boolean
+          narrator?: string | null
+          order_index?: number | null
+          thumbnail_url?: string | null
+          title: string
+        }
+        Update: {
+          audio_url?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number
+          id?: string
+          is_free?: boolean
+          narrator?: string | null
+          order_index?: number | null
+          thumbnail_url?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -60,9 +102,12 @@ export type Database = {
           display_name: string | null
           goals: string[] | null
           id: string
+          is_premium: boolean | null
           last_check_in_date: string | null
           onboarding_completed: boolean | null
+          premium_until: string | null
           streak_count: number | null
+          stripe_customer_id: string | null
           updated_at: string
           user_id: string
         }
@@ -72,9 +117,12 @@ export type Database = {
           display_name?: string | null
           goals?: string[] | null
           id?: string
+          is_premium?: boolean | null
           last_check_in_date?: string | null
           onboarding_completed?: boolean | null
+          premium_until?: string | null
           streak_count?: number | null
+          stripe_customer_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -84,9 +132,12 @@ export type Database = {
           display_name?: string | null
           goals?: string[] | null
           id?: string
+          is_premium?: boolean | null
           last_check_in_date?: string | null
           onboarding_completed?: boolean | null
+          premium_until?: string | null
           streak_count?: number | null
+          stripe_customer_id?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -128,6 +179,45 @@ export type Database = {
         }
         Relationships: []
       }
+      tools: {
+        Row: {
+          category: string
+          color: string
+          content: Json
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          is_premium: boolean
+          order_index: number | null
+          title: string
+        }
+        Insert: {
+          category: string
+          color?: string
+          content?: Json
+          created_at?: string
+          description: string
+          icon?: string
+          id: string
+          is_premium?: boolean
+          order_index?: number | null
+          title: string
+        }
+        Update: {
+          category?: string
+          color?: string
+          content?: Json
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          is_premium?: boolean
+          order_index?: number | null
+          title?: string
+        }
+        Relationships: []
+      }
       trusted_contacts: {
         Row: {
           created_at: string
@@ -160,6 +250,35 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_favorites: {
+        Row: {
+          created_at: string
+          id: string
+          meditation_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meditation_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meditation_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_favorites_meditation_id_fkey"
+            columns: ["meditation_id"]
+            isOneToOne: false
+            referencedRelation: "meditations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
