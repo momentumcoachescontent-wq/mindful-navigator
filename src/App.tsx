@@ -8,7 +8,9 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Scanner from "./pages/Scanner";
 import Tools from "./pages/Tools";
+import ToolDetail from "./pages/ToolDetail";
 import Journal from "./pages/Journal";
+import JournalEntry from "./pages/JournalEntry";
 import Community from "./pages/Community";
 import Profile from "./pages/Profile";
 import Meditations from "./pages/Meditations";
@@ -31,7 +33,9 @@ const App = () => (
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/scanner" element={<Scanner />} />
             <Route path="/tools" element={<Tools />} />
+            <Route path="/tools/:id" element={<ToolDetail />} />
             <Route path="/journal" element={<Journal />} />
+            <Route path="/journal/new" element={<JournalEntry />} />
             <Route path="/community" element={<Community />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/meditations" element={<Meditations />} />
