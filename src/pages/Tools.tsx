@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Search, Shield, Heart, MessageSquare, Zap, Brain, Users, Sparkles, Loader2, Lock, LucideIcon } from "lucide-react";
+import { ArrowLeft, Search, Shield, Heart, MessageSquare, Zap, Brain, Users, Sparkles, Loader2, Lock, LucideIcon, Headphones } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/layout/MobileNav";
@@ -22,6 +22,7 @@ const iconMap: Record<string, LucideIcon> = {
   Zap,
   Brain,
   Users,
+  Headphones,
 };
 
 interface Tool {
