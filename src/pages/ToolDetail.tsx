@@ -7,8 +7,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { SOSButton } from "@/components/layout/SOSButton";
+import { ConversationSimulator } from "@/components/tools/ConversationSimulator";
+import { RiskMap } from "@/components/tools/RiskMap";
+import { AudioLibrary } from "@/components/tools/AudioLibrary";
 
 interface ToolContent {
+  type?: "roleplay" | "assessment" | "audio_library";
   intro?: string;
   closing?: string;
   sections?: Array<{
@@ -26,11 +30,14 @@ interface ToolContent {
   }>;
   tips?: string[];
   scenarios?: Array<{
-    situation: string;
-    do_say: string[];
-    dont_say: string[];
-    do_action: string;
-    dont_action: string;
+    id?: string;
+    label?: string;
+    icon?: string;
+    situation?: string;
+    do_say?: string[];
+    dont_say?: string[];
+    do_action?: string;
+    dont_action?: string;
   }>;
   emergency?: {
     title: string;
@@ -52,6 +59,42 @@ interface ToolContent {
     title: string;
     items: string[];
   };
+  // Roleplay specific
+  personalities?: Array<{
+    id: string;
+    label: string;
+    description: string;
+  }>;
+  rounds?: number;
+  feedback_categories?: string[];
+  script_versions?: string[];
+  // Assessment specific
+  questions?: Array<{
+    id: number;
+    text: string;
+    category: string;
+    weight: number;
+  }>;
+  risk_levels?: {
+    green: { max?: number; min?: number; title: string; color: string };
+    yellow: { max?: number; min?: number; title: string; color: string };
+    red: { max?: number; min?: number; title: string; color: string };
+  };
+  has_discrete_mode?: boolean;
+  has_exit_plan?: boolean;
+  // Audio library specific
+  emotions?: Array<{
+    id: string;
+    label: string;
+    icon: string;
+    color: string;
+  }>;
+  situations?: Array<{
+    id: string;
+    label: string;
+  }>;
+  has_offline?: boolean;
+  has_playlists?: boolean;
 }
 
 interface Tool {
@@ -158,6 +201,68 @@ const ToolDetail = () => {
   }
 
   const content = tool.content;
+
+  // Check if this is an interactive tool type
+  const isRoleplay = content.type === "roleplay" && content.scenarios && content.personalities;
+  const isAssessment = content.type === "assessment" && content.questions && content.risk_levels;
+  const isAudioLibrary = content.type === "audio_library" && content.emotions && content.situations;
+
+  // Render interactive tools
+  if (isRoleplay || isAssessment || isAudioLibrary) {
+    return (
+      <div className="min-h-screen bg-background pb-24">
+        <header className="sticky top-0 z-40 glass border-b border-border/50">
+          <div className="container flex items-center gap-4 py-4">
+            <Button variant="ghost" size="icon-sm" onClick={() => navigate(-1)}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div className="flex-1">
+              <h1 className="text-lg font-display font-bold text-foreground">{tool.title}</h1>
+            </div>
+          </div>
+        </header>
+
+        <main className="container py-6">
+          {isRoleplay && (
+            <ConversationSimulator 
+              content={{
+                scenarios: content.scenarios as Array<{id: string; label: string; icon: string}>,
+                personalities: content.personalities!,
+                rounds: content.rounds || 3,
+                feedback_categories: content.feedback_categories || [],
+                script_versions: content.script_versions || [],
+              }} 
+            />
+          )}
+          
+          {isAssessment && (
+            <RiskMap 
+              content={{
+                questions: content.questions!,
+                risk_levels: content.risk_levels!,
+                has_discrete_mode: content.has_discrete_mode || false,
+                has_exit_plan: content.has_exit_plan || false,
+              }} 
+            />
+          )}
+          
+          {isAudioLibrary && (
+            <AudioLibrary 
+              content={{
+                emotions: content.emotions!,
+                situations: content.situations!,
+                has_offline: content.has_offline || false,
+                has_playlists: content.has_playlists || false,
+              }} 
+            />
+          )}
+        </main>
+
+        <MobileNav />
+        <SOSButton />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-24">
