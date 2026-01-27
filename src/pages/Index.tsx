@@ -5,7 +5,8 @@ import { SOSButton } from "@/components/layout/SOSButton";
 import { MoodCheckIn } from "@/components/home/MoodCheckIn";
 import { QuickActions } from "@/components/home/QuickActions";
 import { StreakCard } from "@/components/home/StreakCard";
-import { Bell, Settings, LogIn, User } from "lucide-react";
+import { DailyChallenge } from "@/components/daily-challenge";
+import { Bell, LogIn, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -192,6 +193,9 @@ const Index = () => {
             </p>
           </div>
         )}
+
+        {/* Daily Challenge - Main Feature */}
+        <DailyChallenge />
 
         {/* Quick Actions */}
         <section className="space-y-3">
