@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      daily_missions: {
+        Row: {
+          completed_at: string
+          id: string
+          metadata: Json | null
+          mission_date: string
+          mission_id: string
+          mission_type: string
+          user_id: string
+          xp_earned: number
+        }
+        Insert: {
+          completed_at?: string
+          id?: string
+          metadata?: Json | null
+          mission_date?: string
+          mission_id: string
+          mission_type: string
+          user_id: string
+          xp_earned?: number
+        }
+        Update: {
+          completed_at?: string
+          id?: string
+          metadata?: Json | null
+          mission_date?: string
+          mission_id?: string
+          mission_type?: string
+          user_id?: string
+          xp_earned?: number
+        }
+        Relationships: []
+      }
+      daily_victories: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+          victory_date: string
+          victory_text: string
+          xp_bonus: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+          victory_date?: string
+          victory_text: string
+          xp_bonus?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+          victory_date?: string
+          victory_text?: string
+          xp_bonus?: number | null
+        }
+        Relationships: []
+      }
       journal_entries: {
         Row: {
           content: string | null
@@ -179,6 +239,39 @@ export type Database = {
         }
         Relationships: []
       }
+      sos_cards: {
+        Row: {
+          card_type: string
+          content: string
+          created_at: string
+          id: string
+          is_favorite: boolean | null
+          reminder_time: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          card_type: string
+          content: string
+          created_at?: string
+          id?: string
+          is_favorite?: boolean | null
+          reminder_time?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          card_type?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_favorite?: boolean | null
+          reminder_time?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       tools: {
         Row: {
           category: string
@@ -251,6 +344,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_achievements: {
+        Row: {
+          achievement_id: string
+          id: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          achievement_id: string
+          id?: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          achievement_id?: string
+          id?: string
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_favorites: {
         Row: {
           created_at: string
@@ -279,6 +393,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_progress: {
+        Row: {
+          created_at: string
+          current_level: string
+          id: string
+          power_tokens: number
+          streak_rescues_available: number
+          streak_rescues_used: number
+          total_xp: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_level?: string
+          id?: string
+          power_tokens?: number
+          streak_rescues_available?: number
+          streak_rescues_used?: number
+          total_xp?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_level?: string
+          id?: string
+          power_tokens?: number
+          streak_rescues_available?: number
+          streak_rescues_used?: number
+          total_xp?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
