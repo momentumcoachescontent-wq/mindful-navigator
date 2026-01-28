@@ -47,6 +47,39 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_reflections: {
+        Row: {
+          author: string | null
+          category: string | null
+          content: string
+          created_at: string
+          display_date: string | null
+          id: string
+          is_active: boolean
+          order_index: number | null
+        }
+        Insert: {
+          author?: string | null
+          category?: string | null
+          content: string
+          created_at?: string
+          display_date?: string | null
+          id?: string
+          is_active?: boolean
+          order_index?: number | null
+        }
+        Update: {
+          author?: string | null
+          category?: string | null
+          content?: string
+          created_at?: string
+          display_date?: string | null
+          id?: string
+          is_active?: boolean
+          order_index?: number | null
+        }
+        Relationships: []
+      }
       daily_victories: {
         Row: {
           created_at: string
