@@ -167,7 +167,6 @@ export type Database = {
           onboarding_completed: boolean | null
           premium_until: string | null
           streak_count: number | null
-          stripe_customer_id: string | null
           updated_at: string
           user_id: string
         }
@@ -182,7 +181,6 @@ export type Database = {
           onboarding_completed?: boolean | null
           premium_until?: string | null
           streak_count?: number | null
-          stripe_customer_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -197,7 +195,6 @@ export type Database = {
           onboarding_completed?: boolean | null
           premium_until?: string | null
           streak_count?: number | null
-          stripe_customer_id?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -268,6 +265,30 @@ export type Database = {
           is_favorite?: boolean | null
           reminder_time?: string | null
           title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      stripe_customers: {
+        Row: {
+          created_at: string
+          id: string
+          stripe_customer_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          stripe_customer_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          stripe_customer_id?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
