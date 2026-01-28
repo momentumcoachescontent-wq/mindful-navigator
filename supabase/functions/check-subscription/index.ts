@@ -74,6 +74,20 @@ serve(async (req) => {
     let productId = null;
     let subscriptionEnd = null;
 
+    // Store stripe_customer_id in separate secure table (only accessible via service_role)
+    const { error: upsertError } = await supabaseClient
+      .from("stripe_customers")
+      .upsert(
+        { user_id: user.id, stripe_customer_id: customerId },
+        { onConflict: "user_id" }
+      );
+    
+    if (upsertError) {
+      logStep("Warning: Failed to store stripe customer mapping", { error: upsertError.message });
+    } else {
+      logStep("Stripe customer mapping stored securely");
+    }
+
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
@@ -82,13 +96,12 @@ serve(async (req) => {
       productId = subscription.items.data[0].price.product;
       logStep("Determined subscription tier", { productId });
       
-      // Update profile with premium status
+      // Update profile with premium status (without stripe_customer_id)
       await supabaseClient
         .from("profiles")
         .update({ 
           is_premium: true, 
-          premium_until: subscriptionEnd,
-          stripe_customer_id: customerId 
+          premium_until: subscriptionEnd
         })
         .eq("user_id", user.id);
     } else {
@@ -97,7 +110,7 @@ serve(async (req) => {
       // Update profile to reflect non-premium status
       await supabaseClient
         .from("profiles")
-        .update({ is_premium: false, premium_until: null, stripe_customer_id: customerId })
+        .update({ is_premium: false, premium_until: null })
         .eq("user_id", user.id);
     }
 
