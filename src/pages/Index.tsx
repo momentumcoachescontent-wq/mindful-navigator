@@ -5,6 +5,7 @@ import { SOSButton } from "@/components/layout/SOSButton";
 import { MoodCheckIn } from "@/components/home/MoodCheckIn";
 import { QuickActions } from "@/components/home/QuickActions";
 import { StreakCard } from "@/components/home/StreakCard";
+import { RankingPreviewCard } from "@/components/home/RankingPreviewCard";
 import { DailyChallenge } from "@/components/daily-challenge";
 import { Bell, LogIn, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -196,6 +197,9 @@ const Index = () => {
 
         {/* Daily Challenge - Main Feature */}
         <DailyChallenge />
+
+        {/* Ranking Preview Card */}
+        {user && <RankingPreviewCard />}
 
         {/* Quick Actions */}
         <section className="space-y-3">
