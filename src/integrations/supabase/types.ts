@@ -196,6 +196,7 @@ export type Database = {
           goals: string[] | null
           id: string
           is_premium: boolean | null
+          is_ranking_private: boolean | null
           last_check_in_date: string | null
           onboarding_completed: boolean | null
           premium_until: string | null
@@ -210,6 +211,7 @@ export type Database = {
           goals?: string[] | null
           id?: string
           is_premium?: boolean | null
+          is_ranking_private?: boolean | null
           last_check_in_date?: string | null
           onboarding_completed?: boolean | null
           premium_until?: string | null
@@ -224,6 +226,7 @@ export type Database = {
           goals?: string[] | null
           id?: string
           is_premium?: boolean | null
+          is_ranking_private?: boolean | null
           last_check_in_date?: string | null
           onboarding_completed?: boolean | null
           premium_until?: string | null
