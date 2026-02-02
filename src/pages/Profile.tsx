@@ -1,4 +1,4 @@
-import { ArrowLeft, User, Settings, Bell, Shield, Heart, LogOut, ChevronRight, Crown } from "lucide-react";
+import { ArrowLeft, User, Settings, Bell, Shield, Heart, LogOut, ChevronRight, Crown, Database } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/layout/MobileNav";
@@ -8,6 +8,7 @@ const menuItems = [
   { icon: Bell, label: "Notificaciones", path: "/settings/notifications" },
   { icon: Shield, label: "Privacidad y seguridad", path: "/settings/privacy" },
   { icon: Heart, label: "Contactos de confianza", path: "/settings/contacts" },
+  { icon: Database, label: "Gestión de datos", path: "/data" },
   { icon: Settings, label: "Configuración", path: "/settings" },
 ];
 
