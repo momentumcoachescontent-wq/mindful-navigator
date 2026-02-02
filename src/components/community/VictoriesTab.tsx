@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Trophy, Heart, MessageCircle, Flame } from "lucide-react";
+import { Trophy, Heart, Flame, Lock } from "lucide-react";
 import { Loader2 } from "lucide-react";
 
 export function VictoriesTab() {
@@ -12,10 +12,12 @@ export function VictoriesTab() {
   const { data: victories, isLoading } = useQuery({
     queryKey: ["communityVictories"],
     queryFn: async () => {
-      // Fetch recent victories from all users (public)
+      // Fetch recent public victories from all users
+      // RLS policy ensures we only see is_public=true OR our own
       const { data, error } = await supabase
         .from("daily_victories")
-        .select("*")
+        .select("id, victory_text, victory_date, created_at, xp_bonus, is_public")
+        .eq("is_public", true)
         .order("created_at", { ascending: false })
         .limit(50);
 
@@ -42,6 +44,15 @@ export function VictoriesTab() {
         <p className="text-sm text-muted-foreground">
           ¡Sé el primero en compartir tu victoria!
         </p>
+        <div className="mt-4 p-4 bg-muted/50 rounded-xl mx-auto max-w-sm">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Lock className="w-4 h-4" />
+            <span>Las victorias son privadas por defecto</span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            Puedes elegir compartir tus victorias al crearlas para inspirar a otros en la comunidad.
+          </p>
+        </div>
       </div>
     );
   }
@@ -57,8 +68,8 @@ export function VictoriesTab() {
         </p>
       </div>
 
-      {victories.map((victory) => (
-        <VictoryCard key={victory.id} victory={victory} />
+      {victories.map((victory, index) => (
+        <VictoryCard key={victory.id} victory={victory} index={index} />
       ))}
     </div>
   );
@@ -71,19 +82,27 @@ interface VictoryCardProps {
     victory_date: string;
     created_at: string;
     xp_bonus?: number | null;
+    is_public?: boolean;
   };
+  index: number;
 }
 
-function VictoryCard({ victory }: VictoryCardProps) {
-  // Generate anonymous alias from user_id hash (we don't have user_id here due to RLS)
-  const alias = "Valiente" + Math.floor(Math.random() * 1000);
+function VictoryCard({ victory, index }: VictoryCardProps) {
+  // Generate consistent anonymous alias from victory id (deterministic)
+  const hashCode = victory.id.split('').reduce((acc, char) => {
+    return char.charCodeAt(0) + ((acc << 5) - acc);
+  }, 0);
+  const aliasNumber = Math.abs(hashCode % 1000);
+  const alias = `Valiente${aliasNumber}`;
+  
   const avatarGradients = [
     "from-coral to-coral-light",
     "from-primary to-turquoise-light",
     "from-secondary to-primary",
     "from-turquoise to-turquoise-light",
   ];
-  const gradient = avatarGradients[Math.floor(Math.random() * avatarGradients.length)];
+  const gradientIndex = Math.abs(hashCode % avatarGradients.length);
+  const gradient = avatarGradients[gradientIndex];
 
   return (
     <article className="bg-card rounded-2xl p-5 shadow-soft space-y-4">
@@ -123,11 +142,7 @@ function VictoryCard({ victory }: VictoryCardProps) {
       <div className="flex items-center gap-4 pt-2 border-t border-border">
         <button className="flex items-center gap-1.5 text-muted-foreground hover:text-coral transition-colors">
           <Heart className="w-4 h-4" />
-          <span className="text-xs">{Math.floor(Math.random() * 50)}</span>
-        </button>
-        <button className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors">
-          <MessageCircle className="w-4 h-4" />
-          <span className="text-xs">{Math.floor(Math.random() * 10)}</span>
+          <span className="text-xs">Apoyar</span>
         </button>
       </div>
     </article>
