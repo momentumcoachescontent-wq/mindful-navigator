@@ -1,9 +1,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Input validation constants
+const MAX_SITUATION_LENGTH = 2000;
+const MIN_SITUATION_LENGTH = 10;
 
 const systemPrompt = `Eres un coach de apoyo emocional especializado en identificar señales de alerta en relaciones y situaciones interpersonales. Tu rol es ayudar a las personas a reconocer patrones de manipulación, abuso emocional, y comportamientos problemáticos.
 
@@ -54,20 +59,106 @@ NIVELES DE ALERTA:
 
 Responde SOLO con el JSON, sin texto adicional antes o después.`;
 
+/**
+ * Sanitize user input by removing control characters and trimming
+ */
+function sanitizeInput(input: string): string {
+  // Remove control characters (except newlines and tabs which are valid in text)
+  return input
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+    .trim();
+}
+
+/**
+ * Validate the situation input
+ */
+function validateSituation(situation: unknown): { valid: boolean; error?: string; sanitized?: string } {
+  if (!situation || typeof situation !== 'string') {
+    return { valid: false, error: "Se requiere una descripción de la situación (texto)" };
+  }
+
+  const sanitized = sanitizeInput(situation);
+
+  if (sanitized.length < MIN_SITUATION_LENGTH) {
+    return { valid: false, error: `La descripción debe tener al menos ${MIN_SITUATION_LENGTH} caracteres` };
+  }
+
+  if (sanitized.length > MAX_SITUATION_LENGTH) {
+    return { valid: false, error: `La descripción no puede exceder ${MAX_SITUATION_LENGTH} caracteres` };
+  }
+
+  return { valid: true, sanitized };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { situation } = await req.json();
-
-    if (!situation || situation.trim().length === 0) {
+    // Authentication check
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      console.error("No authorization header provided");
       return new Response(
-        JSON.stringify({ error: "Se requiere una descripción de la situación" }),
+        JSON.stringify({ error: "Se requiere autenticación" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Initialize Supabase client for auth verification
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error("Supabase configuration missing");
+      return new Response(
+        JSON.stringify({ error: "Configuración del servicio incorrecta" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { persistSession: false }
+    });
+
+    // Verify the user token
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    
+    if (authError || !user) {
+      console.error("Authentication failed:", authError?.message);
+      return new Response(
+        JSON.stringify({ error: "Token de autenticación inválido" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`Authenticated user: ${user.id.substring(0, 8)}...`);
+
+    // Parse and validate request body
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Formato de solicitud inválido (JSON esperado)" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    const { situation } = requestBody;
+    
+    // Validate input
+    const validation = validateSituation(situation);
+    if (!validation.valid) {
+      return new Response(
+        JSON.stringify({ error: validation.error }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const sanitizedSituation = validation.sanitized!;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -78,7 +169,7 @@ serve(async (req) => {
       );
     }
 
-    console.log("Analyzing situation:", situation.substring(0, 100) + "...");
+    console.log(`User ${user.id.substring(0, 8)}... analyzing situation (${sanitizedSituation.length} chars)`);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -90,7 +181,7 @@ serve(async (req) => {
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Analiza esta situación y responde en JSON:\n\n${situation}` },
+          { role: "user", content: `Analiza esta situación y responde en JSON:\n\n${sanitizedSituation}` },
         ],
         temperature: 0.7,
       }),
@@ -146,7 +237,7 @@ serve(async (req) => {
       );
     }
 
-    console.log("Analysis completed successfully");
+    console.log(`Analysis completed successfully for user ${user.id.substring(0, 8)}...`);
 
     return new Response(
       JSON.stringify({
