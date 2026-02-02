@@ -16,6 +16,7 @@ import Profile from "./pages/Profile";
 import Meditations from "./pages/Meditations";
 import Onboarding from "./pages/Onboarding";
 import Premium from "./pages/Premium";
+import DataManagement from "./pages/DataManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="/meditations" element={<Meditations />} />
             <Route path="/premium" element={<Premium />} />
+            <Route path="/data" element={<DataManagement />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
