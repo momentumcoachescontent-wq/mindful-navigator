@@ -84,6 +84,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_public: boolean
           user_id: string
           victory_date: string
           victory_text: string
@@ -92,6 +93,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_public?: boolean
           user_id: string
           victory_date?: string
           victory_text: string
@@ -100,6 +102,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_public?: boolean
           user_id?: string
           victory_date?: string
           victory_text?: string
@@ -492,7 +495,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_user_premium: { Args: { check_user_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

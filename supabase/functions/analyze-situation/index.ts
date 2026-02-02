@@ -10,6 +10,29 @@ const corsHeaders = {
 const MAX_SITUATION_LENGTH = 2000;
 const MIN_SITUATION_LENGTH = 10;
 
+// Rate limiting constants
+const RATE_LIMITS = {
+  FREE: {
+    hourly: 5,
+    daily: 20,
+  },
+  PREMIUM: {
+    hourly: 50,
+    daily: 200,
+  },
+};
+
+// AI Response validation schema (manual validation for Deno compatibility)
+interface AIAnalysisResult {
+  alert_level: "low" | "medium" | "high";
+  summary: string;
+  red_flags: string[];
+  what_to_observe: string;
+  recommended_tools: string[];
+  action_plan: Array<{ step: number; action: string }>;
+  validation_message: string;
+}
+
 const systemPrompt = `Eres un coach de apoyo emocional especializado en identificar señales de alerta en relaciones y situaciones interpersonales. Tu rol es ayudar a las personas a reconocer patrones de manipulación, abuso emocional, y comportamientos problemáticos.
 
 IMPORTANTE:
@@ -90,6 +113,170 @@ function validateSituation(situation: unknown): { valid: boolean; error?: string
   return { valid: true, sanitized };
 }
 
+/**
+ * Sanitize a string by removing potentially dangerous characters and limiting length
+ */
+function sanitizeString(str: unknown, maxLength: number): string {
+  if (typeof str !== 'string') return '';
+  // Remove control characters and limit length
+  return str
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+    .slice(0, maxLength);
+}
+
+/**
+ * Validate and sanitize AI response to prevent injection attacks
+ */
+function validateAndSanitizeAIResponse(result: unknown): { valid: boolean; sanitized?: AIAnalysisResult; error?: string } {
+  if (!result || typeof result !== 'object') {
+    return { valid: false, error: "AI response is not an object" };
+  }
+
+  const obj = result as Record<string, unknown>;
+
+  // Validate alert_level
+  const validAlertLevels = ['low', 'medium', 'high'];
+  if (!validAlertLevels.includes(obj.alert_level as string)) {
+    return { valid: false, error: "Invalid alert_level" };
+  }
+
+  // Validate and sanitize strings
+  const summary = sanitizeString(obj.summary, 500);
+  if (!summary) {
+    return { valid: false, error: "Missing or invalid summary" };
+  }
+
+  const what_to_observe = sanitizeString(obj.what_to_observe, 500);
+  const validation_message = sanitizeString(obj.validation_message, 300);
+
+  // Validate and sanitize arrays
+  const red_flags: string[] = [];
+  if (Array.isArray(obj.red_flags)) {
+    for (const flag of obj.red_flags.slice(0, 10)) {
+      const sanitized = sanitizeString(flag, 200);
+      if (sanitized) red_flags.push(sanitized);
+    }
+  }
+
+  const recommended_tools: string[] = [];
+  if (Array.isArray(obj.recommended_tools)) {
+    for (const tool of obj.recommended_tools.slice(0, 10)) {
+      const sanitized = sanitizeString(tool, 100);
+      if (sanitized) recommended_tools.push(sanitized);
+    }
+  }
+
+  // Validate and sanitize action_plan
+  const action_plan: Array<{ step: number; action: string }> = [];
+  if (Array.isArray(obj.action_plan)) {
+    for (const item of obj.action_plan.slice(0, 10)) {
+      if (typeof item === 'object' && item !== null) {
+        const step = typeof (item as Record<string, unknown>).step === 'number' 
+          ? (item as Record<string, unknown>).step as number 
+          : action_plan.length + 1;
+        const action = sanitizeString((item as Record<string, unknown>).action, 200);
+        if (action) {
+          action_plan.push({ step, action });
+        }
+      }
+    }
+  }
+
+  return {
+    valid: true,
+    sanitized: {
+      alert_level: obj.alert_level as "low" | "medium" | "high",
+      summary,
+      red_flags,
+      what_to_observe,
+      recommended_tools,
+      action_plan,
+      validation_message,
+    }
+  };
+}
+
+/**
+ * Check if user has premium subscription
+ */
+async function checkPremiumStatus(
+  supabaseClient: any,
+  userId: string
+): Promise<boolean> {
+  const { data: profile, error } = await supabaseClient
+    .from('profiles')
+    .select('is_premium, premium_until')
+    .eq('user_id', userId)
+    .single();
+
+  if (error || !profile) {
+    return false;
+  }
+
+  const profileData = profile as { is_premium: boolean | null; premium_until: string | null };
+  
+  return (
+    profileData.is_premium === true &&
+    profileData.premium_until !== null &&
+    new Date(profileData.premium_until) > new Date()
+  );
+}
+
+/**
+ * Check rate limits for user
+ */
+async function checkRateLimits(
+  supabaseClient: any,
+  userId: string,
+  isPremium: boolean
+): Promise<{ allowed: boolean; error?: string; retryAfter?: number }> {
+  const limits = isPremium ? RATE_LIMITS.PREMIUM : RATE_LIMITS.FREE;
+  const now = Date.now();
+  const hourAgo = new Date(now - 3600000).toISOString();
+  const dayAgo = new Date(now - 86400000).toISOString();
+
+  // Check hourly limit
+  const { count: hourlyCount, error: hourlyError } = await supabaseClient
+    .from('scanner_history')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .gte('created_at', hourAgo);
+
+  if (hourlyError) {
+    console.error("Error checking hourly rate limit:", hourlyError);
+    // Allow on error to not block users
+  } else if (hourlyCount !== null && hourlyCount >= limits.hourly) {
+    const minutesRemaining = 60 - Math.floor((now % 3600000) / 60000);
+    return {
+      allowed: false,
+      error: isPremium
+        ? `Has alcanzado el límite de ${limits.hourly} análisis por hora. Intenta en ${minutesRemaining} minutos.`
+        : `Límite gratuito alcanzado (${limits.hourly}/hora). Actualiza a Premium para más análisis o intenta en ${minutesRemaining} minutos.`,
+      retryAfter: minutesRemaining * 60,
+    };
+  }
+
+  // Check daily limit
+  const { count: dailyCount, error: dailyError } = await supabaseClient
+    .from('scanner_history')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .gte('created_at', dayAgo);
+
+  if (dailyError) {
+    console.error("Error checking daily rate limit:", dailyError);
+  } else if (dailyCount !== null && dailyCount >= limits.daily) {
+    return {
+      allowed: false,
+      error: isPremium
+        ? `Has alcanzado el límite de ${limits.daily} análisis por día. Vuelve mañana.`
+        : `Límite diario gratuito alcanzado (${limits.daily}/día). Actualiza a Premium para más análisis.`,
+    };
+  }
+
+  return { allowed: true };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -136,6 +323,30 @@ serve(async (req) => {
 
     console.log(`Authenticated user: ${user.id.substring(0, 8)}...`);
 
+    // Check premium status for rate limiting
+    const isPremium = await checkPremiumStatus(supabaseClient, user.id);
+    console.log(`User ${user.id.substring(0, 8)}... premium status: ${isPremium}`);
+
+    // Check rate limits
+    const rateLimitCheck = await checkRateLimits(supabaseClient, user.id, isPremium);
+    if (!rateLimitCheck.allowed) {
+      console.log(`Rate limit exceeded for user ${user.id.substring(0, 8)}...`);
+      const headers: Record<string, string> = {
+        ...corsHeaders,
+        "Content-Type": "application/json",
+      };
+      if (rateLimitCheck.retryAfter) {
+        headers["Retry-After"] = String(rateLimitCheck.retryAfter);
+      }
+      return new Response(
+        JSON.stringify({ 
+          error: rateLimitCheck.error,
+          upgrade_available: !isPremium,
+        }),
+        { status: 429, headers }
+      );
+    }
+
     // Parse and validate request body
     let requestBody;
     try {
@@ -171,21 +382,40 @@ serve(async (req) => {
 
     console.log(`User ${user.id.substring(0, 8)}... analyzing situation (${sanitizedSituation.length} chars)`);
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `Analiza esta situación y responde en JSON:\n\n${sanitizedSituation}` },
-        ],
-        temperature: 0.7,
-      }),
-    });
+    // Add timeout for AI request
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+    let response;
+    try {
+      response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: `Analiza esta situación y responde en JSON:\n\n${sanitizedSituation}` },
+          ],
+          temperature: 0.7,
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.error("AI request timed out");
+        return new Response(
+          JSON.stringify({ error: "La solicitud tardó demasiado. Intenta con una descripción más breve." }),
+          { status: 408, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      throw error;
+    }
 
     if (!response.ok) {
       if (response.status === 429) {
@@ -237,20 +467,31 @@ serve(async (req) => {
       );
     }
 
+    // Validate and sanitize the AI response
+    const aiValidation = validateAndSanitizeAIResponse(analysisResult);
+    if (!aiValidation.valid || !aiValidation.sanitized) {
+      console.error("AI response validation failed:", aiValidation.error);
+      return new Response(
+        JSON.stringify({ error: "Error al procesar el análisis (respuesta inválida)" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const sanitizedAnalysis = aiValidation.sanitized;
+
     console.log(`Analysis completed successfully for user ${user.id.substring(0, 8)}...`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        analysis: analysisResult,
-        raw_response: content
+        analysis: sanitizedAnalysis,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
     console.error("analyze-situation error:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Error desconocido" }),
+      JSON.stringify({ error: "Error desconocido. Por favor intenta de nuevo." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
