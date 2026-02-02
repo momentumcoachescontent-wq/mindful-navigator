@@ -17,6 +17,12 @@ type TableConfig = {
 
 const EXPORTABLE_TABLES: TableConfig[] = [
   {
+    name: "daily_reflections",
+    displayName: "Reflexiones del Día",
+    description: "Frases y reflexiones diarias para motivar a los usuarios",
+    columns: ["id", "content", "author", "category", "display_date", "order_index", "is_active", "created_at"],
+  },
+  {
     name: "journal_entries",
     displayName: "Entradas de Diario",
     description: "Tus reflexiones, estados de ánimo y notas personales",
@@ -73,10 +79,16 @@ const DataManagement = () => {
 
     setLoading(`export-${table.name}`);
     try {
-      const { data, error } = await supabase
+      // daily_reflections is global content, no user_id filter
+      let query = supabase
         .from(table.name as "journal_entries")
-        .select(table.columns.join(","))
-        .eq("user_id", user.id);
+        .select(table.columns.join(","));
+      
+      if (table.name !== "daily_reflections") {
+        query = query.eq("user_id", user.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -136,7 +148,10 @@ const DataManagement = () => {
             cleaned[col] = item[col];
           }
         });
-        cleaned.user_id = user.id;
+        // Only add user_id for tables that require it (not global content like daily_reflections)
+        if (table.name !== "daily_reflections") {
+          cleaned.user_id = user.id;
+        }
         return cleaned;
       });
 
