@@ -87,6 +87,16 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
   const generateSimulatorResponse = async (isFirst = false) => {
     if (!selectedScenario || !selectedPersonality) return;
     
+    // Validate session before making authenticated request
+    if (!session?.access_token) {
+      toast({
+        title: "Sesión expirada",
+        description: "Por favor inicia sesión nuevamente.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("analyze-situation", {
@@ -101,9 +111,9 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
           currentRound,
           maxRounds,
         },
-        headers: session?.access_token ? {
+        headers: {
           Authorization: `Bearer ${session.access_token}`,
-        } : {},
+        },
       });
 
       if (error) throw error;
@@ -146,6 +156,16 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
   };
 
   const generateFeedback = async (allMessages: Message[]) => {
+    // Validate session before making authenticated request
+    if (!session?.access_token) {
+      toast({
+        title: "Sesión expirada",
+        description: "Por favor inicia sesión nuevamente.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsLoading(true);
     setStep("feedback");
     
@@ -158,9 +178,9 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
           context,
           messages: allMessages,
         },
-        headers: session?.access_token ? {
+        headers: {
           Authorization: `Bearer ${session.access_token}`,
-        } : {},
+        },
       });
 
       if (error) throw error;
