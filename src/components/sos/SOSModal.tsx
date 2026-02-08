@@ -1,7 +1,8 @@
-import { X, Phone, MessageCircle, Wind, ExternalLink } from "lucide-react";
+import { X, MessageCircle, Wind, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { BreathingExercise } from "./BreathingExercise";
+import { ProfessionalResources } from "./ProfessionalResources";
 
 interface SOSModalProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface SOSModalProps {
 
 export function SOSModal({ isOpen, onClose }: SOSModalProps) {
   const [showBreathing, setShowBreathing] = useState(false);
+  const [showResources, setShowResources] = useState(false);
 
   if (!isOpen) return null;
 
@@ -21,6 +23,18 @@ export function SOSModal({ isOpen, onClose }: SOSModalProps) {
           onClose();
         }} />
       </div>
+    );
+  }
+
+  if (showResources) {
+    return (
+      <ProfessionalResources 
+        onBack={() => setShowResources(false)} 
+        onClose={() => {
+          setShowResources(false);
+          onClose();
+        }} 
+      />
     );
   }
 
@@ -62,16 +76,10 @@ export function SOSModal({ isOpen, onClose }: SOSModalProps) {
           <Button
             variant="ghost"
             className="w-full justify-start gap-3 text-muted-foreground"
-            asChild
+            onClick={() => setShowResources(true)}
           >
-            <a 
-              href="https://www.who.int/es/health-topics/suicide#tab=tab_2" 
-              target="_blank" 
-              rel="noopener noreferrer"
-            >
-              <ExternalLink className="w-5 h-5" />
-              <span>Recursos de ayuda profesional</span>
-            </a>
+            <BookOpen className="w-5 h-5" />
+            <span>Recursos de ayuda profesional</span>
           </Button>
         </div>
 
