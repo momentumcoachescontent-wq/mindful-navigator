@@ -15,13 +15,8 @@ type TableConfig = {
   columns: string[];
 };
 
+// Note: daily_reflections removed - write access restricted to admin/service role only for security
 const EXPORTABLE_TABLES: TableConfig[] = [
-  {
-    name: "daily_reflections",
-    displayName: "Reflexiones del Día",
-    description: "Frases y reflexiones diarias para motivar a los usuarios",
-    columns: ["id", "content", "author", "category", "display_date", "order_index", "is_active", "created_at"],
-  },
   {
     name: "journal_entries",
     displayName: "Entradas de Diario",
@@ -79,16 +74,11 @@ const DataManagement = () => {
 
     setLoading(`export-${table.name}`);
     try {
-      // daily_reflections is global content, no user_id filter
-      let query = supabase
+      // All exportable tables are user-specific
+      const { data, error } = await supabase
         .from(table.name as "journal_entries")
-        .select(table.columns.join(","));
-      
-      if (table.name !== "daily_reflections") {
-        query = query.eq("user_id", user.id);
-      }
-
-      const { data, error } = await query;
+        .select(table.columns.join(","))
+        .eq("user_id", user.id);
 
       if (error) throw error;
 
@@ -140,7 +130,7 @@ const DataManagement = () => {
         throw new Error("El archivo debe contener un array de registros");
       }
 
-      // Validate and clean data
+      // Validate and clean data - all tables are user-specific
       const cleanedData = data.map((item: Record<string, unknown>) => {
         const cleaned: Record<string, unknown> = {};
         table.columns.forEach((col) => {
@@ -148,10 +138,8 @@ const DataManagement = () => {
             cleaned[col] = item[col];
           }
         });
-        // Only add user_id for tables that require it (not global content like daily_reflections)
-        if (table.name !== "daily_reflections") {
-          cleaned.user_id = user.id;
-        }
+        // All exportable tables require user_id
+        cleaned.user_id = user.id;
         return cleaned;
       });
 
