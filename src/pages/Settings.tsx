@@ -14,7 +14,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 const Settings = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const section = location.pathname.split("/").pop();
+    const section = location.pathname.includes("/notifications") ? "notifications"
+        : location.pathname.includes("/privacy") ? "privacy"
+            : location.pathname.includes("/contacts") ? "contacts"
+                : "settings";
     const isRoot = section === "settings";
     const { user } = useAuth();
     const queryClient = useQueryClient();

@@ -44,7 +44,9 @@ const App = () => (
             <Route path="/premium" element={<Premium />} />
             <Route path="/data" element={<DataManagement />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="/settings/*" element={<Settings />} />
+            <Route path="/settings/notifications" element={<Settings />} />
+            <Route path="/settings/privacy" element={<Settings />} />
+            <Route path="/settings/contacts" element={<Settings />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
