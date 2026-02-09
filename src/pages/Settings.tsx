@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Bell, Shield, Heart, ChevronRight, Plus, Trash2, Loader2, Save } from "lucide-react";
+import { useTheme } from "@/components/theme-provider";
+import { ArrowLeft, Bell, Shield, Heart, ChevronRight, Plus, Trash2, Loader2, Save, Moon, Sun, Laptop } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -17,10 +18,13 @@ const Settings = () => {
     const section = location.pathname.includes("/notifications") ? "notifications"
         : location.pathname.includes("/privacy") ? "privacy"
             : location.pathname.includes("/contacts") ? "contacts"
-                : "settings";
+                : location.pathname.includes("/appearance") ? "appearance"
+                    : "settings";
+
     const isRoot = section === "settings";
     const { user } = useAuth();
     const queryClient = useQueryClient();
+    const { setTheme, theme } = useTheme();
 
     // Fetch Profile
     const { data: profile, isLoading: isLoadingProfile } = useQuery({
@@ -139,6 +143,7 @@ const Settings = () => {
                 { icon: Bell, label: "Notificaciones", path: "/settings/notifications", desc: "Alertas y recordatorios" },
                 { icon: Shield, label: "Privacidad y seguridad", path: "/settings/privacy", desc: "Visibilidad y datos" },
                 { icon: Heart, label: "Contactos de confianza", path: "/settings/contacts", desc: "Red de apoyo" },
+                { icon: Moon, label: "Apariencia", path: "/settings/appearance", desc: "Tema claro u oscuro" },
             ].map((item) => (
                 <button
                     key={item.path}
@@ -293,11 +298,46 @@ const Settings = () => {
         );
     };
 
+    const renderAppearance = () => (
+        <Card>
+            <CardHeader>
+                <CardTitle>Apariencia</CardTitle>
+                <CardDescription>Personaliza cómo se ve la aplicación.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="grid grid-cols-3 gap-4">
+                    <button
+                        onClick={() => setTheme("light")}
+                        className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${theme === 'light' ? 'border-primary bg-primary/5' : 'border-transparent bg-muted/50 hover:bg-muted'}`}
+                    >
+                        <Sun className={`w-8 h-8 mb-2 ${theme === 'light' ? 'text-primary' : 'text-muted-foreground'}`} />
+                        <span className="text-sm font-medium">Claro</span>
+                    </button>
+                    <button
+                        onClick={() => setTheme("dark")}
+                        className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${theme === 'dark' ? 'border-primary bg-primary/5' : 'border-transparent bg-muted/50 hover:bg-muted'}`}
+                    >
+                        <Moon className={`w-8 h-8 mb-2 ${theme === 'dark' ? 'text-primary' : 'text-muted-foreground'}`} />
+                        <span className="text-sm font-medium">Oscuro</span>
+                    </button>
+                    <button
+                        onClick={() => setTheme("system")}
+                        className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${theme === 'system' ? 'border-primary bg-primary/5' : 'border-transparent bg-muted/50 hover:bg-muted'}`}
+                    >
+                        <Laptop className={`w-8 h-8 mb-2 ${theme === 'system' ? 'text-primary' : 'text-muted-foreground'}`} />
+                        <span className="text-sm font-medium">Sistema</span>
+                    </button>
+                </div>
+            </CardContent>
+        </Card>
+    );
+
     const getTitle = () => {
         switch (section) {
             case "notifications": return "Notificaciones";
             case "privacy": return "Privacidad";
             case "contacts": return "Contactos";
+            case "appearance": return "Apariencia";
             default: return "Configuración";
         }
     };
@@ -320,6 +360,7 @@ const Settings = () => {
                 {section === "notifications" && renderNotifications()}
                 {section === "privacy" && renderPrivacy()}
                 {section === "contacts" && renderContacts()}
+                {section === "appearance" && renderAppearance()}
             </main>
         </div>
     );
