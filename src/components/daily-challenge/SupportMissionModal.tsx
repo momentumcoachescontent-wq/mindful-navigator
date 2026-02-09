@@ -25,6 +25,7 @@ interface TrustedContact {
   id: string;
   name: string;
   relationship: string | null;
+  email?: string | null;
 }
 
 export function SupportMissionModal({ open, onClose, onComplete }: SupportMissionModalProps) {
@@ -46,13 +47,13 @@ export function SupportMissionModal({ open, onClose, onComplete }: SupportMissio
 
   const loadContacts = async () => {
     if (!user) return;
-    
+
     const { data } = await supabase
       .from('trusted_contacts')
       .select('id, name, relationship')
       .eq('user_id', user.id)
       .limit(5);
-    
+
     if (data) {
       setContacts(data);
     }
@@ -60,13 +61,13 @@ export function SupportMissionModal({ open, onClose, onComplete }: SupportMissio
 
   const handleAddContact = async () => {
     if (!user || !newContactName.trim()) return;
-    
+
     const { data, error } = await supabase
       .from('trusted_contacts')
       .insert([{ user_id: user.id, name: newContactName.trim() }] as never)
       .select('id, name, relationship')
       .single();
-    
+
     if (!error && data) {
       setContacts(prev => [...prev, data]);
       setNewContactName('');
@@ -77,14 +78,14 @@ export function SupportMissionModal({ open, onClose, onComplete }: SupportMissio
 
   const handleComplete = async () => {
     if (!selectedContact) return;
-    
+
     setIsSubmitting(true);
     const result = await onComplete({
       contactId: selectedContact,
       message: checkInMessage.trim() || null,
     });
     setIsSubmitting(false);
-    
+
     if (result.success) {
       setEarnedXP(result.xpEarned || 25);
       setCompleted(true);
@@ -170,11 +171,17 @@ export function SupportMissionModal({ open, onClose, onComplete }: SupportMissio
 
           {/* Add new contact */}
           {isAddingContact ? (
-            <div className="space-y-2 animate-fade-up">
               <Input
                 placeholder="Nombre del contacto"
                 value={newContactName}
                 onChange={(e) => setNewContactName(e.target.value)}
+                className="mb-2"
+              />
+              <Input
+                placeholder="Correo electrónico (para emergencias)"
+                type="email"
+                value={newContactEmail}
+                onChange={(e) => setNewContactEmail(e.target.value)}
               />
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => setIsAddingContact(false)}>
@@ -185,48 +192,48 @@ export function SupportMissionModal({ open, onClose, onComplete }: SupportMissio
                 </Button>
               </div>
             </div>
-          ) : (
-            <Button 
-              variant="outline" 
-              className="w-full" 
-              onClick={() => setIsAddingContact(true)}
-            >
-              <UserPlus className="w-4 h-4 mr-2" />
-              Agregar nuevo contacto
-            </Button>
+        ) : (
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() => setIsAddingContact(true)}
+        >
+          <UserPlus className="w-4 h-4 mr-2" />
+          Agregar nuevo contacto
+        </Button>
           )}
 
-          {/* Check-in message */}
-          {selectedContact && (
-            <div className="animate-fade-up space-y-2">
-              <p className="text-sm font-medium">
-                Escribe un mensaje de check-in (opcional):
-              </p>
-              <Textarea
-                placeholder="Hola, solo quería saber cómo estás..."
-                value={checkInMessage}
-                onChange={(e) => setCheckInMessage(e.target.value)}
-                className="min-h-[60px]"
-              />
-              <p className="text-xs text-muted-foreground">
-                No se enviará automáticamente. Es solo para ti.
-              </p>
-            </div>
-          )}
-
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={handleClose}>
-              Cancelar
-            </Button>
-            <Button 
-              onClick={handleComplete}
-              disabled={!selectedContact || isSubmitting}
-            >
-              {isSubmitting ? 'Guardando...' : 'Completar misión'}
-            </Button>
+        {/* Check-in message */}
+        {selectedContact && (
+          <div className="animate-fade-up space-y-2">
+            <p className="text-sm font-medium">
+              Escribe un mensaje de check-in (opcional):
+            </p>
+            <Textarea
+              placeholder="Hola, solo quería saber cómo estás..."
+              value={checkInMessage}
+              onChange={(e) => setCheckInMessage(e.target.value)}
+              className="min-h-[60px]"
+            />
+            <p className="text-xs text-muted-foreground">
+              No se enviará automáticamente. Es solo para ti.
+            </p>
           </div>
+        )}
+
+        <div className="flex justify-end gap-2 pt-2">
+          <Button variant="outline" onClick={handleClose}>
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleComplete}
+            disabled={!selectedContact || isSubmitting}
+          >
+            {isSubmitting ? 'Guardando...' : 'Completar misión'}
+          </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </DialogContent>
+    </Dialog >
   );
 }
