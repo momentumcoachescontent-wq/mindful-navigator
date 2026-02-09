@@ -210,11 +210,14 @@ const Profile = () => {
 
         {/* Menu Items */}
         <div className="bg-card rounded-2xl shadow-soft overflow-hidden">
-          {menuItems.map((item, index) => (
+          {menuItems.filter(item => {
+            if (item.path === "/data") return profile?.is_admin;
+            return true;
+          }).map((item, index, array) => (
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`w-full flex items-center gap-4 p-4 text-left hover:bg-muted/50 transition-colors ${index !== menuItems.length - 1 ? "border-b border-border" : ""
+              className={`w-full flex items-center gap-4 p-4 text-left hover:bg-muted/50 transition-colors ${index !== array.length - 1 ? "border-b border-border" : ""
                 }`}
             >
               <item.icon className="w-5 h-5 text-muted-foreground" />
