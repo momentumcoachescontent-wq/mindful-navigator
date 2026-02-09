@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { SOSButton } from "@/components/layout/SOSButton";
+import { useAuth } from "@/contexts/AuthContext";
 
 const menuItems = [
   { icon: Bell, label: "Notificaciones", path: "/settings/notifications" },
@@ -14,6 +15,12 @@ const menuItems = [
 
 const Profile = () => {
   const navigate = useNavigate();
+  const { signOut, user } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/auth");
+  };
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -38,12 +45,12 @@ const Profile = () => {
             <User className="w-10 h-10 text-white" />
           </div>
           <h2 className="text-xl font-display font-bold text-foreground">
-            Usuario
+            {user?.email?.split('@')[0] || "Usuario"}
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
             Miembro desde enero 2024
           </p>
-          
+
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-border">
             <div>
@@ -86,9 +93,8 @@ const Profile = () => {
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`w-full flex items-center gap-4 p-4 text-left hover:bg-muted/50 transition-colors ${
-                index !== menuItems.length - 1 ? "border-b border-border" : ""
-              }`}
+              className={`w-full flex items-center gap-4 p-4 text-left hover:bg-muted/50 transition-colors ${index !== menuItems.length - 1 ? "border-b border-border" : ""
+                }`}
             >
               <item.icon className="w-5 h-5 text-muted-foreground" />
               <span className="flex-1 text-foreground font-medium text-sm">
@@ -100,7 +106,12 @@ const Profile = () => {
         </div>
 
         {/* Sign Out */}
-        <Button variant="ghost" className="w-full text-destructive hover:text-destructive hover:bg-destructive/10">
+        {/* Sign Out */}
+        <Button
+          variant="ghost"
+          className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+          onClick={handleSignOut}
+        >
           <LogOut className="w-5 h-5" />
           <span>Cerrar sesión</span>
         </Button>
