@@ -10,12 +10,13 @@ import { Eye, EyeOff, Shield, Heart, Sparkles } from "lucide-react";
 import { z } from "zod";
 
 const authSchema = z.object({
-  email: z.string().email("Email inválido"),
+  email: z.string().email("Email inválido").optional(),
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
 });
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Auth() {
-  const [view, setView] = useState<"login" | "register" | "forgot">("login");
+  const [view, setView] = useState<"login" | "register" | "forgot" | "update_password">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -31,6 +32,16 @@ export default function Auth() {
       navigate("/");
     }
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    // Check if we are in a password recovery flow
+    const hash = window.location.hash;
+    const query = new URLSearchParams(window.location.search);
+
+    if (query.get("type") === "recovery" || query.get("view") === "update_password" || hash.includes("type=recovery")) {
+      setView("update_password");
+    }
+  }, []);
 
   const validateForm = () => {
     try {
@@ -74,6 +85,25 @@ export default function Auth() {
             description: "Revisa tu bandeja de entrada para restablecer tu contraseña",
           });
           setView("login");
+        }
+        return;
+      }
+
+      if (view === "update_password") {
+        const { error } = await supabase.auth.updateUser({ password: password });
+        if (error) {
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Contraseña actualizada",
+            description: "Tu contraseña ha sido actualizada exitosamente",
+          });
+          setView("login");
+          navigate("/");
         }
         return;
       }
@@ -166,31 +196,35 @@ export default function Auth() {
           <CardTitle className="text-xl">
             {view === "login" ? "Bienvenido de vuelta"
               : view === "register" ? "Crea tu cuenta"
-                : "Recuperar contraseña"}
+                : view === "forgot" ? "Recuperar contraseña"
+                  : "Actualizar contraseña"}
           </CardTitle>
           <CardDescription>
             {view === "login" ? "Ingresa tus datos para continuar"
               : view === "register" ? "Comienza tu viaje hacia el empoderamiento"
-                : "Ingresa tu email para recibir un enlace de recuperación"}
+                : view === "forgot" ? "Ingresa tu email para recibir un enlace de recuperación"
+                  : "Ingresa tu nueva contraseña"}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="tu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={errors.email ? "border-destructive" : ""}
-                disabled={isLoading}
-              />
-              {errors.email && (
-                <p className="text-sm text-destructive">{errors.email}</p>
-              )}
-            </div>
+            {view !== "update_password" && (
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="tu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={errors.email ? "border-destructive" : ""}
+                  disabled={isLoading}
+                />
+                {errors.email && (
+                  <p className="text-sm text-destructive">{errors.email}</p>
+                )}
+              </div>
+            )}
 
             {view !== "forgot" && (
               <div className="space-y-2">
@@ -250,7 +284,8 @@ export default function Auth() {
                 <>
                   {view === "login" ? "Iniciar sesión"
                     : view === "register" ? "Crear cuenta"
-                      : "Enviar enlace"}
+                      : view === "forgot" ? "Enviar enlace"
+                        : "Actualizar contraseña"}
                   <Sparkles className="w-4 h-4 ml-2" />
                 </>
               )}
@@ -270,7 +305,9 @@ export default function Auth() {
                 ? "¿No tienes cuenta? Regístrate"
                 : view === "register"
                   ? "¿Ya tienes cuenta? Inicia sesión"
-                  : "Volver a Iniciar sesión"}
+                  : view === "update_password"
+                    ? ""
+                    : "Volver a Iniciar sesión"}
             </button>
           </div>
 
