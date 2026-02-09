@@ -20,22 +20,30 @@ interface HeroMissionModalProps {
 }
 
 export function HeroMissionModal({ open, onClose, onComplete }: HeroMissionModalProps) {
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [evidence, setEvidence] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [earnedXP, setEarnedXP] = useState(0);
 
+  const toggleCategory = (categoryId: string) => {
+    setSelectedCategories(prev =>
+      prev.includes(categoryId)
+        ? prev.filter(id => id !== categoryId)
+        : [...prev, categoryId]
+    );
+  };
+
   const handleComplete = async () => {
-    if (!selectedCategory || !evidence.trim()) return;
-    
+    if (selectedCategories.length === 0 || !evidence.trim()) return;
+
     setIsSubmitting(true);
     const result = await onComplete({
-      category: selectedCategory,
+      categories: selectedCategories,
       evidence: evidence.trim(),
     });
     setIsSubmitting(false);
-    
+
     if (result.success) {
       setEarnedXP(result.xpEarned || 20);
       setCompleted(true);
@@ -43,7 +51,7 @@ export function HeroMissionModal({ open, onClose, onComplete }: HeroMissionModal
   };
 
   const handleClose = () => {
-    setSelectedCategory(null);
+    setSelectedCategories([]);
     setEvidence('');
     setCompleted(false);
     onClose();
@@ -63,7 +71,7 @@ export function HeroMissionModal({ open, onClose, onComplete }: HeroMissionModal
               +{earnedXP} XP
             </Badge>
             <p className="text-sm text-muted-foreground mb-6">
-              Has detectado una señal H.E.R.O. Esto te ayuda a reconocer patrones.
+              Has detectado señales H.E.R.O. Esto te ayuda a reconocer patrones.
             </p>
             <Button onClick={handleClose}>Continuar</Button>
           </div>
@@ -80,21 +88,24 @@ export function HeroMissionModal({ open, onClose, onComplete }: HeroMissionModal
             🔍 Misión: Detecta (H.E.R.O.)
           </DialogTitle>
           <DialogDescription>
-            Identifica 1 señal en una situación real o pasada
+            <span className="block font-medium text-foreground mb-1">
+              H.E.R.O: Humillación, Exigencias, Rechazo, Órdenes
+            </span>
+            Identifica 1 o más señales en una situación real o pasada
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div>
-            <p className="text-sm font-medium mb-3">¿Qué tipo de señal detectaste?</p>
+            <p className="text-sm font-medium mb-3">¿Qué señales detectaste?</p>
             <div className="grid grid-cols-2 gap-2">
               {HERO_CATEGORIES.map((cat) => (
                 <button
                   key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
+                  onClick={() => toggleCategory(cat.id)}
                   className={cn(
                     "p-3 rounded-xl border-2 text-left transition-all",
-                    selectedCategory === cat.id
+                    selectedCategories.includes(cat.id)
                       ? "border-primary bg-primary/10"
                       : "border-border hover:border-primary/50"
                   )}
@@ -104,9 +115,14 @@ export function HeroMissionModal({ open, onClose, onComplete }: HeroMissionModal
                 </button>
               ))}
             </div>
+            {selectedCategories.length > 0 && (
+              <p className="text-xs text-muted-foreground text-center mt-2 animate-fade-up">
+                {selectedCategories.length} señal(es) seleccionada(s)
+              </p>
+            )}
           </div>
 
-          {selectedCategory && (
+          {selectedCategories.length > 0 && (
             <div className="animate-fade-up">
               <p className="text-sm font-medium mb-2">
                 Describe brevemente la situación:
@@ -128,9 +144,9 @@ export function HeroMissionModal({ open, onClose, onComplete }: HeroMissionModal
             <Button variant="outline" onClick={handleClose}>
               Cancelar
             </Button>
-            <Button 
+            <Button
               onClick={handleComplete}
-              disabled={!selectedCategory || !evidence.trim() || isSubmitting}
+              disabled={selectedCategories.length === 0 || !evidence.trim() || isSubmitting}
             >
               {isSubmitting ? 'Guardando...' : 'Completar misión'}
             </Button>

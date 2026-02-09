@@ -45,7 +45,7 @@ export function CalmMissionModal({ open, onClose, onComplete }: CalmMissionModal
       focusStep: CALM_STEPS[todaysFocus].id,
     });
     setIsSubmitting(false);
-    
+
     if (result.success) {
       setEarnedXP(result.xpEarned || 20);
       setCompleted(true);
@@ -99,6 +99,9 @@ export function CalmMissionModal({ open, onClose, onComplete }: CalmMissionModal
             🧘 Misión: Regula (C.A.L.M.)
           </DialogTitle>
           <DialogDescription>
+            <span className="block font-medium text-foreground mb-1">
+              C.A.L.M: Calma, Analiza, Libera, Muévete
+            </span>
             Ejercicio guiado de regulación emocional
           </DialogDescription>
         </DialogHeader>
@@ -114,8 +117,8 @@ export function CalmMissionModal({ open, onClose, onComplete }: CalmMissionModal
                   i === currentStep
                     ? "bg-primary text-primary-foreground"
                     : i < currentStep
-                    ? "bg-success text-success-foreground"
-                    : "bg-muted text-muted-foreground"
+                      ? "bg-success text-success-foreground"
+                      : "bg-muted text-muted-foreground"
                 )}
               >
                 {i < currentStep ? <Check className="w-4 h-4" /> : step.icon}
@@ -126,7 +129,7 @@ export function CalmMissionModal({ open, onClose, onComplete }: CalmMissionModal
           {/* Current step */}
           <div className={cn(
             "p-4 rounded-xl",
-            isFocusStep 
+            isFocusStep
               ? "bg-gradient-to-br from-primary/10 to-secondary/10 border-2 border-primary/30"
               : "bg-muted/50"
           )}>
@@ -142,7 +145,7 @@ export function CalmMissionModal({ open, onClose, onComplete }: CalmMissionModal
             <p className="text-sm text-muted-foreground mb-4">
               {currentStepData.description}
             </p>
-            
+
             <Textarea
               placeholder="Escribe tu reflexión..."
               value={responses[currentStep]}
@@ -152,20 +155,20 @@ export function CalmMissionModal({ open, onClose, onComplete }: CalmMissionModal
           </div>
 
           <div className="flex justify-between gap-2 pt-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => currentStep > 0 ? setCurrentStep(currentStep - 1) : handleClose()}
             >
               {currentStep > 0 ? 'Anterior' : 'Cancelar'}
             </Button>
-            
+
             {currentStep < CALM_STEPS.length - 1 ? (
               <Button onClick={handleNext} className="gap-1">
                 Siguiente
                 <ChevronRight className="w-4 h-4" />
               </Button>
             ) : (
-              <Button 
+              <Button
                 onClick={handleComplete}
                 disabled={isSubmitting}
               >
