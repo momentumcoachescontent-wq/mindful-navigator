@@ -45,7 +45,13 @@ export default function Auth() {
 
   const validateForm = () => {
     try {
-      authSchema.parse({ email, password });
+      if (view === "login" || view === "register") {
+        authSchema.parse({ email, password });
+      } else if (view === "forgot") {
+        z.object({ email: z.string().email("Email inválido") }).parse({ email });
+      } else if (view === "update_password") {
+        z.object({ password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres") }).parse({ password });
+      }
       setErrors({});
       return true;
     } catch (error) {
