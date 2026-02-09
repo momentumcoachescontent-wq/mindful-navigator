@@ -28,7 +28,7 @@ export function RankingList({ users, metric }: RankingListProps) {
   return (
     <div className="space-y-2">
       <h3 className="text-sm font-medium text-muted-foreground px-1">
-        Top 100
+        Clasificación de la Comunidad
       </h3>
 
       <div className="space-y-2">

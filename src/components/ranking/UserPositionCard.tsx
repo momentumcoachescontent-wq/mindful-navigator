@@ -25,11 +25,11 @@ const AVATAR_GRADIENTS = [
   "from-deep-blue-light to-secondary",
 ];
 
-export function UserPositionCard({ 
-  userRanking, 
+export function UserPositionCard({
+  userRanking,
   totalXp,
-  isPrivate, 
-  onTogglePrivacy 
+  isPrivate,
+  onTogglePrivacy
 }: UserPositionCardProps) {
   const { user } = useAuth();
   const [isUpdating, setIsUpdating] = useState(false);
@@ -39,7 +39,7 @@ export function UserPositionCard({
 
   const handleTogglePrivacy = async () => {
     if (!user) return;
-    
+
     setIsUpdating(true);
     try {
       const { error } = await supabase
@@ -48,7 +48,7 @@ export function UserPositionCard({
         .eq("user_id", user.id);
 
       if (error) throw error;
-      
+
       onTogglePrivacy();
       toast.success(isPrivate ? "Ahora apareces en el ranking" : "Modo privado activado");
     } catch (error) {
@@ -60,10 +60,29 @@ export function UserPositionCard({
 
   if (!userRanking) {
     return (
-      <div className="bg-card rounded-2xl p-4 shadow-soft">
-        <p className="text-center text-muted-foreground text-sm">
-          Completa misiones para aparecer en el ranking
-        </p>
+      <div className="bg-card rounded-2xl p-4 shadow-soft border border-border/50">
+        <div className="flex items-center gap-4">
+          {/* Placeholder Avatar */}
+          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+            <span className="text-xl">Op</span>
+          </div>
+
+          <div className="flex-1">
+            <h3 className="font-semibold text-foreground">Tu posición</h3>
+            <p className="text-xs text-muted-foreground">Aún no has clasificado</p>
+          </div>
+
+          <div className="text-right">
+            <Badge variant="outline">Explorador/a</Badge>
+            <p className="text-xs text-muted-foreground mt-1">0 XP</p>
+          </div>
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-border/50 text-center">
+          <p className="text-sm text-primary font-medium">
+            ¡Completa tu primera misión para entrar al ranking!
+          </p>
+        </div>
       </div>
     );
   }
@@ -140,8 +159,8 @@ export function UserPositionCard({
               <span className="text-primary">{getLevelName(nextLevel)}</span>
             </span>
           </div>
-          <Progress 
-            value={(xpProgress.current / (xpProgress.current + xpProgress.needed)) * 100} 
+          <Progress
+            value={(xpProgress.current / (xpProgress.current + xpProgress.needed)) * 100}
             className="h-2"
           />
         </div>
