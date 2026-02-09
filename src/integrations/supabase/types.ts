@@ -198,6 +198,7 @@ export type Database = {
           display_name: string | null
           goals: string[] | null
           id: string
+          is_admin: boolean | null
           is_premium: boolean | null
           is_ranking_private: boolean | null
           last_check_in_date: string | null
@@ -213,6 +214,7 @@ export type Database = {
           display_name?: string | null
           goals?: string[] | null
           id?: string
+          is_admin?: boolean | null
           is_premium?: boolean | null
           is_ranking_private?: boolean | null
           last_check_in_date?: string | null
@@ -228,6 +230,7 @@ export type Database = {
           display_name?: string | null
           goals?: string[] | null
           id?: string
+          is_admin?: boolean | null
           is_premium?: boolean | null
           is_ranking_private?: boolean | null
           last_check_in_date?: string | null
