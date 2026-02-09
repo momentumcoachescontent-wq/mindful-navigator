@@ -62,6 +62,30 @@ const EXPORTABLE_TABLES: TableConfig[] = [
   },
 ];
 
+const normalizeDate = (dateStr: string | unknown): string | null => {
+  if (!dateStr || typeof dateStr !== 'string') return null;
+
+  // Already YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+
+  // Handle DD/MM/YYYY or DD-MM-YYYY
+  const dmy = dateStr.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+  if (dmy) {
+    const day = dmy[1].padStart(2, '0');
+    const month = dmy[2].padStart(2, '0');
+    const year = dmy[3];
+    return `${year}-${month}-${day}`;
+  }
+
+  // Try standard parsing
+  const date = new Date(dateStr);
+  if (!isNaN(date.getTime())) {
+    return date.toISOString().split('T')[0];
+  }
+
+  return null;
+};
+
 const DataManagement = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -181,6 +205,17 @@ const DataManagement = () => {
         if (table.name === 'daily_reflections') {
           // Content is required
           if (!item.content) return false;
+
+          // Normalize date if present
+          if (item.display_date) {
+            const normalized = normalizeDate(item.display_date);
+            if (normalized) {
+              item.display_date = normalized;
+            } else {
+              // If invalid or unparseable, nullify to avoid DB error
+              item.display_date = null;
+            }
+          }
 
           // Ensure defaults if missing
           if (typeof item.is_active === 'undefined') item.is_active = true;
