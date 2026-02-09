@@ -86,6 +86,18 @@ const normalizeDate = (dateStr: string | unknown): string | null => {
   return null;
 };
 
+const normalizeBoolean = (val: unknown): boolean => {
+  if (typeof val === 'boolean') return val;
+  if (typeof val === 'string') {
+    const lower = val.toLowerCase().trim();
+    return ['true', '1', 'yes', 'y', 't'].includes(lower);
+  }
+  if (typeof val === 'number') {
+    return val === 1;
+  }
+  return false;
+};
+
 const DataManagement = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -217,8 +229,13 @@ const DataManagement = () => {
             }
           }
 
-          // Ensure defaults if missing
-          if (typeof item.is_active === 'undefined') item.is_active = true;
+          // Normalize boolean for is_active
+          if (typeof item.is_active !== 'undefined') {
+            item.is_active = normalizeBoolean(item.is_active);
+          } else {
+            item.is_active = true; // Default to true if missing
+          }
+
           if (typeof item.order_index === 'undefined') item.order_index = 0;
         }
         return true;
