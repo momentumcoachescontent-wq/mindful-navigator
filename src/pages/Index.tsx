@@ -20,6 +20,7 @@ const Index = () => {
     longestStreak: 0,
     thisWeek: [false, false, false, false, false, false, false],
   });
+  const [userName, setUserName] = useState("");
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -36,7 +37,7 @@ const Index = () => {
     try {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("streak_count, last_check_in_date")
+        .select("streak_count, last_check_in_date, display_name")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -47,6 +48,7 @@ const Index = () => {
           ...prev,
           currentStreak: profile.streak_count || 0,
         }));
+        if (profile.display_name) setUserName(profile.display_name);
       }
     } catch (error) {
       console.error("Error loading profile:", error);
@@ -140,7 +142,7 @@ const Index = () => {
           <div>
             <p className="text-sm text-muted-foreground">{greeting()}</p>
             <h1 className="text-xl font-display font-bold text-foreground">
-              Tu Coach de Bolsillo
+              {userName ? `Hola, ${userName}` : "Tu Coach de Bolsillo"}
             </h1>
           </div>
           <div className="flex items-center gap-2">
@@ -151,8 +153,8 @@ const Index = () => {
                     <Button variant="ghost" size="icon-sm">
                       <Bell className="w-5 h-5" />
                     </Button>
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       size="icon-sm"
                       onClick={() => navigate("/profile")}
                     >
@@ -160,8 +162,8 @@ const Index = () => {
                     </Button>
                   </>
                 ) : (
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => navigate("/auth")}
                     className="gap-2"
@@ -178,7 +180,7 @@ const Index = () => {
 
       <main className="container py-6 space-y-6">
         {/* Streak Card */}
-        <StreakCard 
+        <StreakCard
           currentStreak={streakData.currentStreak}
           longestStreak={streakData.longestStreak}
           thisWeek={streakData.thisWeek}
