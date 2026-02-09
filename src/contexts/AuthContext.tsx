@@ -17,6 +17,7 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error: Error | null }>;
   checkSubscription: () => Promise<void>;
 }
 
@@ -30,19 +31,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkSubscription = useCallback(async () => {
     if (!session?.access_token) return;
-    
+
     try {
       const { data, error } = await supabase.functions.invoke("check-subscription", {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
       });
-      
+
       if (error) {
         console.error("Error checking subscription:", error);
         return;
       }
-      
+
       setSubscriptionStatus({
         subscribed: data.subscribed,
         productId: data.product_id,
@@ -85,14 +86,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Periodic subscription check (every 5 minutes)
   useEffect(() => {
     if (!session) return;
-    
+
     const interval = setInterval(checkSubscription, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [session, checkSubscription]);
 
   const signUp = async (email: string, password: string) => {
     const redirectUrl = `${window.location.origin}/`;
-    
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -100,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         emailRedirectTo: redirectUrl
       }
     });
-    
+
     return { error: error as Error | null };
   };
 
@@ -109,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password,
     });
-    
+
     return { error: error as Error | null };
   };
 
@@ -118,19 +119,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSubscriptionStatus(null);
   };
 
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth?view=update_password`,
+    });
+    return { error: error as Error | null };
+  };
+
   const isPremium = subscriptionStatus?.subscribed ?? false;
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      session, 
-      loading, 
+    <AuthContext.Provider value={{
+      user,
+      session,
+      loading,
       isPremium,
       subscriptionStatus,
-      signUp, 
-      signIn, 
+      signUp,
+      signIn,
       signOut,
-      checkSubscription 
+      resetPassword,
+      checkSubscription
     }}>
       {children}
     </AuthContext.Provider>

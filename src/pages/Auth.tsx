@@ -15,14 +15,14 @@ const authSchema = z.object({
 });
 
 export default function Auth() {
-  const [isLogin, setIsLogin] = useState(true);
+  const [view, setView] = useState<"login" | "register" | "forgot">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
-  
-  const { signIn, signUp, user, loading } = useAuth();
+
+  const { signIn, signUp, resetPassword, user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -52,13 +52,33 @@ export default function Auth() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
-    
+
+    setIsLoading(true);
+
     setIsLoading(true);
 
     try {
-      if (isLogin) {
+      if (view === "forgot") {
+        const { error } = await resetPassword(email);
+        if (error) {
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Correo enviado",
+            description: "Revisa tu bandeja de entrada para restablecer tu contraseña",
+          });
+          setView("login");
+        }
+        return;
+      }
+
+      if (view === "login") {
         const { error } = await signIn(email, password);
         if (error) {
           if (error.message.includes("Invalid login credentials")) {
@@ -81,7 +101,7 @@ export default function Auth() {
           });
           navigate("/");
         }
-      } else {
+      } else if (view === "register") {
         const { error } = await signUp(email, password);
         if (error) {
           if (error.message.includes("User already registered")) {
@@ -129,7 +149,7 @@ export default function Auth() {
       {/* Decorative elements */}
       <div className="absolute top-20 left-10 w-20 h-20 bg-primary/10 rounded-full blur-2xl" />
       <div className="absolute bottom-20 right-10 w-32 h-32 bg-accent/10 rounded-full blur-3xl" />
-      
+
       {/* Logo and title */}
       <div className="text-center mb-8 animate-slide-up">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-primary mb-4">
@@ -144,12 +164,14 @@ export default function Auth() {
       <Card className="w-full max-w-md animate-slide-up" style={{ animationDelay: "100ms" }}>
         <CardHeader className="text-center pb-4">
           <CardTitle className="text-xl">
-            {isLogin ? "Bienvenido de vuelta" : "Crea tu cuenta"}
+            {view === "login" ? "Bienvenido de vuelta"
+              : view === "register" ? "Crea tu cuenta"
+                : "Recuperar contraseña"}
           </CardTitle>
           <CardDescription>
-            {isLogin 
-              ? "Ingresa tus datos para continuar" 
-              : "Comienza tu viaje hacia el empoderamiento"}
+            {view === "login" ? "Ingresa tus datos para continuar"
+              : view === "register" ? "Comienza tu viaje hacia el empoderamiento"
+                : "Ingresa tu email para recibir un enlace de recuperación"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -169,37 +191,51 @@ export default function Auth() {
                 <p className="text-sm text-destructive">{errors.email}</p>
               )}
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="password">Contraseña</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={errors.password ? "border-destructive pr-10" : "pr-10"}
-                  disabled={isLoading}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  className="absolute right-2 top-1/2 -translate-y-1/2"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-4 h-4 text-muted-foreground" />
-                  ) : (
-                    <Eye className="w-4 h-4 text-muted-foreground" />
-                  )}
-                </Button>
+
+            {view !== "forgot" && (
+              <div className="space-y-2">
+                <Label htmlFor="password">Contraseña</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={errors.password ? "border-destructive pr-10" : "pr-10"}
+                    disabled={isLoading}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="absolute right-2 top-1/2 -translate-y-1/2"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4 text-muted-foreground" />
+                    ) : (
+                      <Eye className="w-4 h-4 text-muted-foreground" />
+                    )}
+                  </Button>
+                </div>
+                {errors.password && (
+                  <p className="text-sm text-destructive">{errors.password}</p>
+                )}
               </div>
-              {errors.password && (
-                <p className="text-sm text-destructive">{errors.password}</p>
-              )}
-            </div>
+            )}
+
+            {view === "login" && (
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => setView("forgot")}
+                  className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
+            )}
 
             <Button
               type="submit"
@@ -208,11 +244,13 @@ export default function Auth() {
             >
               {isLoading ? (
                 <span className="animate-pulse">
-                  {isLogin ? "Iniciando sesión..." : "Creando cuenta..."}
+                  Cargando...
                 </span>
               ) : (
                 <>
-                  {isLogin ? "Iniciar sesión" : "Crear cuenta"}
+                  {view === "login" ? "Iniciar sesión"
+                    : view === "register" ? "Crear cuenta"
+                      : "Enviar enlace"}
                   <Sparkles className="w-4 h-4 ml-2" />
                 </>
               )}
@@ -223,19 +261,21 @@ export default function Auth() {
             <button
               type="button"
               onClick={() => {
-                setIsLogin(!isLogin);
+                setView(view === "login" ? "register" : "login");
                 setErrors({});
               }}
               className="text-sm text-primary hover:underline"
             >
-              {isLogin 
-                ? "¿No tienes cuenta? Regístrate" 
-                : "¿Ya tienes cuenta? Inicia sesión"}
+              {view === "login"
+                ? "¿No tienes cuenta? Regístrate"
+                : view === "register"
+                  ? "¿Ya tienes cuenta? Inicia sesión"
+                  : "Volver a Iniciar sesión"}
             </button>
           </div>
 
           {/* Features preview */}
-          {!isLogin && (
+          {view === "register" && (
             <div className="mt-6 pt-6 border-t border-border space-y-3">
               <p className="text-xs text-muted-foreground text-center mb-3">
                 Al registrarte tendrás acceso a:
