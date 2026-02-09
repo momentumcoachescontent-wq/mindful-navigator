@@ -98,6 +98,15 @@ const normalizeBoolean = (val: unknown): boolean => {
   return false;
 };
 
+const normalizeInteger = (val: unknown): number => {
+  if (typeof val === 'number') return Math.floor(val);
+  if (typeof val === 'string') {
+    const parsed = parseInt(val, 10);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+  return 0; // Default if null/undefined/other
+};
+
 const DataManagement = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -236,7 +245,12 @@ const DataManagement = () => {
             item.is_active = true; // Default to true if missing
           }
 
-          if (typeof item.order_index === 'undefined') item.order_index = 0;
+          // Normalize integer for order_index
+          if (typeof item.order_index !== 'undefined') {
+            item.order_index = normalizeInteger(item.order_index);
+          } else {
+            item.order_index = 0;
+          }
         }
         return true;
       });
