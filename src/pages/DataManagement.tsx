@@ -176,6 +176,17 @@ const DataManagement = () => {
         }
 
         return cleaned;
+      }).filter(item => {
+        // Validation for daily_reflections
+        if (table.name === 'daily_reflections') {
+          // Content is required
+          if (!item.content) return false;
+
+          // Ensure defaults if missing
+          if (typeof item.is_active === 'undefined') item.is_active = true;
+          if (typeof item.order_index === 'undefined') item.order_index = 0;
+        }
+        return true;
       });
 
       if (cleanedData.length === 0) {
@@ -198,9 +209,17 @@ const DataManagement = () => {
         title: "Importación exitosa",
         description: `Se importaron ${cleanedData.length} registros a ${table.displayName}`,
       });
-    } catch (error) {
-      console.error("Import error:", error);
-      const message = error instanceof Error ? error.message : "Error desconocido";
+    } catch (error: any) {
+      console.error("Import error object:", error);
+
+      let message = "Error desconocido";
+      if (error instanceof Error) {
+        message = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        // Handle Supabase error structure
+        message = error.message || error.details || error.hint || JSON.stringify(error);
+      }
+
       setImportStatus({
         table: table.name,
         status: "error",
