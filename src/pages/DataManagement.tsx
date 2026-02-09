@@ -13,10 +13,17 @@ type TableConfig = {
   displayName: string;
   description: string;
   columns: string[];
+  isGlobal?: boolean;
 };
 
-// Note: daily_reflections removed - write access restricted to admin/service role only for security
 const EXPORTABLE_TABLES: TableConfig[] = [
+  {
+    name: "daily_reflections",
+    displayName: "Reflexiones Diarias (Admin)",
+    description: "Contenido global de reflexiones (Solo Admin)",
+    columns: ["author", "category", "content", "display_date", "is_active", "order_index"],
+    isGlobal: true,
+  },
   {
     name: "journal_entries",
     displayName: "Entradas de Diario",
@@ -62,6 +69,25 @@ const DataManagement = () => {
   const [loading, setLoading] = useState<string | null>(null);
   const [importStatus, setImportStatus] = useState<{ table: string; status: "success" | "error"; message: string } | null>(null);
 
+  // Fetch user profile to check admin status
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useState(() => {
+    async function checkAdmin() {
+      if (!user) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('user_id', user.id)
+        .single();
+
+      if (data?.is_admin) {
+        setIsAdmin(true);
+      }
+    }
+    checkAdmin();
+  });
+
   const handleExport = async (table: TableConfig) => {
     if (!user) {
       toast({
@@ -74,11 +100,16 @@ const DataManagement = () => {
 
     setLoading(`export-${table.name}`);
     try {
-      // All exportable tables are user-specific
-      const { data, error } = await supabase
+      let query = supabase
         .from(table.name as "journal_entries")
-        .select(table.columns.join(","))
-        .eq("user_id", user.id);
+        .select(table.columns.join(","));
+
+      // Only filter by user_id if it's NOT a global table
+      if (!table.isGlobal) {
+        query = query.eq("user_id", user.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -130,7 +161,7 @@ const DataManagement = () => {
         throw new Error("El archivo debe contener un array de registros");
       }
 
-      // Validate and clean data - all tables are user-specific
+      // Validate and clean data
       const cleanedData = data.map((item: Record<string, unknown>) => {
         const cleaned: Record<string, unknown> = {};
         table.columns.forEach((col) => {
@@ -138,8 +169,12 @@ const DataManagement = () => {
             cleaned[col] = item[col];
           }
         });
-        // All exportable tables require user_id
-        cleaned.user_id = user.id;
+
+        // Add user_id ONLY if it's NOT a global table
+        if (!table.isGlobal) {
+          cleaned.user_id = user.id;
+        }
+
         return cleaned;
       });
 
@@ -249,7 +284,7 @@ const DataManagement = () => {
 
         {/* Table Cards */}
         <div className="grid gap-4">
-          {EXPORTABLE_TABLES.map((table) => (
+          {EXPORTABLE_TABLES.filter(t => !t.isGlobal || isAdmin).map((table) => (
             <Card key={table.name}>
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg">{table.displayName}</CardTitle>
