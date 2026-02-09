@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -88,6 +88,7 @@ Responde SOLO con el JSON, sin texto adicional antes o después.`;
 function sanitizeInput(input: string): string {
   // Remove control characters (except newlines and tabs which are valid in text)
   return input
+    // eslint-disable-next-line no-control-regex
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
     .trim();
 }
@@ -120,6 +121,7 @@ function sanitizeString(str: unknown, maxLength: number): string {
   if (typeof str !== 'string') return '';
   // Remove control characters and limit length
   return str
+    // eslint-disable-next-line no-control-regex
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
     .slice(0, maxLength);
 }
@@ -171,8 +173,8 @@ function validateAndSanitizeAIResponse(result: unknown): { valid: boolean; sanit
   if (Array.isArray(obj.action_plan)) {
     for (const item of obj.action_plan.slice(0, 10)) {
       if (typeof item === 'object' && item !== null) {
-        const step = typeof (item as Record<string, unknown>).step === 'number' 
-          ? (item as Record<string, unknown>).step as number 
+        const step = typeof (item as Record<string, unknown>).step === 'number'
+          ? (item as Record<string, unknown>).step as number
           : action_plan.length + 1;
         const action = sanitizeString((item as Record<string, unknown>).action, 200);
         if (action) {
@@ -200,7 +202,7 @@ function validateAndSanitizeAIResponse(result: unknown): { valid: boolean; sanit
  * Check if user has premium subscription
  */
 async function checkPremiumStatus(
-  supabaseClient: any,
+  supabaseClient: SupabaseClient,
   userId: string
 ): Promise<boolean> {
   const { data: profile, error } = await supabaseClient
@@ -214,7 +216,7 @@ async function checkPremiumStatus(
   }
 
   const profileData = profile as { is_premium: boolean | null; premium_until: string | null };
-  
+
   return (
     profileData.is_premium === true &&
     profileData.premium_until !== null &&
@@ -226,7 +228,7 @@ async function checkPremiumStatus(
  * Check rate limits for user
  */
 async function checkRateLimits(
-  supabaseClient: any,
+  supabaseClient: SupabaseClient,
   userId: string,
   isPremium: boolean
 ): Promise<{ allowed: boolean; error?: string; retryAfter?: number }> {
@@ -296,7 +298,7 @@ serve(async (req) => {
     // Initialize Supabase client for auth verification
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    
+
     if (!supabaseUrl || !supabaseAnonKey) {
       console.error("Supabase configuration missing");
       return new Response(
@@ -312,7 +314,7 @@ serve(async (req) => {
     // Verify the user token
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
-    
+
     if (authError || !user) {
       console.error("Authentication failed:", authError?.message);
       return new Response(
@@ -339,7 +341,7 @@ serve(async (req) => {
         headers["Retry-After"] = String(rateLimitCheck.retryAfter);
       }
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: rateLimitCheck.error,
           upgrade_available: !isPremium,
         }),
@@ -359,7 +361,7 @@ serve(async (req) => {
     }
 
     const { situation } = requestBody;
-    
+
     // Validate input
     const validation = validateSituation(situation);
     if (!validation.valid) {

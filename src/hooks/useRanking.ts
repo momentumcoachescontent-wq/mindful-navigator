@@ -122,7 +122,7 @@ export function useRanking(
 
       // Fetch missions for XP in period
       let missionsQuery = supabase.from("daily_missions").select("user_id, xp_earned, mission_date");
-      
+
       if (startDate) {
         missionsQuery = missionsQuery.gte("mission_date", startDate.toISOString().split("T")[0]);
       }
@@ -132,7 +132,7 @@ export function useRanking(
 
       // Fetch victories for period
       let victoriesQuery = supabase.from("daily_victories").select("user_id, victory_date");
-      
+
       if (startDate) {
         victoriesQuery = victoriesQuery.gte("victory_date", startDate.toISOString().split("T")[0]);
       }
@@ -159,7 +159,7 @@ export function useRanking(
       });
 
       // Build ranked users
-      let rankedUsers: RankedUser[] = progressData
+      const rankedUsers: RankedUser[] = progressData
         ?.filter((p) => {
           const profile = profilesMap[p.user_id];
           // Filter out private users (unless it's the current user)
@@ -171,7 +171,7 @@ export function useRanking(
         .map((p) => {
           const profile = profilesMap[p.user_id];
           const periodXp = period === "historical" ? p.total_xp : (periodXpByUser[p.user_id] || 0);
-          
+
           return {
             userId: p.user_id,
             alias: profile?.display_name || generateAlias(p.user_id),
@@ -245,7 +245,7 @@ export function useUserRankingPosition(
 
       // For position calculation, we'd need the full ranking
       // This is simplified - in production use a database function
-      
+
       return {
         userId: user.id,
         level: progress.current_level,
