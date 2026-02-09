@@ -307,6 +307,7 @@ const Settings = () => {
             <CardContent className="space-y-4">
                 <div className="grid grid-cols-3 gap-4">
                     <button
+                        type="button"
                         onClick={() => setTheme("light")}
                         className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${theme === 'light' ? 'border-primary bg-primary/5' : 'border-transparent bg-muted/50 hover:bg-muted'}`}
                     >
@@ -314,6 +315,7 @@ const Settings = () => {
                         <span className="text-sm font-medium">Claro</span>
                     </button>
                     <button
+                        type="button"
                         onClick={() => setTheme("dark")}
                         className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${theme === 'dark' ? 'border-primary bg-primary/5' : 'border-transparent bg-muted/50 hover:bg-muted'}`}
                     >
@@ -321,6 +323,7 @@ const Settings = () => {
                         <span className="text-sm font-medium">Oscuro</span>
                     </button>
                     <button
+                        type="button"
                         onClick={() => setTheme("system")}
                         className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${theme === 'system' ? 'border-primary bg-primary/5' : 'border-transparent bg-muted/50 hover:bg-muted'}`}
                     >
