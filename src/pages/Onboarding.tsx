@@ -156,6 +156,7 @@ const Onboarding = () => {
                   <SelectValue placeholder="Selecciona tu rango de edad" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="<18">Menor de 18 años</SelectItem>
                   <SelectItem value="18-24">18 - 24 años</SelectItem>
                   <SelectItem value="25-34">25 - 34 años</SelectItem>
                   <SelectItem value="35-44">35 - 44 años</SelectItem>
