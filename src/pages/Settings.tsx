@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@/components/theme-provider";
-import { ArrowLeft, Bell, Shield, Heart, ChevronRight, Plus, Trash2, Loader2, Save, Moon, Sun, Laptop } from "lucide-react";
+import { ArrowLeft, Bell, Shield, Heart, ChevronRight, Plus, Trash2, Loader2, Save, Moon, Sun, Laptop, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +20,8 @@ const Settings = () => {
         : location.pathname.includes("/privacy") ? "privacy"
             : location.pathname.includes("/contacts") ? "contacts"
                 : location.pathname.includes("/appearance") ? "appearance"
-                    : "settings";
+                    : location.pathname.includes("/profile") ? "profile"
+                        : "settings";
 
     const isRoot = section === "settings";
     const { user } = useAuth();
@@ -140,6 +142,7 @@ const Settings = () => {
     const renderRoot = () => (
         <div className="space-y-4">
             {[
+                { icon: User, label: "Perfil", path: "/settings/profile", desc: "Datos personales y demografía" },
                 { icon: Bell, label: "Notificaciones", path: "/settings/notifications", desc: "Alertas y recordatorios" },
                 { icon: Shield, label: "Privacidad y seguridad", path: "/settings/privacy", desc: "Visibilidad y datos" },
                 { icon: Heart, label: "Contactos de confianza", path: "/settings/contacts", desc: "Red de apoyo" },
@@ -298,6 +301,97 @@ const Settings = () => {
         );
     };
 
+    const renderProfile = () => {
+        if (isLoadingProfile) return <Loader2 className="w-8 h-8 animate-spin mx-auto" />;
+
+        const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            updateProfileMutation.mutate({
+                display_name: formData.get('display_name'),
+                age_range: formData.get('age_range'),
+                gender: formData.get('gender'),
+                occupation: formData.get('occupation'),
+            });
+        };
+
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Tu Perfil</CardTitle>
+                    <CardDescription>Actualiza tu información personal.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="display_name">Nombre</Label>
+                            <Input
+                                id="display_name"
+                                name="display_name"
+                                defaultValue={profile?.display_name || ''}
+                                placeholder="Tu nombre"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="age_range">Rango de Edad</Label>
+                            <Select name="age_range" defaultValue={profile?.age_range || ''}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecciona tu rango de edad" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="18-24">18 - 24 años</SelectItem>
+                                    <SelectItem value="25-34">25 - 34 años</SelectItem>
+                                    <SelectItem value="35-44">35 - 44 años</SelectItem>
+                                    <SelectItem value="45-54">45 - 54 años</SelectItem>
+                                    <SelectItem value="55+">55+ años</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="gender">Género</Label>
+                            <Select name="gender" defaultValue={profile?.gender || ''}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="¿Cómo te identificas?" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Hombre">Hombre</SelectItem>
+                                    <SelectItem value="Mujer">Mujer</SelectItem>
+                                    <SelectItem value="No binario">No binario</SelectItem>
+                                    <SelectItem value="Prefiero no decir">Prefiero no decir</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="occupation">Ocupación</Label>
+                            <Select name="occupation" defaultValue={profile?.occupation || ''}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="¿A qué te dedicas?" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Estudiante">Estudiante</SelectItem>
+                                    <SelectItem value="Trabajo">Trabajo</SelectItem>
+                                    <SelectItem value="Estudio y Trabajo">Estudio y Trabajo</SelectItem>
+                                    <SelectItem value="Desempleado/a">Desempleado/a</SelectItem>
+                                    <SelectItem value="Otro">Otro</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="pt-4">
+                            <Button type="submit" className="w-full">
+                                <Save className="w-4 h-4 mr-2" />
+                                Guardar Cambios
+                            </Button>
+                        </div>
+                    </form>
+                </CardContent>
+            </Card>
+        );
+    };
+
     const renderAppearance = () => (
         <Card>
             <CardHeader>
@@ -341,6 +435,7 @@ const Settings = () => {
             case "privacy": return "Privacidad";
             case "contacts": return "Contactos";
             case "appearance": return "Apariencia";
+            case "profile": return "Tu Perfil";
             default: return "Configuración";
         }
     };
@@ -364,6 +459,7 @@ const Settings = () => {
                 {section === "privacy" && renderPrivacy()}
                 {section === "contacts" && renderContacts()}
                 {section === "appearance" && renderAppearance()}
+                {section === "profile" && renderProfile()}
             </main>
         </div>
     );
