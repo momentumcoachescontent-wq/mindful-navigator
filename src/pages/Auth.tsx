@@ -28,10 +28,10 @@ export default function Auth() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && user && view !== "update_password") {
       navigate("/");
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, view]);
 
   useEffect(() => {
     // Check if we are in a password recovery flow
