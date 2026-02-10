@@ -116,6 +116,11 @@ export function SOSModal({ isOpen, onClose }: SOSModalProps) {
       else if (error?.status) errorMessage += ` Status: ${error.status}`;
       else if (error?.message) errorMessage += ` Error: ${error.message}`;
 
+      // Common error: 412 means Gmail scopes are missing. User needs to reconnect Gmail in EmailJS.
+      if (error?.text?.includes("insufficient authentication scopes")) {
+        errorMessage = "Error de permisos de Gmail. Por favor reconecta tu cuenta en EmailJS y marca la casilla de enviar correos.";
+      }
+
       toast({
         title: "Error al enviar",
         description: errorMessage,
