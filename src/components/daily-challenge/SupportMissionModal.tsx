@@ -35,6 +35,7 @@ export function SupportMissionModal({ open, onClose, onComplete }: SupportMissio
   const [checkInMessage, setCheckInMessage] = useState('');
   const [isAddingContact, setIsAddingContact] = useState(false);
   const [newContactName, setNewContactName] = useState('');
+  const [newContactEmail, setNewContactEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [earnedXP, setEarnedXP] = useState(0);
@@ -50,7 +51,7 @@ export function SupportMissionModal({ open, onClose, onComplete }: SupportMissio
 
     const { data } = await supabase
       .from('trusted_contacts')
-      .select('id, name, relationship')
+      .select('id, name, relationship, email')
       .eq('user_id', user.id)
       .limit(5);
 
@@ -64,13 +65,18 @@ export function SupportMissionModal({ open, onClose, onComplete }: SupportMissio
 
     const { data, error } = await supabase
       .from('trusted_contacts')
-      .insert([{ user_id: user.id, name: newContactName.trim() }] as never)
-      .select('id, name, relationship')
+      .insert([{
+        user_id: user.id,
+        name: newContactName.trim(),
+        email: newContactEmail.trim() || null
+      }] as never)
+      .select('id, name, relationship, email')
       .single();
 
     if (!error && data) {
       setContacts(prev => [...prev, data]);
       setNewContactName('');
+      setNewContactEmail('');
       setIsAddingContact(false);
       setSelectedContact(data.id);
     }
