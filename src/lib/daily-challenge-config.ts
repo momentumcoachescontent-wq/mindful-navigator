@@ -161,98 +161,69 @@ const RISK_MAP_BONUS: Mission = {
   icon: 'AlertTriangle',
 };
 
-// Weekly schedule
-export const WEEKLY_SCHEDULE: DayMissions[] = [
-  // Sunday - Review + Victory Wall
-  {
-    day: 0,
-    freeMissions: [HERO_MISSION, CALM_MISSION, { ...SELFCARE_MISSION, id: 'review', title: 'Revisión semanal', description: 'Revisa tu progreso y celebra tus victorias' }],
-    premiumBonuses: [RISK_MAP_BONUS],
-  },
-  // Monday
-  {
-    day: 1,
-    freeMissions: [HERO_MISSION, CALM_MISSION, SCRIPTS_MISSION],
-    premiumBonuses: [SOS_CARD_BONUS],
-  },
-  // Tuesday
-  {
-    day: 2,
-    freeMissions: [HERO_MISSION, CALM_MISSION, SELFCARE_MISSION],
-    premiumBonuses: [{ ...SOS_CARD_BONUS, id: 'audio_state', title: 'Audio por estado', description: 'Escucha un audio según cómo te sientes', icon: 'Headphones' }],
-  },
-  // Wednesday
-  {
-    day: 3,
-    freeMissions: [HERO_MISSION, CALM_MISSION, SUPPORT_MISSION],
-    premiumBonuses: [ROLEPLAY_BONUS],
-  },
-  // Thursday
-  {
-    day: 4,
-    freeMissions: [HERO_MISSION, CALM_MISSION, SCRIPTS_MISSION],
-    premiumBonuses: [SOS_CARD_BONUS],
-  },
-  // Friday
-  {
-    day: 5,
-    freeMissions: [HERO_MISSION, CALM_MISSION, SELFCARE_MISSION],
-    premiumBonuses: [ROLEPLAY_BONUS],
-  },
-  // Saturday - Social mini-challenge
-  {
-    day: 6,
-    freeMissions: [HERO_MISSION, CALM_MISSION, { ...SCRIPTS_MISSION, id: 'social', title: 'Mini-reto social', description: 'Practica límites en redes o con amigos' }],
-    premiumBonuses: [SOS_CARD_BONUS],
-  },
-];
+// Seeded random number generator (Linear Congruential Generator)
+function seededRandom(seed: number) {
+  const m = 0x80000000;
+  const a = 1103515245;
+  const c = 12345;
+  let state = seed ? seed : Math.floor(Math.random() * (m - 1));
 
-// H.E.R.O. categories
-export const HERO_CATEGORIES = [
-  { id: 'humillacion', label: 'Humillación', icon: '😔', description: 'Comentarios despectivos, burlas, críticas constantes' },
-  { id: 'exigencias', label: 'Exigencias', icon: '😤', description: 'Demandas excesivas, expectativas irreales, presión' },
-  { id: 'rechazo', label: 'Rechazo', icon: '💔', description: 'Ignorar sentimientos, minimizar, invalidar' },
-  { id: 'ordenes', label: 'Órdenes', icon: '👊', description: 'Control, imposiciones, decisiones unilaterales' },
-];
+  return function () {
+    state = (a * state + c) % m;
+    return state / (m - 1);
+  };
+}
 
-// C.A.L.M. steps with daily focus
-export const CALM_STEPS = [
-  { id: 'cuerpo', label: 'Cuerpo', icon: '🫁', description: 'Respira profundo 3 veces. ¿Dónde sientes tensión?' },
-  { id: 'analiza', label: 'Analiza', icon: '🧠', description: '¿Qué necesitas realmente en este momento?' },
-  { id: 'limita', label: 'Limita', icon: '🛡️', description: '¿Qué límite necesitas poner o reforzar?' },
-  { id: 'mueve', label: 'Muévete', icon: '🚶', description: 'Cambia de posición, sal un momento, estira' },
-];
+// Generate a seed from the date string (YYYY-MM-DD)
+function getSeedFromDate(date: Date): number {
+  const str = date.toISOString().split('T')[0].replace(/-/g, '');
+  return parseInt(str, 10);
+}
 
-// Script templates
-export const SCRIPT_TEMPLATES = [
-  { id: 'soft', level: 'Suave', template: 'Entiendo tu punto de vista, y al mismo tiempo necesito [tu necesidad].' },
-  { id: 'firm', level: 'Firme', template: 'Aprecio que me compartas esto. Mi decisión es [tu límite] y no está en negociación.' },
-  { id: 'final', level: 'Última advertencia', template: 'He sido claro/a sobre mis límites. Si esto continúa, [consecuencia].' },
-];
+const VARIABLE_MISSIONS = [SCRIPTS_MISSION, SELFCARE_MISSION, SUPPORT_MISSION];
 
-// Selfcare micro-actions
-export const SELFCARE_ACTIONS = [
-  { id: 'water', label: 'Beber agua', icon: '💧' },
-  { id: 'walk', label: 'Caminar 5 min', icon: '🚶' },
-  { id: 'sleep', label: 'Dormir 8 horas', icon: '😴' },
-  { id: 'eat', label: 'Comer nutritivo', icon: '🥗' },
-  { id: 'breathe', label: 'Respirar profundo', icon: '🫁' },
-  { id: 'disconnect', label: 'Desconectar del teléfono', icon: '📵' },
-  { id: 'nature', label: 'Tiempo en naturaleza', icon: '🌿' },
-  { id: 'music', label: 'Escuchar música', icon: '🎵' },
-];
-
-// SOS Card types
-export const SOS_CARD_TYPES = [
-  { id: 'say', label: 'Qué decir', icon: '💬', color: 'bg-primary' },
-  { id: 'not_say', label: 'Qué NO decir', icon: '🚫', color: 'bg-destructive' },
-  { id: 'do', label: 'Qué hacer', icon: '✅', color: 'bg-success' },
+const PREMIUM_MISSIONS = [
+  SOS_CARD_BONUS,
+  ROLEPLAY_BONUS,
+  RISK_MAP_BONUS,
+  { ...SOS_CARD_BONUS, id: 'audio_state', title: 'Audio por estado', description: 'Escucha un audio según cómo te sientes', icon: 'Headphones' }
 ];
 
 // Helper function to get today's missions
 export function getTodaysMissions(): DayMissions {
-  const today = new Date().getDay();
-  return WEEKLY_SCHEDULE[today] || WEEKLY_SCHEDULE[1]; // Default to Monday if something fails
+  const todayDate = new Date();
+  const todayDay = todayDate.getDay();
+
+  // Use a seed based on the date to ensure everyone gets the same "random" missions for the day
+  const seed = getSeedFromDate(todayDate);
+  const random = seededRandom(seed);
+
+  // Core missions: Always HERO and CALM
+  const dailyMissions = [HERO_MISSION, CALM_MISSION];
+
+  // 3rd Mission: Randomly selected from variable pool
+  // On Sundays, we prioritize the Review mission
+  if (todayDay === 0) {
+    dailyMissions.push({
+      ...SELFCARE_MISSION,
+      id: 'review',
+      title: 'Revisión semanal',
+      description: 'Revisa tu progreso y celebra tus victorias'
+    });
+  } else {
+    const variableIndex = Math.floor(random() * VARIABLE_MISSIONS.length);
+    dailyMissions.push(VARIABLE_MISSIONS[variableIndex]);
+  }
+
+  // Premium Bonus: Randomly selected
+  const premiumIndex = Math.floor(random() * PREMIUM_MISSIONS.length);
+  const premiumBonus = PREMIUM_MISSIONS[premiumIndex];
+
+  return {
+    day: todayDay,
+    freeMissions: dailyMissions,
+    premiumBonuses: [premiumBonus],
+  };
 }
 
 // Helper function to calculate level from XP
