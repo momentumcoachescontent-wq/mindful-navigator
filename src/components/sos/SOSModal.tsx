@@ -31,12 +31,35 @@ export function SOSModal({ isOpen, onClose }: SOSModalProps) {
   const [isCustomMessage, setIsCustomMessage] = useState(false);
   const [customMessageText, setCustomMessageText] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [userName, setUserName] = useState("Usuario de Mindful Navigator");
+
+  useEffect(() => {
+    if (user) {
+      fetchUserProfile();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (showContacts && user) {
       fetchContacts();
     }
   }, [showContacts, user]);
+
+  const fetchUserProfile = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('user_id', user!.id)
+        .single();
+
+      if (data?.display_name) {
+        setUserName(data.display_name);
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+    }
+  };
 
   const fetchContacts = async () => {
     setLoadingContacts(true);
@@ -90,8 +113,8 @@ export function SOSModal({ isOpen, onClose }: SOSModalProps) {
       to_email: email,
       to_name: name,
       message: message,
-      from_name: user?.user_metadata?.first_name || "Usuario de Mindful Navigator",
-      reply_to: user?.email,
+      from_name: userName,
+      reply_to: "noreply@mindfulnavigator.app",
     };
 
     try {
@@ -105,8 +128,6 @@ export function SOSModal({ isOpen, onClose }: SOSModalProps) {
       setIsCustomMessage(false);
       setCustomMessageText('');
       setSelectedContact(null);
-      // Optional: keep modal open or go back to main screen?
-      // For now, let's keep them in the contact view but clear selection
 
     } catch (error: any) {
       console.error('Error sending SOS email:', error);
