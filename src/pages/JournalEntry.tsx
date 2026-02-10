@@ -129,6 +129,7 @@ const JournalEntry = () => {
 
       <main className="container py-6 space-y-6">
         {/* Victory toggle */}
+        {/* Victory toggle */}
         <div className={cn(
           "flex items-center justify-between p-4 rounded-2xl border-2 transition-all",
           isVictory
@@ -153,107 +154,106 @@ const JournalEntry = () => {
               </p>
             </div>
           </div>
+          <Switch
+            id="victory-toggle"
+            checked={isVictory}
+            onCheckedChange={setIsVictory}
+          />
         </div>
-        <Switch
-          id="victory-toggle"
-          checked={isVictory}
-          onCheckedChange={setIsVictory}
-        />
-    </div>
 
-        {/* Follow Up toggle */ }
-  <div className="flex items-center justify-between p-4 rounded-2xl bg-card border border-border">
-    <div className="flex items-center gap-3">
-      <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
-        <span className="text-xl">🔄</span>
-      </div>
-      <div>
-        <Label htmlFor="followup-toggle" className="font-display font-semibold text-foreground">
-          Hacer seguimiento
-        </Label>
-        <p className="text-xs text-muted-foreground">
-          Te recordaremos revisar esta entrada en el futuro
-        </p>
-      </div>
-    </div>
-    <Switch
-      id="followup-toggle"
-      checked={isFollowUp}
-      onCheckedChange={setIsFollowUp}
-    />
-  </div>
+        {/* Follow Up toggle */}
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-card border border-border">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
+              <span className="text-xl">🔄</span>
+            </div>
+            <div>
+              <Label htmlFor="followup-toggle" className="font-display font-semibold text-foreground">
+                Hacer seguimiento
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Te recordaremos revisar esta entrada en el futuro
+              </p>
+            </div>
+          </div>
+          <Switch
+            id="followup-toggle"
+            checked={isFollowUp}
+            onCheckedChange={setIsFollowUp}
+          />
+        </div>
 
-  {/* Title */ }
-  <div className="space-y-2">
-    <Label htmlFor="title">Título</Label>
-    <Input
-      id="title"
-      placeholder={isVictory ? "¿Qué lograste hoy?" : "¿Cómo fue tu día?"}
-      value={title}
-      onChange={(e) => setTitle(e.target.value)}
-      className="text-lg font-display"
-    />
-  </div>
+        {/* Title */}
+        <div className="space-y-2">
+          <Label htmlFor="title">Título</Label>
+          <Input
+            id="title"
+            placeholder={isVictory ? "¿Qué lograste hoy?" : "¿Cómo fue tu día?"}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="text-lg font-display"
+          />
+        </div>
 
-  {/* Mood */ }
-  <div className="space-y-3">
-    <Label>¿Cómo te sientes?</Label>
-    <div className="flex justify-between gap-2">
-      {moodOptions.map((option) => (
-        <button
-          key={option.value}
-          onClick={() => setMood(option.value)}
-          className={cn(
-            "flex-1 py-3 rounded-xl flex flex-col items-center gap-1 transition-all",
-            mood === option.value
-              ? "bg-primary/10 ring-2 ring-primary"
-              : "bg-muted hover:bg-muted/80"
-          )}
-        >
-          <span className="text-2xl">{option.label}</span>
-          <span className="text-[10px] text-muted-foreground">{option.description}</span>
-        </button>
-      ))}
-    </div>
-  </div>
+        {/* Mood */}
+        <div className="space-y-3">
+          <Label>¿Cómo te sientes?</Label>
+          <div className="flex justify-between gap-2">
+            {moodOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => setMood(option.value)}
+                className={cn(
+                  "flex-1 py-3 rounded-xl flex flex-col items-center gap-1 transition-all",
+                  mood === option.value
+                    ? "bg-primary/10 ring-2 ring-primary"
+                    : "bg-muted hover:bg-muted/80"
+                )}
+              >
+                <span className="text-2xl">{option.label}</span>
+                <span className="text-[10px] text-muted-foreground">{option.description}</span>
+              </button>
+            ))}
+          </div>
+        </div>
 
-  {/* Tags */ }
-  <div className="space-y-3">
-    <Label>Etiquetas</Label>
-    <div className="flex flex-wrap gap-2">
-      {tags.map((tag) => (
-        <button
-          key={tag.id}
-          onClick={() => toggleTag(tag.id)}
-          className={cn(
-            "px-4 py-2 rounded-full text-sm font-medium border transition-all",
-            selectedTags.includes(tag.id)
-              ? `${tag.color} border-current`
-              : "bg-muted text-muted-foreground border-transparent"
-          )}
-        >
-          {tag.label}
-        </button>
-      ))}
-    </div>
-  </div>
+        {/* Tags */}
+        <div className="space-y-3">
+          <Label>Etiquetas</Label>
+          <div className="flex flex-wrap gap-2">
+            {tags.map((tag) => (
+              <button
+                key={tag.id}
+                onClick={() => toggleTag(tag.id)}
+                className={cn(
+                  "px-4 py-2 rounded-full text-sm font-medium border transition-all",
+                  selectedTags.includes(tag.id)
+                    ? `${tag.color} border-current`
+                    : "bg-muted text-muted-foreground border-transparent"
+                )}
+              >
+                {tag.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
-  {/* Content */ }
-  <div className="space-y-2">
-    <Label htmlFor="content">
-      {isVictory ? "Cuéntanos sobre tu victoria" : "¿Qué quieres escribir?"}
-    </Label>
-    <Textarea
-      id="content"
-      placeholder={isVictory
-        ? "Describe lo que lograste, cómo te sentiste y qué aprendiste..."
-        : "Escribe libremente sobre lo que pasó, cómo te sientes..."
-      }
-      value={content}
-      onChange={(e) => setContent(e.target.value)}
-      className="min-h-[200px] resize-none"
-    />
-  </div>
+        {/* Content */}
+        <div className="space-y-2">
+          <Label htmlFor="content">
+            {isVictory ? "Cuéntanos sobre tu victoria" : "¿Qué quieres escribir?"}
+          </Label>
+          <Textarea
+            id="content"
+            placeholder={isVictory
+              ? "Describe lo que lograste, cómo te sentiste y qué aprendiste..."
+              : "Escribe libremente sobre lo que pasó, cómo te sientes..."
+            }
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            className="min-h-[200px] resize-none"
+          />
+        </div>
       </main >
     </div >
   );
