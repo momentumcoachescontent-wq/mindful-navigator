@@ -86,8 +86,62 @@ export function SOSModal({ isOpen, onClose }: SOSModalProps) {
     );
   }
 
-  // View: Contact List
+  // View: Contact List or Message Preview
   if (showContacts) {
+    if (selectedContact) {
+      return (
+        <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-xl flex items-end justify-center p-4">
+          <div className="w-full max-w-md bg-card rounded-3xl shadow-elevated p-6 animate-slide-up space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-display font-semibold text-foreground flex items-center gap-2">
+                <MessageCircle className="w-5 h-5 text-primary" />
+                Dile a {selectedContact.name}
+              </h2>
+              <Button variant="ghost" size="icon-sm" onClick={() => setSelectedContact(null)}>
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Puedes usar este mensaje predefinido o escribir uno propio.
+              </p>
+
+              <div className="p-4 bg-muted/50 rounded-xl border border-border/50 text-sm italic relative">
+                <span className="text-2xl text-primary/20 absolute -top-2 -left-2">"</span>
+                Hola {selectedContact.name},<br /><br />
+                Necesito apoyo y me gustaría mucho que pudiéramos estar en contacto pronto.
+                <span className="text-2xl text-primary/20 absolute -bottom-4 -right-2">"</span>
+              </div>
+
+              <div className="space-y-3 pt-2">
+                <Button
+                  className="w-full"
+                  onClick={() => handleSendEmail(selectedContact.email, selectedContact.name, true)}
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Enviar mensaje predefinido
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => handleSendEmail(selectedContact.email, selectedContact.name, false)}
+                >
+                  <Mail className="w-4 h-4 mr-2" />
+                  Escribir mi propio mensaje
+                </Button>
+              </div>
+            </div>
+
+            <Button variant="ghost" className="w-full" onClick={() => setSelectedContact(null)}>
+              Volver a contactos
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-xl flex items-end justify-center p-4">
         <div className="w-full max-w-md bg-card rounded-3xl shadow-elevated p-6 animate-slide-up space-y-6">
@@ -119,7 +173,7 @@ export function SOSModal({ isOpen, onClose }: SOSModalProps) {
                   key={contact.id}
                   variant="outline"
                   className="w-full justify-between h-auto py-3 px-4"
-                  onClick={() => handleSendEmail(contact.email, contact.name)}
+                  onClick={() => setSelectedContact(contact)}
                 >
                   <span className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
