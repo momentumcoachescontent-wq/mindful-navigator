@@ -27,6 +27,8 @@ export function SOSModal({ isOpen, onClose }: SOSModalProps) {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [loadingContacts, setLoadingContacts] = useState(false);
+  const [isCustomMessage, setIsCustomMessage] = useState(false);
+  const [customMessageText, setCustomMessageText] = useState('');
 
   useEffect(() => {
     if (showContacts && user) {
@@ -96,6 +98,47 @@ export function SOSModal({ isOpen, onClose }: SOSModalProps) {
   // View: Contact List or Message Preview
   if (showContacts) {
     if (selectedContact) {
+      if (isCustomMessage) {
+        return (
+          <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-xl flex items-end justify-center p-4">
+            <div className="w-full max-w-md bg-card rounded-3xl shadow-elevated p-6 animate-slide-up space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-display font-semibold text-foreground flex items-center gap-2">
+                  <Mail className="w-5 h-5 text-primary" />
+                  Mensaje para {selectedContact.name}
+                </h2>
+                <Button variant="ghost" size="icon-sm" onClick={() => setIsCustomMessage(false)}>
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+
+              <div className="space-y-4">
+                <textarea
+                  className="w-full h-32 p-3 rounded-xl border border-border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="Escribe aquí tu mensaje..."
+                  value={customMessageText}
+                  onChange={(e) => setCustomMessageText(e.target.value)}
+                  autoFocus
+                />
+
+                <Button
+                  className="w-full"
+                  onClick={() => handleSendEmail(selectedContact.email, selectedContact.name, false)}
+                  disabled={!customMessageText.trim()}
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Abrir cliente de correo
+                </Button>
+              </div>
+
+              <Button variant="ghost" className="w-full" onClick={() => setIsCustomMessage(false)}>
+                Volver
+              </Button>
+            </div>
+          </div>
+        );
+      }
+
       return (
         <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-xl flex items-end justify-center p-4">
           <div className="w-full max-w-md bg-card rounded-3xl shadow-elevated p-6 animate-slide-up space-y-6">
@@ -133,7 +176,7 @@ export function SOSModal({ isOpen, onClose }: SOSModalProps) {
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={() => handleSendEmail(selectedContact.email, selectedContact.name, false)}
+                  onClick={() => setIsCustomMessage(true)}
                 >
                   <Mail className="w-4 h-4 mr-2" />
                   Escribir mi propio mensaje
