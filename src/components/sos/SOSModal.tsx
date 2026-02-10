@@ -111,7 +111,7 @@ export function SOSModal({ isOpen, onClose }: SOSModalProps) {
             ) : contacts.length === 0 ? (
               <div className="text-center py-4 border-2 border-dashed rounded-xl">
                 <p className="text-sm text-muted-foreground mb-2">No tienes contactos registrados.</p>
-                <p className="text-xs text-muted-foreground">Ve a Misiones > Red de Apoyo para agregar uno.</p>
+                <p className="text-xs text-muted-foreground">Ve a Misiones &gt; Red de Apoyo para agregar uno.</p>
               </div>
             ) : (
               contacts.map(contact => (
