@@ -98,9 +98,11 @@ const Journal = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="flex-1">
-            <h1 className="text-lg font-display font-bold text-foreground">Diario, Tu Historia, Tu Crecimiento</h1>
+            <h1 className="text-lg font-display font-bold text-foreground">Tu Diario, Tu Historia, Tu Crecimiento</h1>
           </div>
-          <PenLine className="w-8 h-8 text-primary" />
+          <Button variant="ghost" size="icon-sm" onClick={() => navigate("/journal/new")}>
+            <PenLine className="w-6 h-6 text-primary" />
+          </Button>
         </div>
       </header>
 
