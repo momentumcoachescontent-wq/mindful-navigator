@@ -25,11 +25,51 @@ const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const [dailyReflection, setDailyReflection] = useState<{
+    content: string;
+    author: string | null;
+  } | null>(null);
+
   useEffect(() => {
     if (user) {
       loadProfileData();
     }
+    loadDailyReflection();
   }, [user]);
+
+  const loadDailyReflection = async () => {
+    try {
+      const today = new Date().toISOString().split("T")[0];
+
+      // Try to find a reflection for today
+      let { data: reflection, error } = await supabase
+        .from("daily_reflections")
+        .select("content, author")
+        .eq("display_date", today)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      // Fallback: any active reflection
+      if (!reflection) {
+        const { data: randomReflection } = await supabase
+          .from("daily_reflections")
+          .select("content, author")
+          .eq("is_active", true)
+          .limit(1)
+          .maybeSingle();
+
+        reflection = randomReflection;
+      }
+
+      if (reflection) {
+        setDailyReflection(reflection);
+      }
+    } catch (error) {
+      console.error("Error loading daily reflection:", error);
+    }
+  };
 
   const loadProfileData = async () => {
     if (!user) return;
@@ -217,8 +257,13 @@ const Index = () => {
             Reflexión del día
           </p>
           <p className="font-display text-lg leading-relaxed">
-            "Poner límites no es ser egoísta. Es cuidar tu energía para estar mejor contigo y con los demás."
+            "{dailyReflection?.content || "Cargando reflexión..."}"
           </p>
+          {dailyReflection?.author && (
+            <p className="text-sm text-right mt-2 opacity-80">
+              — {dailyReflection.author}
+            </p>
+          )}
         </section>
       </main>
 
