@@ -62,18 +62,18 @@ export function SOSModal({ isOpen, onClose }: SOSModalProps) {
     setIsSending(true);
 
     // Configuration for EmailJS
-    // User must replace these with their own values from https://dashboard.emailjs.com/
-    const SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || "service_placeholder";
-    const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || "template_placeholder";
-    const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || "public_key_placeholder";
+    // User provided keys directly
+    const SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || "service_59lgy53";
+    const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || "template_tfch3dk";
+    const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || "FSOyeuuDUXKDdHcT_";
 
-    if (SERVICE_ID === "service_placeholder" || PUBLIC_KEY === "public_key_placeholder") {
+    if (!SERVICE_ID || !PUBLIC_KEY) {
       toast({
         title: "Configuración requerida",
         description: "Falta configurar EmailJS. Por favor contacta al soporte técnico.",
         variant: "destructive",
       });
-      console.error("EmailJS not configured. Please set VITE_EMAILJS_SERVICE_ID, VITE_EMAILJS_TEMPLATE_ID, and VITE_EMAILJS_PUBLIC_KEY.");
+      console.error("EmailJS keys missing.");
       setIsSending(false);
       return;
     }
