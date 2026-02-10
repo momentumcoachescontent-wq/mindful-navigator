@@ -171,6 +171,7 @@ export function SupportMissionModal({ open, onClose, onComplete }: SupportMissio
 
           {/* Add new contact */}
           {isAddingContact ? (
+            <div className="space-y-2 animate-fade-up">
               <Input
                 placeholder="Nombre del contacto"
                 value={newContactName}
@@ -192,48 +193,48 @@ export function SupportMissionModal({ open, onClose, onComplete }: SupportMissio
                 </Button>
               </div>
             </div>
-        ) : (
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={() => setIsAddingContact(true)}
-        >
-          <UserPlus className="w-4 h-4 mr-2" />
-          Agregar nuevo contacto
-        </Button>
+          ) : (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setIsAddingContact(true)}
+            >
+              <UserPlus className="w-4 h-4 mr-2" />
+              Agregar nuevo contacto
+            </Button>
           )}
 
-        {/* Check-in message */}
-        {selectedContact && (
-          <div className="animate-fade-up space-y-2">
-            <p className="text-sm font-medium">
-              Escribe un mensaje de check-in (opcional):
-            </p>
-            <Textarea
-              placeholder="Hola, solo quería saber cómo estás..."
-              value={checkInMessage}
-              onChange={(e) => setCheckInMessage(e.target.value)}
-              className="min-h-[60px]"
-            />
-            <p className="text-xs text-muted-foreground">
-              No se enviará automáticamente. Es solo para ti.
-            </p>
-          </div>
-        )}
+          {/* Check-in message */}
+          {selectedContact && (
+            <div className="animate-fade-up space-y-2">
+              <p className="text-sm font-medium">
+                Escribe un mensaje de check-in (opcional):
+              </p>
+              <Textarea
+                placeholder="Hola, solo quería saber cómo estás..."
+                value={checkInMessage}
+                onChange={(e) => setCheckInMessage(e.target.value)}
+                className="min-h-[60px]"
+              />
+              <p className="text-xs text-muted-foreground">
+                No se enviará automáticamente. Es solo para ti.
+              </p>
+            </div>
+          )}
 
-        <div className="flex justify-end gap-2 pt-2">
-          <Button variant="outline" onClick={handleClose}>
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleComplete}
-            disabled={!selectedContact || isSubmitting}
-          >
-            {isSubmitting ? 'Guardando...' : 'Completar misión'}
-          </Button>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={handleClose}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleComplete}
+              disabled={!selectedContact || isSubmitting}
+            >
+              {isSubmitting ? 'Guardando...' : 'Completar misión'}
+            </Button>
+          </div>
         </div>
-      </div>
-    </DialogContent>
+      </DialogContent>
     </Dialog >
   );
 }
