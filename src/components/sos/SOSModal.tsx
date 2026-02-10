@@ -25,6 +25,7 @@ export function SOSModal({ isOpen, onClose }: SOSModalProps) {
   const [showResources, setShowResources] = useState(false);
   const [showContacts, setShowContacts] = useState(false);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [loadingContacts, setLoadingContacts] = useState(false);
 
   useEffect(() => {
