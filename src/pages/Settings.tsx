@@ -80,7 +80,7 @@ const Settings = () => {
 
     // Add Contact Mutation
     const addContactMutation = useMutation({
-        mutationFn: async (newContact: { name: string; phone: string }) => {
+        mutationFn: async (newContact: { name: string; phone?: string; email: string }) => {
             const { error } = await supabase
                 .from('trusted_contacts')
                 .insert([{ ...newContact, user_id: user?.id }]);
@@ -90,7 +90,7 @@ const Settings = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['trusted_contacts'] });
             toast.success("Contacto agregado");
-            setNewContact({ name: "", phone: "" });
+            setNewContact({ name: "", phone: "", email: "" });
             setIsAddingContact(false);
         },
         onError: (error) => {
@@ -118,7 +118,7 @@ const Settings = () => {
     });
 
     const [isAddingContact, setIsAddingContact] = useState(false);
-    const [newContact, setNewContact] = useState({ name: "", phone: "" });
+    const [newContact, setNewContact] = useState({ name: "", phone: "", email: "" });
 
     // Handlers
     const handleNotificationToggle = (key: 'notifications_push' | 'notifications_email') => {
@@ -134,7 +134,7 @@ const Settings = () => {
 
     const handleAddContactSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newContact.name || !newContact.phone) return;
+        if (!newContact.name || !newContact.email) return;
         addContactMutation.mutate(newContact);
     };
 
@@ -245,7 +245,8 @@ const Settings = () => {
                                     </div>
                                     <div>
                                         <p className="text-sm font-medium">{contact.name}</p>
-                                        <p className="text-xs text-muted-foreground">{contact.phone}</p>
+                                        <p className="text-xs text-muted-foreground">{contact.email}</p>
+                                        {contact.phone && <p className="text-xs text-muted-foreground">{contact.phone}</p>}
                                     </div>
                                 </div>
                                 <Button
@@ -272,13 +273,23 @@ const Settings = () => {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="phone">Teléfono</Label>
+                                    <Label htmlFor="email">Correo Electrónico</Label>
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        value={newContact.email}
+                                        onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
+                                        placeholder="ejemplo@correo.com"
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="phone">Teléfono (Opcional)</Label>
                                     <Input
                                         id="phone"
                                         value={newContact.phone}
                                         onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
                                         placeholder="Ej. 555-1234"
-                                        required
                                     />
                                 </div>
                                 <div className="flex gap-2 justify-end">
