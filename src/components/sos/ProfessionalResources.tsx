@@ -1,83 +1,55 @@
-import { ArrowLeft, Phone, Globe, MessageCircle, Heart, AlertTriangle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ArrowLeft, Phone, Globe, MessageCircle, Heart, AlertTriangle, Loader2, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ProfessionalResourcesProps {
   onBack: () => void;
   onClose: () => void;
 }
 
-const resources = [
-  {
-    category: "Líneas de Crisis 24/7",
+interface ResourceItem {
+  id: string;
+  category: string;
+  name: string;
+  description: string | null;
+  phone: string | null;
+  url: string | null;
+  country: string | null;
+}
+
+interface CategoryGroup {
+  category: string;
+  icon: LucideIcon;
+  color: string;
+  bgColor: string;
+  items: ResourceItem[];
+}
+
+const CATEGORY_CONFIG: Record<string, { icon: LucideIcon; color: string; bgColor: string }> = {
+  "Líneas de Crisis 24/7": {
     icon: Phone,
     color: "text-destructive",
     bgColor: "bg-destructive/10",
-    items: [
-      {
-        name: "Línea de la Vida (México)",
-        phone: "800 911 2000",
-        description: "Atención gratuita las 24 horas",
-      },
-      {
-        name: "SAPTEL (México)",
-        phone: "55 5259 8121",
-        description: "Apoyo emocional y prevención del suicidio",
-      },
-      {
-        name: "Teléfono de la Esperanza (España)",
-        phone: "717 003 717",
-        description: "Línea de atención a la conducta suicida",
-      },
-      {
-        name: "Centro de Asistencia al Suicida (Argentina)",
-        phone: "135",
-        description: "Atención gratuita las 24 horas",
-      },
-    ],
   },
-  {
-    category: "Violencia de Género",
+  "Violencia de Género": {
     icon: Heart,
     color: "text-coral",
     bgColor: "bg-coral/10",
-    items: [
-      {
-        name: "Línea Mujeres (México)",
-        phone: "800 108 4053",
-        description: "Atención a víctimas de violencia",
-      },
-      {
-        name: "016 (España)",
-        phone: "016",
-        description: "Violencia de género - No deja rastro en la factura",
-      },
-      {
-        name: "Línea 144 (Argentina)",
-        phone: "144",
-        description: "Atención a víctimas de violencia de género",
-      },
-    ],
   },
-  {
-    category: "Recursos en Línea",
+  "Recursos en Línea": {
     icon: Globe,
     color: "text-secondary",
     bgColor: "bg-secondary/10",
-    items: [
-      {
-        name: "OMS - Salud Mental",
-        url: "https://www.who.int/es/health-topics/mental-health",
-        description: "Recursos y guías de la Organización Mundial de la Salud",
-      },
-      {
-        name: "IASP - Prevención del Suicidio",
-        url: "https://www.iasp.info/resources/Crisis_Centres/",
-        description: "Directorio internacional de centros de crisis",
-      },
-    ],
   },
-];
+  // Default fallback
+  "default": {
+    icon: MessageCircle,
+    color: "text-primary",
+    bgColor: "bg-primary/10",
+  }
+};
 
 const tips = [
   "Hablar de lo que sientes no es debilidad, es valentía.",
@@ -87,6 +59,68 @@ const tips = [
 ];
 
 export function ProfessionalResources({ onBack, onClose }: ProfessionalResourcesProps) {
+  const [resources, setResources] = useState<CategoryGroup[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchResources();
+  }, []);
+
+  const fetchResources = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('sos_resources')
+        .select('*')
+        .order('order_index');
+
+      if (error) throw error;
+
+      if (data) {
+        // Group by category
+        const groups: Record<string, ResourceItem[]> = {};
+
+        // Use a set to maintain the order of categories as they first appear (or we could have a separate category order table)
+        // For now, we'll respect the order in the config keys if we want specific ordering, 
+        // or just insertion order. The query is ordered by 'order_index', so items come in desired order.
+        const categoryOrder: string[] = [];
+
+        data.forEach((item) => {
+          if (!groups[item.category]) {
+            groups[item.category] = [];
+            categoryOrder.push(item.category);
+          }
+          groups[item.category].push({
+            id: item.id,
+            category: item.category,
+            name: item.name,
+            description: item.description,
+            phone: item.phone,
+            url: item.url,
+            country: item.country
+          });
+        });
+
+        // Map to display structure
+        const displayData: CategoryGroup[] = categoryOrder.map(catName => {
+          const config = CATEGORY_CONFIG[catName] || CATEGORY_CONFIG["default"];
+          return {
+            category: catName,
+            icon: config.icon,
+            color: config.color,
+            bgColor: config.bgColor,
+            items: groups[catName]
+          };
+        });
+
+        setResources(displayData);
+      }
+    } catch (error) {
+      console.error("Error fetching resources:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[100] bg-background flex flex-col">
       {/* Header */}
@@ -121,8 +155,15 @@ export function ProfessionalResources({ onBack, onClose }: ProfessionalResources
             </div>
           </div>
 
+          {/* Loading State */}
+          {loading && (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          )}
+
           {/* Resources by Category */}
-          {resources.map((category) => (
+          {!loading && resources.map((category) => (
             <section key={category.category} className="space-y-3">
               <div className="flex items-center gap-2">
                 <div className={`w-8 h-8 rounded-lg ${category.bgColor} flex items-center justify-center`}>
@@ -134,17 +175,17 @@ export function ProfessionalResources({ onBack, onClose }: ProfessionalResources
               </div>
 
               <div className="space-y-2">
-                {category.items.map((item, index) => (
+                {category.items.map((item) => (
                   <div
-                    key={index}
+                    key={item.id}
                     className="bg-card border border-border rounded-xl p-4 space-y-2"
                   >
                     <h3 className="font-medium text-foreground">{item.name}</h3>
                     <p className="text-xs text-muted-foreground">
                       {item.description}
                     </p>
-                    
-                    {"phone" in item && item.phone && (
+
+                    {item.phone && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -157,8 +198,8 @@ export function ProfessionalResources({ onBack, onClose }: ProfessionalResources
                         </a>
                       </Button>
                     )}
-                    
-                    {"url" in item && item.url && (
+
+                    {item.url && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -176,6 +217,12 @@ export function ProfessionalResources({ onBack, onClose }: ProfessionalResources
               </div>
             </section>
           ))}
+
+          {!loading && resources.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No se encontraron recursos disponibles en este momento.</p>
+            </div>
+          )}
 
           {/* Tips Section */}
           <section className="space-y-3">
@@ -200,7 +247,7 @@ export function ProfessionalResources({ onBack, onClose }: ProfessionalResources
 
           {/* Disclaimer */}
           <p className="text-xs text-muted-foreground text-center px-4">
-            Esta información es orientativa. Los servicios pueden variar según tu ubicación. 
+            Esta información es orientativa. Los servicios pueden variar según tu ubicación.
             Esta app es un apoyo, no reemplaza ayuda profesional.
           </p>
         </div>
