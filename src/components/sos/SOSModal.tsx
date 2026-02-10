@@ -29,8 +29,6 @@ export function SOSModal({ isOpen, onClose }: SOSModalProps) {
   const [loadingContacts, setLoadingContacts] = useState(false);
   const [isCustomMessage, setIsCustomMessage] = useState(false);
   const [customMessageText, setCustomMessageText] = useState('');
-  const [isCustomMessage, setIsCustomMessage] = useState(false);
-  const [customMessageText, setCustomMessageText] = useState('');
 
   useEffect(() => {
     if (showContacts && user) {
