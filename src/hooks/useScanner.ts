@@ -147,6 +147,7 @@ export function useScanner() {
         entry_type: "scanner_result",
         tags: ["escáner", scanResult.alertLevel],
         metadata: {
+          title: `Resultado Escáner de Situaciones ${new Date().toLocaleDateString()}`,
           alert_level: scanResult.alertLevel,
           red_flags: scanResult.redFlags,
           recommended_tools: scanResult.recommendedTools,
