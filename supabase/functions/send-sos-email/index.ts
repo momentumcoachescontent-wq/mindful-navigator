@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
@@ -21,7 +21,11 @@ serve(async (req) => {
 
     try {
         if (!RESEND_API_KEY) {
-            throw new Error("RESEND_API_KEY is not set");
+            console.error("RESEND_API_KEY is not set");
+            return new Response(
+                JSON.stringify({ error: "No se ha configurado la RESEND_API_KEY en los secretos de Supabase." }),
+                { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
         }
 
         const { to, name, subject, html }: EmailRequest = await req.json();
@@ -43,6 +47,7 @@ serve(async (req) => {
         const data = await res.json();
 
         if (!res.ok) {
+            console.error("Resend API error:", data);
             return new Response(JSON.stringify({ error: data }), {
                 status: res.status,
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -54,6 +59,7 @@ serve(async (req) => {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
     } catch (error: any) {
+        console.error("Error sending email:", error);
         return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
