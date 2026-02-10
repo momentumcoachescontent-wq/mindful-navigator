@@ -110,9 +110,15 @@ export function SOSModal({ isOpen, onClose }: SOSModalProps) {
 
     } catch (error: any) {
       console.error('Error sending SOS email:', error);
+
+      let errorMessage = "No se pudo enviar el mensaje.";
+      if (error?.text) errorMessage += ` Detalles: ${error.text}`;
+      else if (error?.status) errorMessage += ` Status: ${error.status}`;
+      else if (error?.message) errorMessage += ` Error: ${error.message}`;
+
       toast({
         title: "Error al enviar",
-        description: "No se pudo enviar el mensaje. Verifica tu conexión o intenta más tarde.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
