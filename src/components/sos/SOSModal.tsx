@@ -44,7 +44,7 @@ export function SOSModal({ isOpen, onClose }: SOSModalProps) {
     setLoadingContacts(false);
   };
 
-  const handleSendEmail = (email: string | null, name: string) => {
+  const handleSendEmail = (email: string | null, name: string, usePredefined: boolean) => {
     if (!email) {
       toast({
         title: "Sin correo electrónico",
@@ -55,10 +55,16 @@ export function SOSModal({ isOpen, onClose }: SOSModalProps) {
     }
 
     const subject = encodeURIComponent("Necesito apoyo");
-    const body = encodeURIComponent(
-      `Hola ${name},\n\nNecesito apoyo y me gustaría mucho que pudiéramos estar en contacto pronto.\n\n`
-    );
-    window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_blank');
+    let link = `mailto:${email}?subject=${subject}`;
+
+    if (usePredefined) {
+      const body = encodeURIComponent(
+        `Hola ${name},\n\nNecesito apoyo y me gustaría mucho que pudiéramos estar en contacto pronto.\n\n`
+      );
+      link += `&body=${body}`;
+    }
+
+    window.open(link, '_blank');
   };
 
   if (!isOpen) return null;
