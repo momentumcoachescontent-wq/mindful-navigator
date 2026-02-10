@@ -168,9 +168,16 @@ export function SOSModal({ isOpen, onClose }: SOSModalProps) {
                 <Button
                   className="w-full"
                   onClick={() => handleSendEmail(selectedContact.email, selectedContact.name, true)}
+                  disabled={isSending}
                 >
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  Enviar mensaje predefinido
+                  {isSending ? (
+                    "Enviando..."
+                  ) : (
+                    <>
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      Enviar mensaje predefinido
+                    </>
+                  )}
                 </Button>
 
                 <Button
