@@ -226,6 +226,48 @@ export function getTodaysMissions(): DayMissions {
   };
 }
 
+// H.E.R.O. categories
+export const HERO_CATEGORIES = [
+  { id: 'humillacion', label: 'Humillación', icon: '😔', description: 'Comentarios despectivos, burlas, críticas constantes' },
+  { id: 'exigencias', label: 'Exigencias', icon: '😤', description: 'Demandas excesivas, expectativas irreales, presión' },
+  { id: 'rechazo', label: 'Rechazo', icon: '💔', description: 'Ignorar sentimientos, minimizar, invalidar' },
+  { id: 'ordenes', label: 'Órdenes', icon: '👊', description: 'Control, imposiciones, decisiones unilaterales' },
+];
+
+// C.A.L.M. steps with daily focus
+export const CALM_STEPS = [
+  { id: 'cuerpo', label: 'Cuerpo', icon: '🫁', description: 'Respira profundo 3 veces. ¿Dónde sientes tensión?' },
+  { id: 'analiza', label: 'Analiza', icon: '🧠', description: '¿Qué necesitas realmente en este momento?' },
+  { id: 'limita', label: 'Limita', icon: '🛡️', description: '¿Qué límite necesitas poner o reforzar?' },
+  { id: 'mueve', label: 'Muévete', icon: '🚶', description: 'Cambia de posición, sal un momento, estira' },
+];
+
+// Script templates
+export const SCRIPT_TEMPLATES = [
+  { id: 'soft', level: 'Suave', template: 'Entiendo tu punto de vista, y al mismo tiempo necesito [tu necesidad].' },
+  { id: 'firm', level: 'Firme', template: 'Aprecio que me compartas esto. Mi decisión es [tu límite] y no está en negociación.' },
+  { id: 'final', level: 'Última advertencia', template: 'He sido claro/a sobre mis límites. Si esto continúa, [consecuencia].' },
+];
+
+// Selfcare micro-actions
+export const SELFCARE_ACTIONS = [
+  { id: 'water', label: 'Beber agua', icon: '💧' },
+  { id: 'walk', label: 'Caminar 5 min', icon: '🚶' },
+  { id: 'sleep', label: 'Dormir 8 horas', icon: '😴' },
+  { id: 'eat', label: 'Comer nutritivo', icon: '🥗' },
+  { id: 'breathe', label: 'Respirar profundo', icon: '🫁' },
+  { id: 'disconnect', label: 'Desconectar del teléfono', icon: '📵' },
+  { id: 'nature', label: 'Tiempo en naturaleza', icon: '🌿' },
+  { id: 'music', label: 'Escuchar música', icon: '🎵' },
+];
+
+// SOS Card types
+export const SOS_CARD_TYPES = [
+  { id: 'say', label: 'Qué decir', icon: '💬', color: 'bg-primary' },
+  { id: 'not_say', label: 'Qué NO decir', icon: '🚫', color: 'bg-destructive' },
+  { id: 'do', label: 'Qué hacer', icon: '✅', color: 'bg-success' },
+];
+
 // Helper function to calculate level from XP
 export function getLevelFromXP(xp: number): typeof LEVELS[0] {
   for (let i = LEVELS.length - 1; i >= 0; i--) {
