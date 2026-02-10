@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft, Save, Trophy, Loader2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,7 @@ const moodOptions = [
 
 const JournalEntry = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
   const { user, session } = useAuth();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -37,6 +38,46 @@ const JournalEntry = () => {
   const [isVictory, setIsVictory] = useState(false);
   const [isFollowUp, setIsFollowUp] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (id && id !== "new" && user) {
+      loadEntry(id);
+    }
+  }, [id, user]);
+
+  const loadEntry = async (entryId: string) => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("journal_entries")
+        .select("*")
+        .eq("id", entryId)
+        .eq("user_id", user?.id)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setContent(data.content || "");
+        setMood(data.mood_score || 3);
+        setIsVictory(data.entry_type === "victory");
+        setSelectedTags(data.tags || []);
+
+        if (data.metadata && typeof data.metadata === 'object') {
+          const meta = data.metadata as Record<string, any>;
+          setTitle(meta.title || "");
+          setIsFollowUp(!!meta.follow_up);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading entry:", error);
+      toast.error("No se pudo cargar la entrada");
+      navigate("/journal");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const toggleTag = (tagId: string) => {
     setSelectedTags((prev) =>
@@ -59,7 +100,7 @@ const JournalEntry = () => {
 
     setIsSaving(true);
     try {
-      const { error } = await supabase.from("journal_entries").insert({
+      const entryData = {
         user_id: user.id,
         content: content.trim(),
         entry_type: isVictory ? "victory" : "daily",
@@ -69,11 +110,25 @@ const JournalEntry = () => {
           title: title.trim(),
           follow_up: isFollowUp
         },
-      });
+      };
 
-      if (error) throw error;
+      if (id && id !== "new") {
+        // Update existing
+        const { error } = await supabase
+          .from("journal_entries")
+          .update(entryData)
+          .eq("id", id);
+        if (error) throw error;
+        toast.success("Entrada actualizada");
+      } else {
+        // Create new
+        const { error } = await supabase
+          .from("journal_entries")
+          .insert(entryData);
+        if (error) throw error;
+        toast.success(isVictory ? "¡Victoria registrada! 🏆" : "Entrada guardada");
+      }
 
-      toast.success(isVictory ? "¡Victoria registrada! 🏆" : "Entrada guardada");
       navigate("/journal");
     } catch (error) {
       console.error("Error saving entry:", error);
@@ -84,6 +139,14 @@ const JournalEntry = () => {
       setIsSaving(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (!user) {
     return (

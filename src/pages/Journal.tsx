@@ -65,6 +65,12 @@ const Journal = () => {
   }, [user]);
 
   const filteredEntries = entries.filter((entry) => {
+    // Filter out empty/broken entries
+    const hasContent = entry.content && entry.content.trim().length > 0;
+    const hasTitle = entry.metadata && typeof entry.metadata === 'object' && 'title' in entry.metadata && (entry.metadata.title as string).trim().length > 0;
+
+    if (!hasContent && !hasTitle) return false;
+
     if (activeTab === "victories" && entry.entry_type !== "victory") return false;
     if (selectedTag && !entry.tags?.includes(selectedTag)) return false;
     return true;
@@ -79,8 +85,8 @@ const Journal = () => {
 
   const getPreview = (entry: JournalEntry) => {
     if (!entry.content) return "Sin contenido";
-    return entry.content.length > 80 
-      ? entry.content.substring(0, 80) + "..." 
+    return entry.content.length > 80
+      ? entry.content.substring(0, 80) + "..."
       : entry.content;
   };
 
@@ -92,7 +98,7 @@ const Journal = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="flex-1">
-            <h1 className="text-lg font-display font-bold text-foreground">Diario Guiado</h1>
+            <h1 className="text-lg font-display font-bold text-foreground">Diario, Tu Historia, Tu Crecimiento</h1>
           </div>
           <PenLine className="w-8 h-8 text-primary" />
         </div>
