@@ -19,6 +19,7 @@ import Onboarding from "./pages/Onboarding";
 import Premium from "./pages/Premium";
 import DataManagement from "./pages/DataManagement";
 import Settings from "./pages/Settings";
+import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +53,7 @@ const App = () => (
               <Route path="/settings/contacts" element={<Settings />} />
               <Route path="/settings/appearance" element={<Settings />} />
               <Route path="/settings/profile" element={<Settings />} />
+              <Route path="/admin" element={<AdminDashboard />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
