@@ -129,16 +129,17 @@ export function SOSModal({ isOpen, onClose }: SOSModalProps) {
       setCustomMessageText('');
       setSelectedContact(null);
 
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error sending SOS email:', error);
+      const e = error as { text?: string; status?: number; message?: string };
 
       let errorMessage = "No se pudo enviar el mensaje.";
-      if (error?.text) errorMessage += ` Detalles: ${error.text}`;
-      else if (error?.status) errorMessage += ` Status: ${error.status}`;
-      else if (error?.message) errorMessage += ` Error: ${error.message}`;
+      if (e?.text) errorMessage += ` Detalles: ${e.text}`;
+      else if (e?.status) errorMessage += ` Status: ${e.status}`;
+      else if (e?.message) errorMessage += ` Error: ${e.message}`;
 
       // Common error: 412 means Gmail scopes are missing. User needs to reconnect Gmail in EmailJS.
-      if (error?.text?.includes("insufficient authentication scopes")) {
+      if (e?.text?.includes("insufficient authentication scopes")) {
         errorMessage = "Error de permisos de Gmail. Por favor reconecta tu cuenta en EmailJS y marca la casilla de enviar correos.";
       }
 

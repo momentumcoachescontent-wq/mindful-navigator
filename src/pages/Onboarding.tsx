@@ -92,8 +92,8 @@ const Onboarding = () => {
 
       toast.success("¡Perfil creado con éxito!");
       navigate("/");
-    } catch (error: any) {
-      toast.error("Error al guardar perfil: " + error.message);
+    } catch (error) {
+      toast.error("Error al guardar perfil: " + (error as Error).message);
     } finally {
       setIsLoading(false);
     }

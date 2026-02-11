@@ -275,7 +275,7 @@ const DataManagement = () => {
         title: "Importación exitosa",
         description: `Se importaron ${cleanedData.length} registros a ${table.displayName}`,
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error("Import error object:", error);
 
       let message = "Error desconocido";

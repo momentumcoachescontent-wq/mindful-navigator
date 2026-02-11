@@ -78,7 +78,7 @@ const Profile = () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       toast.success("Foto de perfil actualizada");
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error("Error al subir imagen: " + error.message);
     }
   });
@@ -136,7 +136,6 @@ const Profile = () => {
               disabled={uploading}
               className="w-full h-full rounded-full overflow-hidden border-4 border-background shadow-md relative"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               {profile?.avatar_url ? (
                 <img
                   src={profile.avatar_url}

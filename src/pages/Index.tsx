@@ -42,7 +42,7 @@ const Index = () => {
       const today = new Date().toISOString().split("T")[0];
 
       // Try to find a reflection for today
-      let { data: reflection, error } = await supabase
+      const { data: initialReflection, error } = await supabase
         .from("daily_reflections")
         .select("content, author")
         .eq("display_date", today)
@@ -50,6 +50,8 @@ const Index = () => {
         .maybeSingle();
 
       if (error) throw error;
+
+      let reflection = initialReflection;
 
       // Fallback: any active reflection
       if (!reflection) {

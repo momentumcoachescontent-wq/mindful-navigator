@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ArrowLeft, Save, Trophy, Loader2 } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,8 @@ const moodOptions = [
 const JournalEntry = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const parentId = searchParams.get("parent_id");
   const { user, session } = useAuth();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -39,12 +41,43 @@ const JournalEntry = () => {
   const [isFollowUp, setIsFollowUp] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [parentEntryId, setParentEntryId] = useState<string | null>(null);
 
   useEffect(() => {
     if (id && id !== "new" && user) {
       loadEntry(id);
+    } else if (id === "new" && parentId && user) {
+      loadParentEntry(parentId);
     }
-  }, [id, user]);
+  }, [id, user, parentId]);
+
+  const loadParentEntry = async (pId: string) => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("journal_entries")
+        .select("*")
+        .eq("id", pId)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        const meta = data.metadata as Record<string, unknown>;
+        const parentTitle = (meta?.title as string) || "Sin título";
+        setTitle(`Seguimiento: ${parentTitle}`);
+        setContent(`Continuando desde la entrada "${parentTitle}":\n\n`);
+        setParentEntryId(pId);
+        // Optional: Pre-fill content or tags
+        // setSelectedTags(data.tags || []); 
+      }
+    } catch (err) {
+      console.error("Error loading parent entry:", err);
+      toast.error("No se pudo cargar la entrada original");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const loadEntry = async (entryId: string) => {
     setIsLoading(true);
@@ -65,9 +98,12 @@ const JournalEntry = () => {
         setSelectedTags(data.tags || []);
 
         if (data.metadata && typeof data.metadata === 'object') {
-          const meta = data.metadata as Record<string, any>;
-          setTitle(meta.title || "");
+          const meta = data.metadata as Record<string, unknown>;
+          setTitle((meta.title as string) || "");
           setIsFollowUp(!!meta.follow_up);
+          if (meta.parent_id) {
+            setParentEntryId(meta.parent_id as string);
+          }
         }
       }
     } catch (error) {
@@ -108,7 +144,8 @@ const JournalEntry = () => {
         tags: selectedTags,
         metadata: {
           title: title.trim(),
-          follow_up: isFollowUp
+          follow_up: isFollowUp,
+          parent_id: parentEntryId
         },
       };
 
@@ -187,6 +224,15 @@ const JournalEntry = () => {
               </>
             )}
           </Button>
+          {(id && id !== "new" && isFollowUp) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/journal/new?parent_id=${id}`)}
+            >
+              Realizar Seguimiento
+            </Button>
+          )}
         </div>
       </header>
 

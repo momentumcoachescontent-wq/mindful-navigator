@@ -19,7 +19,10 @@ const tagConfig = [
 const tabs = [
   { id: "entries", label: "Entradas" },
   { id: "victories", label: "Victorias" },
+  { id: "pending", label: "Pendientes" },
 ];
+
+
 
 interface JournalEntry {
   id: string;
@@ -72,6 +75,10 @@ const Journal = () => {
     if (!hasContent && !hasTitle) return false;
 
     if (activeTab === "victories" && entry.entry_type !== "victory") return false;
+    if (activeTab === "pending") {
+      const meta = entry.metadata as Record<string, unknown> | null;
+      if (!meta?.follow_up) return false;
+    }
     if (selectedTag && !entry.tags?.includes(selectedTag)) return false;
     return true;
   });
@@ -118,6 +125,7 @@ const Journal = () => {
               )}
             >
               {tab.id === "victories" && <Trophy className="w-4 h-4 inline mr-1.5 -mt-0.5" />}
+              {tab.id === "pending" && <span className="mr-1.5 text-lg leading-none">⏳</span>}
               {tab.label}
             </button>
           ))}

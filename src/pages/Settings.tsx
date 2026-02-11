@@ -61,7 +61,7 @@ const Settings = () => {
 
     // Update Profile Mutation
     const updateProfileMutation = useMutation({
-        mutationFn: async (updates: any) => {
+        mutationFn: async (updates: Record<string, unknown>) => {
             const { error } = await supabase
                 .from('profiles')
                 .update(updates)

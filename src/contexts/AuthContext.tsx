@@ -28,6 +28,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
+  const [dbPremium, setDbPremium] = useState(false);
+
+  const checkDbPremium = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('is_premium, premium_until')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) {
+        console.error("Error checking DB premium status:", error);
+        return;
+      }
+
+      // Check if is_premium is true OR if premium_until is in the future
+      let isValidPremium = data?.is_premium || false;
+
+      if (data?.premium_until) {
+        const expiryDate = new Date(data.premium_until);
+        const now = new Date();
+        if (expiryDate > now) {
+          isValidPremium = true;
+        }
+      }
+
+      setDbPremium(isValidPremium);
+    } catch (err) {
+      console.error("Failed to check DB premium:", err);
+    }
+  }, [user]);
 
   const checkSubscription = useCallback(async () => {
     if (!session?.access_token) return;
@@ -78,18 +111,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (session) {
       checkSubscription();
+      checkDbPremium();
     } else {
       setSubscriptionStatus(null);
+      setDbPremium(false);
     }
-  }, [session, checkSubscription]);
+  }, [session, checkSubscription, checkDbPremium]);
 
   // Periodic subscription check (every 5 minutes)
   useEffect(() => {
     if (!session) return;
 
-    const interval = setInterval(checkSubscription, 5 * 60 * 1000);
+    const interval = setInterval(() => {
+      checkSubscription();
+      checkDbPremium();
+    }, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [session, checkSubscription]);
+  }, [session, checkSubscription, checkDbPremium]);
 
   const signUp = async (email: string, password: string) => {
     const redirectUrl = `${window.location.origin}/`;
@@ -117,6 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     setSubscriptionStatus(null);
+    setDbPremium(false);
   };
 
   const resetPassword = async (email: string) => {
@@ -126,7 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error as Error | null };
   };
 
-  const isPremium = subscriptionStatus?.subscribed ?? false;
+  const isPremium = subscriptionStatus?.subscribed || dbPremium;
 
   return (
     <AuthContext.Provider value={{
