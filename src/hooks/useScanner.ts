@@ -137,11 +137,11 @@ export function useScanner() {
         description: "Necesitas una cuenta para guardar en el diario",
         variant: "destructive",
       });
-      return false;
+      return null;
     }
 
     try {
-      const { error } = await supabase.from("journal_entries").insert({
+      const { data, error } = await supabase.from("journal_entries").insert({
         user_id: user.id,
         content: `**Situación analizada:**\n${situationText}\n\n**Resumen:**\n${scanResult.summary}\n\n**Señales de alerta:**\n${scanResult.redFlags.join("\n- ")}\n\n**Plan de acción:**\n${scanResult.actionPlan.map((p) => `${p.step}. ${p.action}`).join("\n")}`,
         entry_type: "scanner_result",
@@ -153,8 +153,12 @@ export function useScanner() {
           red_flags: scanResult.redFlags,
           recommended_tools: scanResult.recommendedTools,
           action_plan: scanResult.actionPlan,
+          progress: {
+            actionPlan: scanResult.actionPlan.map(() => false),
+            tools: scanResult.recommendedTools.map(() => false)
+          }
         },
-      });
+      }).select().single();
 
       if (error) throw error;
 
@@ -162,7 +166,7 @@ export function useScanner() {
         title: "Guardado en Diario",
         description: "El análisis se guardó en tu diario",
       });
-      return true;
+      return data.id;
     } catch (error) {
       console.error("Error saving to journal:", error);
       toast({
@@ -170,7 +174,7 @@ export function useScanner() {
         description: "No se pudo guardar en el diario",
         variant: "destructive",
       });
-      return false;
+      return null;
     }
   };
 

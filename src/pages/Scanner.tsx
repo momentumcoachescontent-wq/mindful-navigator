@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ArrowLeft, Shield, Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,20 +13,33 @@ const Scanner = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isLoading, result, analyze, saveToJournal, reset } = useScanner();
+  const [savedEntryId, setSavedEntryId] = useState<string | null>(null);
 
   const handleSubmit = async (text: string) => {
+    setSavedEntryId(null); // Reset saved ID on new analysis
     await analyze(text);
   };
 
   const handleSaveToJournal = async () => {
-    if (result) {
-      await saveToJournal(result);
+    if (result && !savedEntryId) {
+      const id = await saveToJournal(result);
+      if (id) setSavedEntryId(id);
     }
   };
 
-  const handleCreatePlan = () => {
-    // Navigate to journal with the result saved
-    navigate("/journal");
+  const handleCreatePlan = async () => {
+    if (savedEntryId) {
+      navigate(`/journal/${savedEntryId}`);
+      return;
+    }
+
+    if (result) {
+      const id = await saveToJournal(result);
+      if (id) {
+        setSavedEntryId(id);
+        navigate(`/journal/${id}`);
+      }
+    }
   };
 
   return (
@@ -54,8 +68,8 @@ const Scanner = () => {
             {/* Info Card */}
             <div className="bg-turquoise-soft rounded-2xl p-4">
               <p className="text-sm text-secondary leading-relaxed">
-                <strong>¿Cómo funciona?</strong> Describe una situación que te preocupa 
-                y recibirás un análisis con señales de alerta, observaciones y 
+                <strong>¿Cómo funciona?</strong> Describe una situación que te preocupa
+                y recibirás un análisis con señales de alerta, observaciones y
                 herramientas recomendadas.
               </p>
             </div>
@@ -66,11 +80,11 @@ const Scanner = () => {
                 <Heart className="w-5 h-5 text-warmth flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm text-foreground">
-                    <strong>Consejo:</strong> Inicia sesión para guardar tus análisis y 
+                    <strong>Consejo:</strong> Inicia sesión para guardar tus análisis y
                     hacer seguimiento de tu progreso.
                   </p>
-                  <Button 
-                    variant="link" 
+                  <Button
+                    variant="link"
                     className="p-0 h-auto text-warmth"
                     onClick={() => navigate("/auth")}
                   >
@@ -85,7 +99,7 @@ const Scanner = () => {
 
             {/* Disclaimer */}
             <p className="text-xs text-muted-foreground text-center px-4">
-              Este análisis es orientativo y no constituye un diagnóstico profesional. 
+              Este análisis es orientativo y no constituye un diagnóstico profesional.
               Si sientes que estás en peligro, busca ayuda profesional.
             </p>
           </>
@@ -94,8 +108,8 @@ const Scanner = () => {
             <ScanResult
               result={{
                 ...result,
-                observations: result.observations 
-                  ? [result.observations] 
+                observations: result.observations
+                  ? [result.observations]
                   : [],
                 actionPlan: result.actionPlan.map(p => p.action),
               }}
