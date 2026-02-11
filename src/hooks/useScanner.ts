@@ -152,6 +152,7 @@ export function useScanner() {
           alert_level: scanResult.alertLevel,
           red_flags: scanResult.redFlags,
           recommended_tools: scanResult.recommendedTools,
+          action_plan: scanResult.actionPlan,
         },
       });
 

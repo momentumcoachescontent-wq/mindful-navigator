@@ -27,21 +27,49 @@ const moodOptions = [
   { value: 5, label: "😊", description: "Muy bien" },
 ];
 
+// ... imports ...
+import { Check, Loader2, Save, Trophy, ArrowLeft } from "lucide-react"; // Ensure Check is imported
+
+// ... interfaces ...
+interface ActionStep {
+  step: number;
+  action: string;
+  completed?: boolean;
+}
+
+interface RecommendedTool {
+  name: string;
+  reason: string;
+  completed?: boolean;
+}
+
 const JournalEntry = () => {
-  const navigate = useNavigate();
-  const { id } = useParams();
-  const [searchParams] = useSearchParams();
-  const parentId = searchParams.get("parent_id");
-  const { user, session } = useAuth();
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [mood, setMood] = useState(3);
-  const [isVictory, setIsVictory] = useState(false);
-  const [isFollowUp, setIsFollowUp] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [parentEntryId, setParentEntryId] = useState<string | null>(null);
+  // ... existing hooks ...
+  const [actionPlan, setActionPlan] = useState<ActionStep[]>([]);
+  const [tools, setTools] = useState<RecommendedTool[]>([]);
+  const [isScannerEntry, setIsScannerEntry] = useState(false);
+  // ... existing state ...
+
+  // ... useEffect ...
+
+  // ... inside loadEntry ...
+  if (data.entry_type === "scanner_result") {
+    setIsScannerEntry(true);
+    const meta = data.metadata as Record<string, any>;
+    if (meta.action_plan) setActionPlan(meta.action_plan);
+    if (meta.recommended_tools) setTools(meta.recommended_tools);
+    // Load progress if exists
+    if (meta.progress) {
+      const progress = meta.progress as { actionPlan?: boolean[], tools?: boolean[] };
+      if (progress.actionPlan) {
+        setActionPlan(prev => prev.map((item, index) => ({ ...item, completed: progress.actionPlan?.[index] || false })));
+      }
+      if (progress.tools) {
+        setTools(prev => prev.map((item, index) => ({ ...item, completed: progress.tools?.[index] || false })));
+      }
+    }
+  }
+  // ... rest of loadEntry ...
 
   useEffect(() => {
     if (id && id !== "new" && user) {
@@ -104,6 +132,30 @@ const JournalEntry = () => {
           if (meta.parent_id) {
             setParentEntryId(meta.parent_id as string);
           }
+
+          // Hydrate interactive checklists
+          if (data.entry_type === "scanner_result") {
+            setIsScannerEntry(true);
+            if (meta.action_plan) setActionPlan(meta.action_plan as ActionStep[]);
+            if (meta.recommended_tools) setTools(meta.recommended_tools as RecommendedTool[]);
+
+            // Restore progress state
+            if (meta.progress) {
+              const progress = meta.progress as { actionPlan?: boolean[], tools?: boolean[] };
+              if (progress.actionPlan && Array.isArray(meta.action_plan)) {
+                setActionPlan((prev) => (meta.action_plan as ActionStep[]).map((item, index) => ({
+                  ...item,
+                  completed: progress.actionPlan?.[index] || false
+                })));
+              }
+              if (progress.tools && Array.isArray(meta.recommended_tools)) {
+                setTools((prev) => (meta.recommended_tools as RecommendedTool[]).map((item, index) => ({
+                  ...item,
+                  completed: progress.tools?.[index] || false
+                })));
+              }
+            }
+          }
         }
       }
     } catch (error) {
@@ -145,7 +197,14 @@ const JournalEntry = () => {
         metadata: {
           title: title.trim(),
           follow_up: isFollowUp,
-          parent_id: parentEntryId
+          parent_id: parentEntryId,
+          // Persist interactive state
+          action_plan: actionPlan,
+          recommended_tools: tools,
+          progress: {
+            actionPlan: actionPlan.map(a => !!a.completed),
+            tools: tools.map(t => !!t.completed)
+          }
         },
       };
 
@@ -173,199 +232,282 @@ const JournalEntry = () => {
         description: "Por favor intenta de nuevo.",
       });
     } finally {
-      setIsSaving(false);
-    }
-  };
+      // ... existing handleSave ...
+      const toggleAction = (index: number) => {
+        setActionPlan(prev => prev.map((item, i) => i === index ? { ...item, completed: !item.completed } : item));
+      };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+      const toggleTool = (index: number) => {
+        setTools(prev => prev.map((item, i) => i === index ? { ...item, completed: !item.completed } : item));
+      };
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
-        <div className="text-center space-y-4">
-          <p className="text-muted-foreground">Inicia sesión para escribir en tu diario</p>
-          <Button onClick={() => navigate("/auth")}>Iniciar sesión</Button>
-        </div>
-      </div>
-    );
-  }
+      const calculateProgress = () => {
+        if (!actionPlan.length && !tools.length) return 0;
+        const total = actionPlan.length + tools.length;
+        const completed = actionPlan.filter(a => a.completed).length + tools.filter(t => t.completed).length;
+        return Math.round((completed / total) * 100);
+      };
 
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-40 glass border-b border-border/50">
-        <div className="container flex items-center gap-4 py-4">
-          <Button variant="ghost" size="icon-sm" onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-lg font-display font-bold text-foreground">
-              Nueva Entrada
-            </h1>
+      if (isLoading) {
+        return (
+          <div className="min-h-screen bg-background flex items-center justify-center">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
-          <Button
-            variant="default"
-            size="sm"
-            onClick={handleSave}
-            disabled={isSaving}
-          >
-            {isSaving ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <>
-                <Save className="w-4 h-4" />
-                Guardar
-              </>
-            )}
-          </Button>
-          {(id && id !== "new" && isFollowUp) && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate(`/journal/new?parent_id=${id}`)}
-            >
-              Realizar Seguimiento
-            </Button>
-          )}
-        </div>
-      </header>
+        );
+      }
 
-      <main className="container py-6 space-y-6">
-        {/* Victory toggle */}
-        {/* Victory toggle */}
-        <div className={cn(
-          "flex items-center justify-between p-4 rounded-2xl border-2 transition-all",
-          isVictory
-            ? "bg-gradient-to-r from-coral/10 to-coral-light/10 border-coral/30"
-            : "bg-card border-border"
-        )}>
-          <div className="flex items-center gap-3">
+      if (!user) {
+        return (
+          <div className="min-h-screen bg-background flex items-center justify-center p-6">
+            <div className="text-center space-y-4">
+              <p className="text-muted-foreground">Inicia sesión para escribir en tu diario</p>
+              <Button onClick={() => navigate("/auth")}>Iniciar sesión</Button>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="min-h-screen bg-background">
+          {/* Header */}
+          <header className="sticky top-0 z-40 glass border-b border-border/50">
+            <div className="container flex items-center gap-4 py-4">
+              <Button variant="ghost" size="icon-sm" onClick={() => navigate(-1)}>
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <div className="flex-1">
+                <h1 className="text-lg font-display font-bold text-foreground">
+                  Nueva Entrada
+                </h1>
+              </div>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleSave}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    Guardar
+                  </>
+                )}
+              </Button>
+
+            </div>
+          </header>
+
+          <main className="container py-6 space-y-6">
+            {/* Victory toggle */}
+            {/* Victory toggle */}
             <div className={cn(
-              "w-10 h-10 rounded-xl flex items-center justify-center",
+              "flex items-center justify-between p-4 rounded-2xl border-2 transition-all",
               isVictory
-                ? "bg-gradient-to-br from-coral to-coral-light"
-                : "bg-muted"
+                ? "bg-gradient-to-r from-coral/10 to-coral-light/10 border-coral/30"
+                : "bg-card border-border"
             )}>
-              <Trophy className={cn("w-5 h-5", isVictory ? "text-white" : "text-muted-foreground")} />
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "w-10 h-10 rounded-xl flex items-center justify-center",
+                  isVictory
+                    ? "bg-gradient-to-br from-coral to-coral-light"
+                    : "bg-muted"
+                )}>
+                  <Trophy className={cn("w-5 h-5", isVictory ? "text-white" : "text-muted-foreground")} />
+                </div>
+                <div>
+                  <Label htmlFor="victory-toggle" className="font-display font-semibold text-foreground">
+                    Registrar como victoria
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Celebra tus logros y límites establecidos
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="victory-toggle"
+                checked={isVictory}
+                onCheckedChange={setIsVictory}
+              />
             </div>
-            <div>
-              <Label htmlFor="victory-toggle" className="font-display font-semibold text-foreground">
-                Registrar como victoria
+
+            {/* Follow Up toggle */}
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-card border border-border">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
+                  <span className="text-xl">🔄</span>
+                </div>
+                <div>
+                  <Label htmlFor="followup-toggle" className="font-display font-semibold text-foreground">
+                    Hacer seguimiento
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Te recordaremos revisar esta entrada en el futuro
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="followup-toggle"
+                checked={isFollowUp}
+                onCheckedChange={setIsFollowUp}
+              />
+            </div>
+
+            {/* Title */}
+            <div className="space-y-2">
+              <Label htmlFor="title">Título</Label>
+              <Input
+                id="title"
+                placeholder={isVictory ? "¿Qué lograste hoy?" : "¿Cómo fue tu día?"}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="text-lg font-display"
+              />
+            </div>
+
+            {/* Mood */}
+            <div className="space-y-3">
+              <Label>¿Cómo te sientes?</Label>
+              <div className="flex justify-between gap-2">
+                {moodOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => setMood(option.value)}
+                    className={cn(
+                      "flex-1 py-3 rounded-xl flex flex-col items-center gap-1 transition-all",
+                      mood === option.value
+                        ? "bg-primary/10 ring-2 ring-primary"
+                        : "bg-muted hover:bg-muted/80"
+                    )}
+                  >
+                    <span className="text-2xl">{option.label}</span>
+                    <span className="text-[10px] text-muted-foreground">{option.description}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Tags */}
+            <div className="space-y-3">
+              <Label>Etiquetas</Label>
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag) => (
+                  <button
+                    key={tag.id}
+                    onClick={() => toggleTag(tag.id)}
+                    className={cn(
+                      "px-4 py-2 rounded-full text-sm font-medium border transition-all",
+                      selectedTags.includes(tag.id)
+                        ? `${tag.color} border-current`
+                        : "bg-muted text-muted-foreground border-transparent"
+                    )}
+                  >
+                    {tag.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="space-y-2">
+              <Label htmlFor="content">
+                {isVictory ? "Cuéntanos sobre tu victoria" : "¿Qué quieres escribir?"}
               </Label>
-              <p className="text-xs text-muted-foreground">
-                Celebra tus logros y límites establecidos
-              </p>
+              <Textarea
+                id="content"
+                placeholder={isVictory
+                  ? "Describe lo que lograste, cómo te sentiste y qué aprendiste..."
+                  : "Escribe libremente sobre lo que pasó, cómo te sientes..."
+                }
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                className="min-h-[200px] resize-none"
+              />
             </div>
-          </div>
-          <Switch
-            id="victory-toggle"
-            checked={isVictory}
-            onCheckedChange={setIsVictory}
-          />
-        </div>
 
-        {/* Follow Up toggle */}
-        <div className="flex items-center justify-between p-4 rounded-2xl bg-card border border-border">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
-              <span className="text-xl">🔄</span>
-            </div>
-            <div>
-              <Label htmlFor="followup-toggle" className="font-display font-semibold text-foreground">
-                Hacer seguimiento
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                Te recordaremos revisar esta entrada en el futuro
-              </p>
-            </div>
-          </div>
-          <Switch
-            id="followup-toggle"
-            checked={isFollowUp}
-            onCheckedChange={setIsFollowUp}
-          />
-        </div>
+            {isScannerEntry && (actionPlan.length > 0 || tools.length > 0) && (
+              <div className="space-y-6 pt-4 border-t border-border">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-display font-semibold">Tu Plan de Acción</h3>
+                  <span className="text-sm font-medium text-muted-foreground">{calculateProgress()}% Completado</span>
+                </div>
 
-        {/* Title */}
-        <div className="space-y-2">
-          <Label htmlFor="title">Título</Label>
-          <Input
-            id="title"
-            placeholder={isVictory ? "¿Qué lograste hoy?" : "¿Cómo fue tu día?"}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="text-lg font-display"
-          />
-        </div>
+                {/* Progress Bar */}
+                <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary transition-all duration-500 ease-out"
+                    style={{ width: `${calculateProgress()}%` }}
+                  />
+                </div>
 
-        {/* Mood */}
-        <div className="space-y-3">
-          <Label>¿Cómo te sientes?</Label>
-          <div className="flex justify-between gap-2">
-            {moodOptions.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => setMood(option.value)}
-                className={cn(
-                  "flex-1 py-3 rounded-xl flex flex-col items-center gap-1 transition-all",
-                  mood === option.value
-                    ? "bg-primary/10 ring-2 ring-primary"
-                    : "bg-muted hover:bg-muted/80"
+                {/* Action Plan Checklist */}
+                {actionPlan.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Pasos a seguir</h4>
+                    <div className="space-y-2">
+                      {actionPlan.map((step, index) => (
+                        <div
+                          key={index}
+                          onClick={() => toggleAction(index)}
+                          className={cn(
+                            "flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer",
+                            step.completed ? "bg-primary/5 border-primary/20" : "bg-card border-border hover:border-primary/50"
+                          )}
+                        >
+                          <div className={cn(
+                            "w-5 h-5 rounded-md border flex items-center justify-center mt-0.5 transition-colors",
+                            step.completed ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground"
+                          )}>
+                            {step.completed && <Check className="w-3.5 h-3.5" />}
+                          </div>
+                          <div className={cn("flex-1 text-sm", step.completed && "text-muted-foreground line-through")}>
+                            <span className="font-medium mr-2">{step.step}.</span>
+                            {step.action}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
-              >
-                <span className="text-2xl">{option.label}</span>
-                <span className="text-[10px] text-muted-foreground">{option.description}</span>
-              </button>
-            ))}
-          </div>
-        </div>
 
-        {/* Tags */}
-        <div className="space-y-3">
-          <Label>Etiquetas</Label>
-          <div className="flex flex-wrap gap-2">
-            {tags.map((tag) => (
-              <button
-                key={tag.id}
-                onClick={() => toggleTag(tag.id)}
-                className={cn(
-                  "px-4 py-2 rounded-full text-sm font-medium border transition-all",
-                  selectedTags.includes(tag.id)
-                    ? `${tag.color} border-current`
-                    : "bg-muted text-muted-foreground border-transparent"
+                {/* Tools Checklist */}
+                {tools.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Herramientas Recomendadas</h4>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {tools.map((tool, index) => (
+                        <div
+                          key={index}
+                          onClick={() => toggleTool(index)}
+                          className={cn(
+                            "flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer",
+                            tool.completed ? "bg-primary/5 border-primary/20" : "bg-card border-border hover:border-primary/50"
+                          )}
+                        >
+                          <div className={cn(
+                            "w-5 h-5 rounded-md border flex items-center justify-center mt-0.5 transition-colors",
+                            tool.completed ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground"
+                          )}>
+                            {tool.completed && <Check className="w-3.5 h-3.5" />}
+                          </div>
+                          <div className="flex-1">
+                            <p className={cn("text-sm font-medium", tool.completed && "text-muted-foreground line-through")}>
+                              {tool.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{tool.reason}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
-              >
-                {tag.label}
-              </button>
-            ))}
-          </div>
-        </div>
+              </div>
+            )}
+          </main >
+        </div >
+      );
+    };
 
-        {/* Content */}
-        <div className="space-y-2">
-          <Label htmlFor="content">
-            {isVictory ? "Cuéntanos sobre tu victoria" : "¿Qué quieres escribir?"}
-          </Label>
-          <Textarea
-            id="content"
-            placeholder={isVictory
-              ? "Describe lo que lograste, cómo te sentiste y qué aprendiste..."
-              : "Escribe libremente sobre lo que pasó, cómo te sientes..."
-            }
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className="min-h-[200px] resize-none"
-          />
-        </div>
-      </main >
-    </div >
-  );
-};
-
-export default JournalEntry;
+    export default JournalEntry;
