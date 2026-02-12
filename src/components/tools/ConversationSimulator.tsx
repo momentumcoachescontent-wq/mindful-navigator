@@ -101,6 +101,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
     try {
       const { data, error } = await supabase.functions.invoke("analyze-situation", {
         body: {
+          situation: `Simulación de rol: ${selectedScenario.label} - ${context.substring(0, 50)}...`, // Dummy field for old code compatibility
           mode: "roleplay",
           scenario: selectedScenario.label,
           personality: selectedPersonality.id,
@@ -113,18 +114,23 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Try to parse detailed error from Edge Function response
+        // @ts-ignore
+        const detail = error.context ? await error.context.json().catch(() => ({})) : {};
+        throw new Error(detail.error || error.message || "Error desconocido");
+      }
 
       const simulatorMessage: Message = {
         role: "simulator",
-        content: data.response,
+        content: data.response || "Error: Respuesta vacía del servidor",
       };
       setMessages(prev => [...prev, simulatorMessage]);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating response:", error);
       toast({
-        title: "Error",
-        description: "No se pudo generar la respuesta. Intenta de nuevo.",
+        title: "Error de Simulación",
+        description: error.message || "No se pudo generar la respuesta.",
         variant: "destructive",
       });
     } finally {
@@ -169,6 +175,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
     try {
       const { data, error } = await supabase.functions.invoke("analyze-situation", {
         body: {
+          situation: `Generación de feedback: ${context.substring(0, 50)}...`, // Dummy field
           mode: "feedback",
           scenario: selectedScenario?.label,
           personality: selectedPersonality?.id,
@@ -177,15 +184,19 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // @ts-ignore
+        const detail = error.context ? await error.context.json().catch(() => ({})) : {};
+        throw new Error(detail.error || error.message);
+      }
 
       setFeedback(data.feedback);
       setScripts(data.scripts);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating feedback:", error);
       toast({
         title: "Error",
-        description: "No se pudo generar el feedback. Intenta de nuevo.",
+        description: error.message || "No se pudo generar el feedback.",
         variant: "destructive",
       });
     } finally {
