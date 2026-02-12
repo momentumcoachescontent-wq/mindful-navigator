@@ -53,7 +53,7 @@ type SimulatorStep = "scenario" | "personality" | "context" | "chat" | "feedback
 export function ConversationSimulator({ content }: ConversationSimulatorProps) {
   const { session } = useAuth();
   const { toast } = useToast();
-  
+
   const [step, setStep] = useState<SimulatorStep>("scenario");
   const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
   const [selectedPersonality, setSelectedPersonality] = useState<Personality | null>(null);
@@ -86,7 +86,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
 
   const generateSimulatorResponse = async (isFirst = false) => {
     if (!selectedScenario || !selectedPersonality) return;
-    
+
     // Validate session before making authenticated request
     if (!session?.access_token) {
       toast({
@@ -96,7 +96,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
       });
       return;
     }
-    
+
     setIsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("analyze-situation", {
@@ -110,9 +110,6 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
           isFirst,
           currentRound,
           maxRounds,
-        },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
         },
       });
 
@@ -137,7 +134,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
 
   const handleUserMessage = () => {
     if (!currentInput.trim()) return;
-    
+
     const userMessage: Message = {
       role: "user",
       content: currentInput,
@@ -165,10 +162,10 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
       });
       return;
     }
-    
+
     setIsLoading(true);
     setStep("feedback");
-    
+
     try {
       const { data, error } = await supabase.functions.invoke("analyze-situation", {
         body: {
@@ -177,9 +174,6 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
           personality: selectedPersonality?.id,
           context,
           messages: allMessages,
-        },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
         },
       });
 
@@ -205,7 +199,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
 
   const handleSaveAsActionPlan = async () => {
     if (!session?.user?.id || !scripts) return;
-    
+
     setIsSaving(true);
     try {
       const { error } = await supabase.from("scanner_history").insert([{
@@ -260,7 +254,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
           Elige el tipo de relación para personalizar el entrenamiento
         </p>
       </div>
-      
+
       <div className="grid grid-cols-2 gap-3">
         {content.scenarios.map((scenario) => (
           <button
@@ -285,7 +279,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
           Selecciona el patrón de comportamiento más común
         </p>
       </div>
-      
+
       <div className="space-y-3">
         {content.personalities.map((personality) => (
           <button
@@ -311,16 +305,16 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
           ¿Qué límite quieres poner? ¿Cuál es el contexto?
         </p>
       </div>
-      
+
       <Textarea
         value={context}
         onChange={(e) => setContext(e.target.value)}
         placeholder="Ej: Mi jefe me pide que trabaje los fines de semana sin compensación y quiero establecer un límite claro..."
         className="min-h-[150px] bg-card border-border resize-none"
       />
-      
-      <Button 
-        onClick={handleContextSubmit} 
+
+      <Button
+        onClick={handleContextSubmit}
         disabled={!context.trim()}
         className="w-full"
         variant="calm"
@@ -338,7 +332,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
           Ronda {currentRound + 1} de {maxRounds} • {selectedPersonality?.label}
         </p>
       </div>
-      
+
       <div className="space-y-3 max-h-[300px] overflow-y-auto">
         {messages.map((msg, index) => (
           <div
@@ -353,7 +347,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
             {msg.content}
           </div>
         ))}
-        
+
         {isLoading && (
           <div className="bg-card p-3 rounded-2xl rounded-bl-md max-w-[85%] flex items-center gap-2">
             <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
@@ -361,7 +355,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
           </div>
         )}
       </div>
-      
+
       {currentRound < maxRounds && !isLoading && (
         <div className="flex gap-2">
           <Textarea
@@ -376,8 +370,8 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
               }
             }}
           />
-          <Button 
-            onClick={handleUserMessage} 
+          <Button
+            onClick={handleUserMessage}
             disabled={!currentInput.trim()}
             size="icon"
             className="h-auto"
@@ -404,7 +398,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
             </h3>
             <p className="text-sm text-muted-foreground">{feedback.overall}</p>
           </div>
-          
+
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-card p-4 rounded-xl text-center shadow-soft">
               <div className="text-2xl font-bold text-primary">{feedback.clarity}/10</div>
@@ -419,7 +413,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
               <p className="text-xs text-muted-foreground mt-1">Empatía</p>
             </div>
           </div>
-          
+
           {feedback.traps.length > 0 && (
             <div className="bg-coral/10 border border-coral/20 rounded-xl p-4 space-y-2">
               <p className="text-sm font-medium text-coral">⚠️ Trampas detectadas:</p>
@@ -430,7 +424,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
               </ul>
             </div>
           )}
-          
+
           <Button onClick={handleViewScripts} variant="calm" className="w-full">
             Ver scripts sugeridos
             <ArrowRight className="w-4 h-4" />
@@ -450,7 +444,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
           3 versiones según el nivel de firmeza que necesites
         </p>
       </div>
-      
+
       {scripts && (
         <div className="space-y-3">
           <div className="bg-card p-4 rounded-xl shadow-soft space-y-2">
@@ -460,7 +454,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
             </div>
             <p className="text-sm text-muted-foreground">{scripts.soft}</p>
           </div>
-          
+
           <div className="bg-card p-4 rounded-xl shadow-soft space-y-2">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-warning"></span>
@@ -468,7 +462,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
             </div>
             <p className="text-sm text-muted-foreground">{scripts.firm}</p>
           </div>
-          
+
           <div className="bg-card p-4 rounded-xl shadow-soft space-y-2">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-coral"></span>
@@ -478,11 +472,11 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
           </div>
         </div>
       )}
-      
+
       <div className="flex gap-3">
-        <Button 
-          onClick={handleSaveAsActionPlan} 
-          variant="default" 
+        <Button
+          onClick={handleSaveAsActionPlan}
+          variant="default"
           className="flex-1"
           disabled={isSaving}
         >
@@ -506,14 +500,14 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
             key={s}
             className={cn(
               "w-2 h-2 rounded-full transition-all",
-              step === s ? "w-6 bg-primary" : 
-              ["scenario", "personality", "context", "chat", "feedback", "scripts"].indexOf(step) > i 
-                ? "bg-primary/50" : "bg-muted"
+              step === s ? "w-6 bg-primary" :
+                ["scenario", "personality", "context", "chat", "feedback", "scripts"].indexOf(step) > i
+                  ? "bg-primary/50" : "bg-muted"
             )}
           />
         ))}
       </div>
-      
+
       {step === "scenario" && renderScenarioStep()}
       {step === "personality" && renderPersonalityStep()}
       {step === "context" && renderContextStep()}
