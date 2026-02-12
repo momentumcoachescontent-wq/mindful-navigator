@@ -121,6 +121,13 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
         throw new Error(detail.error || error.message || "Error desconocido");
       }
 
+      console.log("Edge Function Response Data:", data);
+
+      // DEBUG: Show raw data if response is missing
+      if (!data.response) {
+        alert("DEBUG SIMULATOR: " + JSON.stringify(data, null, 2));
+      }
+
       const simulatorMessage: Message = {
         role: "simulator",
         content: data.response || "Error: Respuesta vacía del servidor",
