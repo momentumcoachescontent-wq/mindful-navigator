@@ -232,15 +232,9 @@ const Index = () => {
           thisWeek={streakData.thisWeek}
         />
 
-        {/* Mood Check-in or Success Message */}
-        {!hasCheckedIn ? (
+        {/* Mood Check-in - Hides after completion to save space */}
+        {!hasCheckedIn && (
           <MoodCheckIn onComplete={handleCheckIn} />
-        ) : (
-          <div className="bg-success/10 border-2 border-success/30 rounded-2xl p-5 text-center animate-fade-up">
-            <p className="text-success font-medium">
-              ✨ ¡Check-in guardado! Sigue así.
-            </p>
-          </div>
         )}
 
         {/* Daily Challenge - Main Feature */}
