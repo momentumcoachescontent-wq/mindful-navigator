@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Save, Trophy, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Trophy, Loader2, Check } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,7 +28,7 @@ const moodOptions = [
 ];
 
 // ... imports ...
-import { Check, Loader2, Save, Trophy, ArrowLeft } from "lucide-react"; // Ensure Check is imported
+// ... imports ...
 
 // ... interfaces ...
 interface ActionStep {
@@ -192,8 +192,8 @@ const JournalEntry = () => {
           follow_up: isFollowUp,
           parent_id: parentEntryId,
           // Persist interactive state
-          action_plan: actionPlan,
-          recommended_tools: tools,
+          action_plan: actionPlan as any,
+          recommended_tools: tools as any,
           progress: {
             actionPlan: actionPlan.map(a => !!a.completed),
             tools: tools.map(t => !!t.completed)
