@@ -39,30 +39,34 @@ const Index = () => {
 
   const loadDailyReflection = async () => {
     try {
-      const today = new Date().toISOString().split("T")[0];
-
-      // Try to find a reflection for today
-      const { data: initialReflection, error } = await supabase
+      // 1. Get all active reflections
+      const { data: reflections, error } = await supabase
         .from("daily_reflections")
         .select("content, author")
-        .eq("display_date", today)
-        .eq("is_active", true)
-        .maybeSingle();
+        .eq("is_active", true);
 
       if (error) throw error;
 
-      let reflection = initialReflection;
+      let reflection = null;
 
-      // Fallback: any active reflection
-      if (!reflection) {
-        const { data: randomReflection } = await supabase
-          .from("daily_reflections")
-          .select("content, author")
-          .eq("is_active", true)
-          .limit(1)
-          .maybeSingle();
+      if (reflections && reflections.length > 0) {
+        // 2. Calculate deterministic index based on date
+        // Use local time to respect user's "day", or UTC for global consistency.
+        // Using local date string ensures it changes at midnight local time.
+        const todayStr = new Date().toDateString(); // e.g. "Fri Nov 10 2023"
 
-        reflection = randomReflection;
+        // Simple hash function for the date string to get a number
+        let hash = 0;
+        for (let i = 0; i < todayStr.length; i++) {
+          hash = ((hash << 5) - hash) + todayStr.charCodeAt(i);
+          hash |= 0; // Convert to 32bit integer
+        }
+
+        // Ensure positive index
+        const index = Math.abs(hash) % reflections.length;
+        reflection = reflections[index];
+
+        console.log(`Daily Reflection: Selected index ${index} from ${reflections.length} options for date ${todayStr}`);
       }
 
       if (reflection) {
