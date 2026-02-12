@@ -36,25 +36,40 @@ serve(async (req) => {
 
     const token = authHeader.replace("Bearer ", "");
     logStep("Authenticating user with token");
-    
+
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError) throw new Error(`Authentication error: ${userError.message}`);
     const user = userData.user;
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    // Check if user is admin
+    const { data: profile } = await supabaseClient
+      .from("profiles")
+      .select("is_admin")
+      .eq("user_id", user.id)
+      .single();
+
+    const isAdmin = profile?.is_admin === true;
+    if (isAdmin) logStep("User identified as Admin", { isAdmin });
+
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    
+
     if (customers.data.length === 0) {
-      logStep("No customer found, updating unsubscribed state");
-      
-      // Update profile to reflect non-premium status
-      await supabaseClient
-        .from("profiles")
-        .update({ is_premium: false, premium_until: null })
-        .eq("user_id", user.id);
-      
+      logStep("No customer found");
+
+      if (!isAdmin) {
+        logStep("Updating unsubscribed state (User is not admin)");
+        // Update profile to reflect non-premium status
+        await supabaseClient
+          .from("profiles")
+          .update({ is_premium: false, premium_until: null })
+          .eq("user_id", user.id);
+      } else {
+        logStep("Skipping demotion (User is Admin)");
+      }
+
       return new Response(JSON.stringify({ subscribed: false }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -69,7 +84,7 @@ serve(async (req) => {
       status: "active",
       limit: 1,
     });
-    
+
     const hasActiveSub = subscriptions.data.length > 0;
     let productId = null;
     let subscriptionEnd = null;
@@ -81,7 +96,7 @@ serve(async (req) => {
         { user_id: user.id, stripe_customer_id: customerId },
         { onConflict: "user_id" }
       );
-    
+
     if (upsertError) {
       logStep("Warning: Failed to store stripe customer mapping", { error: upsertError.message });
     } else {
@@ -92,26 +107,31 @@ serve(async (req) => {
       const subscription = subscriptions.data[0];
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
       logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd });
-      
+
       productId = subscription.items.data[0].price.product;
       logStep("Determined subscription tier", { productId });
-      
+
       // Update profile with premium status (without stripe_customer_id)
       await supabaseClient
         .from("profiles")
-        .update({ 
-          is_premium: true, 
+        .update({
+          is_premium: true,
           premium_until: subscriptionEnd
         })
         .eq("user_id", user.id);
     } else {
       logStep("No active subscription found");
-      
-      // Update profile to reflect non-premium status
-      await supabaseClient
-        .from("profiles")
-        .update({ is_premium: false, premium_until: null })
-        .eq("user_id", user.id);
+
+      if (!isAdmin) {
+        logStep("Updating unsubscribed state (User is not admin)");
+        // Update profile to reflect non-premium status
+        await supabaseClient
+          .from("profiles")
+          .update({ is_premium: false, premium_until: null })
+          .eq("user_id", user.id);
+      } else {
+        logStep("Skipping demotion (User is Admin)");
+      }
     }
 
     return new Response(JSON.stringify({

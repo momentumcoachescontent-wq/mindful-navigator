@@ -1,4 +1,4 @@
-import { ArrowLeft, User, Settings, Bell, Shield, Heart, LogOut, ChevronRight, Crown, Database, Camera, Loader2 } from "lucide-react";
+import { ArrowLeft, User, Settings, Bell, Shield, Heart, LogOut, ChevronRight, Crown, Database, Camera, Loader2, LayoutDashboard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/layout/MobileNav";
@@ -14,6 +14,7 @@ const menuItems = [
   { icon: Shield, label: "Privacidad y seguridad", path: "/settings/privacy" },
   { icon: Heart, label: "Contactos de confianza", path: "/settings/contacts" },
   { icon: Database, label: "Gestión de datos", path: "/data" },
+  { icon: LayoutDashboard, label: "Panel de Admin", path: "/admin" },
   { icon: Settings, label: "Configuración", path: "/settings" },
 ];
 
@@ -35,6 +36,7 @@ const Profile = () => {
         .single();
 
       if (error) throw error;
+      console.log("Profile Data:", data);
       return data;
     },
     enabled: !!user,
@@ -113,6 +115,8 @@ const Profile = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="flex-1">
+            {/* Admin Debug Indicator */}
+            {profile?.is_admin && <span className="text-xs text-green-500">Admin Mode</span>}
             <h1 className="text-lg font-display font-bold text-foreground">
               Mi Perfil
             </h1>
@@ -210,7 +214,8 @@ const Profile = () => {
         {/* Menu Items */}
         <div className="bg-card rounded-2xl shadow-soft overflow-hidden">
           {menuItems.filter(item => {
-            if (item.path === "/data") return profile?.is_admin;
+            if (item.path === "/data") return true;
+            if (item.path === "/admin") return profile?.is_admin;
             return true;
           }).map((item, index, array) => (
             <button
