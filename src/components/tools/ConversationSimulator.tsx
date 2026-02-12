@@ -121,7 +121,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
         throw new Error(detail.error || error.message || "Error desconocido");
       }
 
-      console.log("Edge Function Response Data:", data);
+      console.log("Edge Function Response Data [v2]:", data);
 
       // DEBUG: Show raw data if response is missing
       if (!data.response) {
