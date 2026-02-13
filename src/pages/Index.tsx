@@ -39,21 +39,44 @@ const Index = () => {
    */
   const getRandomReflection = async () => {
     try {
+      console.log("Fetching reflections...");
       const { data: reflections, error } = await supabase
         .from("daily_reflections")
         .select("content, author")
         .eq("is_active", true);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase Error:", error);
+        toast({
+          title: "Error de carga",
+          description: error.message,
+          variant: "destructive"
+        });
+        throw error;
+      };
 
       if (reflections && reflections.length > 0) {
-        // Pick a random index
         const randomIndex = Math.floor(Math.random() * reflections.length);
         setDailyReflection(reflections[randomIndex]);
         console.log(`Loaded reflection ${randomIndex + 1} of ${reflections.length}`);
+
+        // Debug Toast (Temporary)
+        toast({
+          title: "Debug: Base de Datos",
+          description: `Se encontraron ${reflections.length} reflexiones disponibles.`,
+          duration: 2000,
+        });
+      } else {
+        setDailyReflection({ content: "No hay reflexiones en la base de datos.", author: "Sistema" });
+        toast({
+          title: "Base de datos vacía",
+          description: "No se encontraron filas con is_active=true",
+          variant: "destructive"
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error loading reflection:", error);
+      setDailyReflection({ content: "Error al cargar.", author: "Sistema" });
     }
   };
 
