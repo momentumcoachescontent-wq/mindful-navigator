@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Send, Save, RefreshCw, MessageSquare } from "lucide-react";
-import { useAuth } from "@/components/AuthProvider";
+import { useAuth } from "@/contexts/AuthContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -385,8 +385,8 @@ export const ConversationSimulator = () => {
                         {messages.map((m, i) => (
                             <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                                 <div className={`max-w-[80%] p-3 rounded-lg ${m.role === "user"
-                                        ? "bg-primary text-primary-foreground"
-                                        : "bg-muted"
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-muted"
                                     }`}>
                                     {m.content}
                                 </div>
@@ -541,3 +541,4 @@ export const ConversationSimulator = () => {
 
     return null;
 };
+
