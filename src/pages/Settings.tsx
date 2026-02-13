@@ -302,9 +302,20 @@ const Settings = () => {
                         )}
 
                         {!isAddingContact && (
-                            <Button className="w-full mt-2" variant="outline" onClick={() => setIsAddingContact(true)}>
-                                <Plus className="w-4 h-4 mr-2" /> Agregar Contacto
-                            </Button>
+                            !user ? (
+                                <Button
+                                    className="w-full mt-2"
+                                    variant="outline"
+                                    onClick={() => navigate("/auth")}
+                                >
+                                    <User className="w-4 h-4 mr-2" />
+                                    Regístrate para agregar contactos
+                                </Button>
+                            ) : (
+                                <Button className="w-full mt-2" variant="outline" onClick={() => setIsAddingContact(true)}>
+                                    <Plus className="w-4 h-4 mr-2" /> Agregar Contacto
+                                </Button>
+                            )
                         )}
                     </CardContent>
                 </Card>
