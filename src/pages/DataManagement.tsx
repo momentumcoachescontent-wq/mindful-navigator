@@ -37,10 +37,10 @@ const EXPORTABLE_TABLES: TableConfig[] = [
     columns: ["id", "victory_text", "victory_date", "is_public", "xp_bonus", "created_at"],
   },
   {
-    name: "scanner_history",
+    name: "scanner_history_exports", // Switched to VIEW for flattened data
     displayName: "Historial del Escáner",
     description: "Análisis de situaciones realizados con IA",
-    columns: ["id", "situation_text", "alert_level", "red_flags", "recommended_tools", "action_plan", "ai_response", "created_at"],
+    columns: ["situation_text", "alert_level", "red_flags", "recommended_tools", "action_plan", "ai_response", "created_at"],
   },
   {
     name: "sos_cards",
