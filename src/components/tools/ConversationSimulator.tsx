@@ -508,47 +508,98 @@ export const ConversationSimulator = () => {
     }
 
     if (step === "scripts") {
+        // Prepare the definitive list of tasks (Scripts + Tools)
+        const effectiveTools = (feedback?.recommended_tools && feedback.recommended_tools.length > 0)
+            ? feedback.recommended_tools
+            : ["Pausa Reflexiva", "Respiración Consciente"]; // Fallback defaults
+
+        const combinedActionPlan = [
+            { step: 1, action: `Practicar respuesta suave: "${scripts?.soft}"`, completed: false },
+            { step: 2, action: `Practicar respuesta firme: "${scripts?.firm}"`, completed: false },
+            { step: 3, action: `Preparar ultimátum: "${scripts?.final_warning}"`, completed: false },
+            ...effectiveTools.map((t, i) => ({
+                step: 4 + i,
+                action: `Usar herramienta: ${t}`,
+                completed: false
+            }))
+        ];
+
+        // Modified save handler that uses the calculated plan
+        const handleSaveDefinitive = async () => {
+            if (!session?.user?.id || !scripts) return;
+            setIsSaving(true);
+            try {
+                // Save to History (Optional, keeps record)
+                await supabase.from("scanner_history").insert([{
+                    user_id: session.user.id,
+                    situation_text: `Simulación: ${selectedScenario?.label}`,
+                    ai_response: JSON.stringify({ feedback, scripts, combinedActionPlan }),
+                }]);
+
+                // Save to Journal (The important part)
+                const { error: journalError } = await supabase.from("journal_entries").insert([{
+                    user_id: session.user.id,
+                    entry_type: "scanner_result", // Triggers checklist view in JournalEntry.tsx
+                    content: `Plan de Acción generado por el Simulador.\n\nEscenario: ${selectedScenario?.label}\nPersonalidad: ${selectedPersonality?.label}\n\nFeedback: ${feedback?.overall || "Sin feedback"}`,
+                    tags: ["simulación", "plan_de_acción", ...effectiveTools],
+                    metadata: {
+                        title: `Plan: ${selectedScenario?.label}`,
+                        follow_up: true, // Marks as "Pendiente"
+                        scenario: selectedScenario?.label,
+                        personality: selectedPersonality?.label,
+                        // THE KEY FIX: Saving the unified action plan here
+                        action_plan: combinedActionPlan,
+                        // Keep tools empty to avoid duplicate rendering, since they are now in action_plan
+                        recommended_tools: []
+                    }
+                }]);
+
+                if (journalError) throw journalError;
+
+                toast({
+                    title: "¡Plan Guardado!",
+                    description: "Revisa tu Diario, encontrarás una lista de tareas lista para marcar.",
+                });
+            } catch (error: any) {
+                console.error("Error saving:", error);
+                toast({ title: "Error", description: "No se pudo guardar.", variant: "destructive" });
+            } finally {
+                setIsSaving(false);
+            }
+        };
+
         return (
             <Card className="p-6 max-w-2xl mx-auto space-y-6 animate-in slide-in-from-right">
-                <h2 className="text-2xl font-bold">Scripts Sugeridos</h2>
-                <p className="text-muted-foreground">Aquí tienes formas alternativas de manejar la situación:</p>
-
-                <div className="space-y-4">
-                    <div className="p-4 border rounded-lg">
-                        <h3 className="font-semibold text-green-600 mb-1">Respuesta Suave (Asertiva-Empática)</h3>
-                        <p className="italic">"{scripts?.soft}"</p>
-                    </div>
-                    <div className="p-4 border rounded-lg">
-                        <h3 className="font-semibold text-blue-600 mb-1">Respuesta Firme (Límites Claros)</h3>
-                        <p className="italic">"{scripts?.firm}"</p>
-                    </div>
-                    <div className="p-4 border rounded-lg">
-                        <h3 className="font-semibold text-red-600 mb-1">Ultimátum (Protección)</h3>
-                        <p className="italic">"{scripts?.final_warning}"</p>
-                    </div>
+                <div className="space-y-2 text-center">
+                    <h2 className="text-2xl font-bold text-primary">Tu Plan de Acción</h2>
+                    <p className="text-muted-foreground">Esta es la lista de tareas que se guardará en tu diario:</p>
                 </div>
 
-                <div className="flex gap-3">
+                <div className="bg-muted/30 p-4 rounded-xl border border-border space-y-3">
+                    {combinedActionPlan.map((item, idx) => (
+                        <div key={idx} className="flex gap-3 items-start p-3 bg-card rounded-lg border shadow-sm">
+                            <div className="bg-primary/10 text-primary w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
+                                {item.step}
+                            </div>
+                            <p className="text-sm">{item.action}</p>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="flex gap-3 pt-4">
                     <Button
-                        onClick={handleSaveAsActionPlan}
+                        onClick={handleSaveDefinitive}
                         disabled={isSaving}
-                        className="flex-1" // Changed from w-full to flex-1 to match original layout
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white"
                     >
                         {isSaving ? (
-                            <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Guardando...
-                            </>
+                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Guardando...</>
                         ) : (
-                            <>
-                                <Save className="mr-2 h-4 w-4" />
-                                Guardar plan
-                            </>
+                            <><Save className="mr-2 h-4 w-4" /> Confirmar y Guardar en Diario</>
                         )}
                     </Button>
                     <Button onClick={handleRestart} variant="outline" className="flex-1">
-                        <RefreshCw className="w-4 h-4" />
-                        Nueva Simulación
+                        <RefreshCw className="mr-2 h-4 w-4" /> Reiniciar
                     </Button>
                 </div>
             </Card>
