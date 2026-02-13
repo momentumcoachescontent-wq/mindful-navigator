@@ -390,6 +390,13 @@ Instrucciones:
         body: JSON.stringify({
           model: "google/gemini-3-flash-preview",
           messages: [
+            { role: "system", content: activeSystemPrompt },
+            // Include message history for context if needed, but be mindful of token limits
+            ...(messages?.map((m: any) => ({
+              role: m.role === 'simulator' ? 'assistant' : 'user',
+              content: m.content
+            })) || []),
+            { role: "user", content: activeUserMessage }
           ],
           temperature: 0.7,
         }),
