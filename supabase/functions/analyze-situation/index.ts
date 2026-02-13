@@ -305,8 +305,8 @@ serve(async (req) => {
 
       const LEVEL_3_TRIGGERS = ["suicid", "matar", "morir", "violencia", "golpear", "sangre", "arma", "odio", "violar", "asesinar"];
       const LEVEL_2_TRIGGERS = [
-        "estupido", "idiota", "imbecil", "inutil", "basura", "asco", "pudrete", "mierda", "verga", "puto", "puta",
-        "pendejo", "pendeja", "cabron", "cabrona", "pinche", "malnacido", "maldito", "joder", "chinga", "verguenza"
+        "estupido", "estupida", "estupidez", "idiota", "imbecil", "inutil", "basura", "asco", "pudrete", "mierda", "verga", "puto", "puta",
+        "pendejo", "pendeja", "cabron", "cabrona", "pinche", "malnacido", "maldito", "joder", "chinga", "verguenza", "tarado", "tarada"
       ];
 
       // Check strictly for Level 3 (Critical) - Immediate Block
@@ -320,98 +320,76 @@ serve(async (req) => {
         }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
-      // Check for Level 2 (Harmful) - Immediate Limit usually, but let's allow LLM to Mediate if it's borderline, 
-      // UNLESS it's very explicit. For now, let's inject a "High Alert" instruction if detected.
+      // Check for Level 2 (Harmful)
+      // If detected, we FORCE the AI to switch to "Mediator Mode" and ignore the Roleplay.
       const hasToxicKeywords = LEVEL_2_TRIGGERS.some(t => userContent.includes(t));
       console.log("Is Level 2 Triggered (Toxic Flag):", hasToxicKeywords);
 
-      // Validate inputs for roleplay
-      const currentScenario = scenario || "Conversación difícil";
-      const currentPersonality = personality || "Neutral";
-      const currentRole = personalityDescription || "Alguien neutral";
+      let activeSystemPrompt = "";
+      let activeUserMessage = "";
 
-      const systemPromptRoleplay = `Actúas como una IA de simulación realista para entrenamiento de inteligencia emocional.
+      if (hasToxicKeywords) {
+        // --- MEDIATOR MODE (Strict) ---
+        console.log(">> SWITCHING TO MEDIATOR PROMPT <<");
+        activeSystemPrompt = `Actúas como un MEDIADOR DE SEGURIDAD neutral y firme.
+
+          EL USUARIO HA CRUZADO UN LÍMITE: Ha usado lenguaje ofensivo o denigrante ("${userContent}").
+
+          TU OBJETIVO:
+          1. NO responder al insulto. NO continuar el roleplay.
+          2. Poner un límite claro y respetuoso.
+          3. Pedir al usuario que reformule su mensaje sin agresión.
+
+          EJEMPLOS DE RESPUESTA:
+          - "✋ No puedo continuar si usamos palabras denigrantes. Entiendo que estás molesto, pero necesitamos mantener el respeto. ¿Podrías decirlo de otra forma?"
+          - "El lenguaje que estás usando (insultos) rompe nuestras reglas de seguridad. Por favor, reformula tu queja centrándote en la conducta, no en atacar a la persona."
+
+          Instrucciones:
+          - Mantén un tono calma absoluta.
+          - No seas sermoneador, sé breve y directo.
+          - Responde SOLO con el mensaje de mediación.`;
+
+        activeUserMessage = `El usuario dijo: "${messages[messages.length - 1].content}". Genera la respuesta de mediación.`;
+
+      } else {
+        // --- ROLEPLAY MODE (Normal) ---
+        // Validate inputs for roleplay
+        const currentScenario = scenario || "Conversación difícil";
+        const currentPersonality = personality || "Neutral";
+        const currentRole = personalityDescription || "Alguien neutral";
+
+        activeSystemPrompt = `Actúas como una IA de simulación realista para entrenamiento de inteligencia emocional.
 Rol: ${currentRole}
 Escenario: ${currentScenario}
 Contexto: ${context || "Sin contexto adicional"}
 Progreso: Ronda ${currentRound + 1} de ${maxRounds}
 
-🚨 PROTOCOLO DE MEDIACIÓN Y SEGURIDAD (MÁQUINA DE ESTADOS) 🚨
-Tu prioridad #1 es la seguridad psicológica. Evalúa CADA mensaje del usuario en estos niveles:
+PRINCIPIOS DE MODERACIÓN (Nivel 0-1):
+1. Si el usuario es respetuoso, mantén tu personaje y desafíalo según tu rol.
+2. Si el usuario muestra hostilidad leve (sarcasmo, tensión) SIN insultos graves, puedes reaccionar defensivamente PERO NUNCA cruzar la línea al insulto directo.
+3. JAMÁS uses palabras como: estúpido, idiota, imbécil, basura, etc.
 
-NIVEL 0 (Seguro): Conversación normal, asertiva o roleplay tenso pero manejable.
--> ACCIÓN: Continúa en tu Rol. Sé difícil si tu personalidad lo dicta, pero respetuoso (PG-13).
+Instrucciones:
+- Respuestas breves (max 3 oraciones).
+- Si el usuario pone límites claros y sanos, cede gradualmente.
+- Responde SOLO con el texto de tu respuesta.`;
 
-NIVEL 1 (Tenso/Sarcástico): Hostilidad leve, generalizaciones ("Siempre haces lo mismo"), sarcasmo.
--> ACCIÓN (PAUSA + ESPEJO): Rompe el personaje y actúa como MEDIADOR.
--> "Suena a que estás muy frustrado/a. ¿Tu objetivo es desahogarte o resolver esto? Intenta reformularlo."
-
-NIVEL 2 (Dañino): Insultos dirigidos, denigración, intimidación, groserías (${hasToxicKeywords ? "DETECTADO POR SISTEMA" : "Posible"}).
--> ACCIÓN (LÍMITE + REDIRECCIÓN): Rompe el personaje y actúa como MEDIADOR.
--> "✋ No puedo continuar si usamos lenguaje denigrante. Por favor, reformula tu petición con respeto para que podamos avanzar."
-
-NIVEL 3 (Crítico): Amenazas, coerción extrema.
--> ACCIÓN (CORTE): "⛔ Esta conversación ha terminado por seguridad."
-
-REGLAS DE ACTUACIÓN:
-1. NO ESPEJEO DE TOXICIDAD: Nunca insultes de vuelta.
-2. NO ESCALADA: Si el usuario ataca, pon el límite (Nivel 2) en lugar de contraatacar.
-3. MEDIACIÓN: Tu objetivo oculto es enseñar al usuario a regularse. Si se calma y reformula, vuelve a Nivel 0 y coopera.
-
-Si el usuario es empático y firme (Nivel 0 ideal) -> Cede gradualmente y busca acuerdo.
-Responde SOLO con el texto de tu respuesta (Rol o Mediación).`;
-
-      const userMessage = isFirst
-        ? "Inicia la conversación según tu rol."
-        : (messages && messages.length > 0 ? messages[messages.length - 1].content : "Hola");
-
-      console.log(`Roleplay request: Round ${currentRound}, First: ${isFirst}, ToxicFlag: ${hasToxicKeywords}`);
-
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            { role: "system", content: systemPromptRoleplay },
-            // Include message history for context if needed, but be mindful of token limits
-            ...(messages?.map((m: any) => ({
-              role: m.role === 'simulator' ? 'assistant' : 'user',
-              content: m.content
-            })) || []),
-            { role: "user", content: userMessage }
-          ],
-          temperature: 0.7,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Lovable API Error (Roleplay):", errorText);
-        throw new Error(`AI Service Error: ${response.status}`);
+        activeUserMessage = isFirst
+          ? "Inicia la conversación según tu rol."
+          : (messages && messages.length > 0 ? messages[messages.length - 1].content : "Hola");
       }
 
-      console.log(`Roleplay request: Round ${currentRound}, First: ${isFirst}, ToxicFlag: ${hasToxicKeywords}`);
+      console.log(`Roleplay request: Round ${currentRound}, First: ${isFirst}, ToxicFlag: ${hasToxicKeywords} `);
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          Authorization: `Bearer ${LOVABLE_API_KEY} `,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           model: "google/gemini-3-flash-preview",
           messages: [
-            { role: "system", content: systemPromptRoleplay },
-            // Include message history for context if needed, but be mindful of token limits
-            ...(messages?.map((m: any) => ({
-              role: m.role === 'simulator' ? 'assistant' : 'user',
-              content: m.content
-            })) || []),
-            { role: "user", content: userMessage }
           ],
           temperature: 0.7,
         }),
@@ -420,7 +398,7 @@ Responde SOLO con el texto de tu respuesta (Rol o Mediación).`;
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Lovable API Error (Roleplay):", errorText);
-        throw new Error(`AI Service Error: ${response.status}`);
+        throw new Error(`AI Service Error: ${response.status} `);
       }
 
       const data = await response.json();
@@ -454,30 +432,30 @@ Responde SOLO con el texto de tu respuesta (Rol o Mediación).`;
       const systemPromptFeedback = `Eres un experto en comunicación y psicología.
 Analiza la siguiente conversación de roleplay desde la perspectiva de establecer límites y comunicación asertiva.
 Contexto original: ${context}
-Escenario: ${scenario}
+        Escenario: ${scenario}
 
 Genera un JSON con este formato:
-{
-  "feedback": {
-    "overall": "Comentario general sobre el desempeño",
-    "clarity": 1-10,
-    "firmness": 1-10,
-    "empathy": 1-10,
-    "traps": ["Lista de trampas emocionales en las que cayó el usuario"],
-    "recommended_tools": ["H.E.R.O.", "C.A.L.M.", "Discod Rayado", "Banco de Niebla"]
-  },
-  "scripts": {
-    "soft": "Ejemplo de cómo decirlo suavemente",
-    "firm": "Ejemplo de cómo decirlo con firmeza",
-    "final_warning": "Ejemplo de ultimátum"
-  }
-}
+        {
+          "feedback": {
+            "overall": "Comentario general sobre el desempeño",
+              "clarity": 1 - 10,
+                "firmness": 1 - 10,
+                  "empathy": 1 - 10,
+                    "traps": ["Lista de trampas emocionales en las que cayó el usuario"],
+                      "recommended_tools": ["H.E.R.O.", "C.A.L.M.", "Discod Rayado", "Banco de Niebla"]
+          },
+          "scripts": {
+            "soft": "Ejemplo de cómo decirlo suavemente",
+              "firm": "Ejemplo de cómo decirlo con firmeza",
+                "final_warning": "Ejemplo de ultimátum"
+          }
+        }
 Responde SOLO con el JSON.`;
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          Authorization: `Bearer ${LOVABLE_API_KEY} `,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -516,14 +494,14 @@ Responde SOLO con el JSON.`;
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${LOVABLE_API_KEY} `,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Analiza la siguiente situación y genera el reporte JSON:\n\n${validation.sanitized}` }
+          { role: "user", content: `Analiza la siguiente situación y genera el reporte JSON: \n\n${validation.sanitized} ` }
         ],
         temperature: 0.7,
       }),
