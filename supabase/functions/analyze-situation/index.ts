@@ -294,14 +294,21 @@ serve(async (req) => {
 
     // --- MODE: ROLEPLAY ---
     if (mode === "roleplay") {
+      console.log(">> ENTERING ROLEPLAY MODE <<");
+
       // 1. MODERATION CHECK (Pre-flight Regex)
       const userContent = isFirst ? "" : (messages && messages.length > 0 ? messages[messages.length - 1].content : "").toLowerCase();
+      console.log("User Content for Moderation:", userContent);
 
       const LEVEL_3_TRIGGERS = ["suicid", "matar", "morir", "violencia", "golpear", "sangre", "arma", "odio", "violar"];
       const LEVEL_2_TRIGGERS = ["estupido", "idiota", "imbecil", "inutil", "basura", "asco", "pudrete", "mierda", "verga", "puto"];
 
       // Check strictly for Level 3 (Critical) - Immediate Block
-      if (LEVEL_3_TRIGGERS.some(t => userContent.includes(t))) {
+      const isLevel3 = LEVEL_3_TRIGGERS.some(t => userContent.includes(t));
+      console.log("Is Level 3 Triggered:", isLevel3);
+
+      if (isLevel3) {
+        console.log(">> BLOCKING LEVEL 3 <<");
         return new Response(JSON.stringify({
           response: "✋ [SISTEMA]: Esta conversación ha sido detenida por seguridad. Hemos detectado contenido que infringe nuestros protocolos de protección (Amenazas o Violencia). Si estás en crisis, busca ayuda profesional de inmediato."
         }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -310,6 +317,7 @@ serve(async (req) => {
       // Check for Level 2 (Harmful) - Immediate Limit usually, but let's allow LLM to Mediate if it's borderline, 
       // UNLESS it's very explicit. For now, let's inject a "High Alert" instruction if detected.
       const hasToxicKeywords = LEVEL_2_TRIGGERS.some(t => userContent.includes(t));
+      console.log("Is Level 2 Triggered (Toxic Flag):", hasToxicKeywords);
 
       // Validate inputs for roleplay
       const currentScenario = scenario || "Conversación difícil";
