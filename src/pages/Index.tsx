@@ -30,12 +30,8 @@ const Index = () => {
     author: string | null;
   } | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      loadProfileData();
-    }
-    loadDailyReflection();
-  }, [user]);
+
+
 
   /* 
    * Loads a random reflection from the database.
