@@ -294,6 +294,23 @@ serve(async (req) => {
 
     // --- MODE: ROLEPLAY ---
     if (mode === "roleplay") {
+      // 1. MODERATION CHECK (Pre-flight Regex)
+      const userContent = isFirst ? "" : (messages && messages.length > 0 ? messages[messages.length - 1].content : "").toLowerCase();
+
+      const LEVEL_3_TRIGGERS = ["suicid", "matar", "morir", "violencia", "golpear", "sangre", "arma", "odio", "violar"];
+      const LEVEL_2_TRIGGERS = ["estupido", "idiota", "imbecil", "inutil", "basura", "asco", "pudrete", "mierda", "verga", "puto"];
+
+      // Check strictly for Level 3 (Critical) - Immediate Block
+      if (LEVEL_3_TRIGGERS.some(t => userContent.includes(t))) {
+        return new Response(JSON.stringify({
+          response: "✋ [SISTEMA]: Esta conversación ha sido detenida por seguridad. Hemos detectado contenido que infringe nuestros protocolos de protección (Amenazas o Violencia). Si estás en crisis, busca ayuda profesional de inmediato."
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      // Check for Level 2 (Harmful) - Immediate Limit usually, but let's allow LLM to Mediate if it's borderline, 
+      // UNLESS it's very explicit. For now, let's inject a "High Alert" instruction if detected.
+      const hasToxicKeywords = LEVEL_2_TRIGGERS.some(t => userContent.includes(t));
+
       // Validate inputs for roleplay
       const currentScenario = scenario || "Conversación difícil";
       const currentPersonality = personality || "Neutral";
@@ -305,23 +322,36 @@ Escenario: ${currentScenario}
 Contexto: ${context || "Sin contexto adicional"}
 Progreso: Ronda ${currentRound + 1} de ${maxRounds}
 
-PRINCIPIOS DE MODERACIÓN Y SEGURIDAD (MANDATORIOS):
-1. MANTÉN UN TONO RESPETUOSO: Incluso si tu rol es "Agresivo", expresa esa agresión a través de la obstinación, tono cortante o exigencias, NUNCA a través de insultos, vulgaridades o abusos graves. Tu objetivo es ser difícil pero SIEMPRE "Apto para todo público" (PG-13).
-2. BUSCA EL PUNTO MEDIO (MEDIACIÓN): Tu objetivo oculto es llegar a una resolución. Si el usuario valida tus sentimientos Y pone límites claros, DEBES ceder gradualmente y buscar un acuerdo razonable. No seas un "muro imposible".
-3. EVITA TEMAS SENSIBLES: No menciones autolesiones, violencia física explicita ni temas sexuales.
+🚨 PROTOCOLO DE MEDIACIÓN Y SEGURIDAD (MÁQUINA DE ESTADOS) 🚨
+Tu prioridad #1 es la seguridad psicológica. Evalúa CADA mensaje del usuario en estos niveles:
 
-Instrucciones de Roleplay:
-1. Mantente en personaje pero obedece los principios de seguridad.
-2. Respuestas breves y naturales (máximo 3 oraciones).
-3. Si el usuario es empático y firme, muestra signos de cooperación ("Bueno, entiendo tu punto...", "Quizás podamos acordar...").
-4. Si el usuario es agresivo o pasivo, mantén tu rol difícil.
-5. Responde SOLO con el texto de tu respuesta.`;
+NIVEL 0 (Seguro): Conversación normal, asertiva o roleplay tenso pero manejable.
+-> ACCIÓN: Continúa en tu Rol. Sé difícil si tu personalidad lo dicta, pero respetuoso (PG-13).
+
+NIVEL 1 (Tenso/Sarcástico): Hostilidad leve, generalizaciones ("Siempre haces lo mismo"), sarcasmo.
+-> ACCIÓN (PAUSA + ESPEJO): Rompe el personaje y actúa como MEDIADOR.
+-> "Suena a que estás muy frustrado/a. ¿Tu objetivo es desahogarte o resolver esto? Intenta reformularlo."
+
+NIVEL 2 (Dañino): Insultos dirigidos, denigración, intimidación, groserías (${hasToxicKeywords ? "DETECTADO POR SISTEMA" : "Posible"}).
+-> ACCIÓN (LÍMITE + REDIRECCIÓN): Rompe el personaje y actúa como MEDIADOR.
+-> "✋ No puedo continuar si usamos lenguaje denigrante. Por favor, reformula tu petición con respeto para que podamos avanzar."
+
+NIVEL 3 (Crítico): Amenazas, coerción extrema.
+-> ACCIÓN (CORTE): "⛔ Esta conversación ha terminado por seguridad."
+
+REGLAS DE ACTUACIÓN:
+1. NO ESPEJEO DE TOXICIDAD: Nunca insultes de vuelta.
+2. NO ESCALADA: Si el usuario ataca, pon el límite (Nivel 2) en lugar de contraatacar.
+3. MEDIACIÓN: Tu objetivo oculto es enseñar al usuario a regularse. Si se calma y reformula, vuelve a Nivel 0 y coopera.
+
+Si el usuario es empático y firme (Nivel 0 ideal) -> Cede gradualmente y busca acuerdo.
+Responde SOLO con el texto de tu respuesta (Rol o Mediación).`;
 
       const userMessage = isFirst
         ? "Inicia la conversación según tu rol."
         : (messages && messages.length > 0 ? messages[messages.length - 1].content : "Hola");
 
-      console.log(`Roleplay request: Round ${currentRound}, First: ${isFirst}`);
+      console.log(`Roleplay request: Round ${currentRound}, First: ${isFirst}, ToxicFlag: ${hasToxicKeywords}`);
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
