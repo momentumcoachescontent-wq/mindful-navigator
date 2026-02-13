@@ -85,10 +85,14 @@ const Index = () => {
         throw error; // Trigger catch block
       };
 
-      if (reflections && reflections.length > 0) {
+      if (reflections && reflections.length >= 5) {
         const randomIndex = Math.floor(Math.random() * reflections.length);
         selectedReflection = reflections[randomIndex];
-        console.log(`Loaded reflection from DB`);
+        console.log(`Loaded reflection from DB (${reflections.length} items)`);
+      } else {
+        console.warn(`DB only returned ${reflections?.length || 0} items. Using fallback for variety.`);
+        // Ensure selectedReflection is null so it triggers only the fallback logic below
+        selectedReflection = null;
       }
     } catch (error) {
       console.log("Using local fallback content.");
@@ -96,11 +100,9 @@ const Index = () => {
 
     // Final Fallback Logic
     if (!selectedReflection) {
+      console.log("Activating Fallback Logic (DB empty or insufficient)");
       const randomIndex = Math.floor(Math.random() * FALLBACK_REFLECTIONS.length);
       selectedReflection = FALLBACK_REFLECTIONS[randomIndex];
-
-      // Inform user silently (optional) or just show the content
-      console.log("Serving offline content");
     }
 
     setDailyReflection(selectedReflection);
