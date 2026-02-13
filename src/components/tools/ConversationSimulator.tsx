@@ -244,18 +244,21 @@ export const ConversationSimulator = () => {
                     scenario: selectedScenario?.label,
                     personality: selectedPersonality?.label,
                     feedback: feedback,
-                    // Map Scripts to Action Plan Steps for checkboxes
+                    // Map Scripts AND Tools to a single Action Plan for "Tasks"
                     action_plan: [
                         { step: 1, action: `Intentar respuesta suave: "${scripts.soft}"`, completed: false },
                         { step: 2, action: `Si persiste, usar respuesta firme: "${scripts.firm}"`, completed: false },
-                        { step: 3, action: `En caso extremo, ultimátum: "${scripts.final_warning}"`, completed: false }
+                        { step: 3, action: `En caso extremo, ultimátum: "${scripts.final_warning}"`, completed: false },
+                        // Append Tools as actionable steps
+                        ...(feedback?.recommended_tools || []).map((t, i) => ({
+                            step: 4 + i,
+                            action: `Practicar herramienta: ${t}`,
+                            completed: false
+                        }))
                     ],
-                    // Map Tools to RecommendedTool objects
-                    recommended_tools: (feedback?.recommended_tools || []).map(t => ({
-                        name: t,
-                        reason: "Recomendado por el simulador",
-                        completed: false
-                    }))
+                    // We keep recommended_tools array for tags/reference, but NOT for the checklist (to avoid duplicates if we wanted them separate)
+                    // actually, let's keep it empty in metadata.recommended_tools so JournalEntry doesn't double-render a second section
+                    recommended_tools: []
                 }
             }]);
 
