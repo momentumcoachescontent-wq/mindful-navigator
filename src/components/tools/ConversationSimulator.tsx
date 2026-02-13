@@ -40,6 +40,7 @@ interface Feedback {
   empathy: number;
   traps: string[];
   overall: string;
+  recommended_tools?: string[];
 }
 
 interface Script {
@@ -121,11 +122,14 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
         throw new Error(detail.error || error.message || "Error desconocido");
       }
 
-      console.log("Edge Function Response Data:", JSON.stringify(data));
+      console.log("Edge Function Response Data [v2]:", data);
+
+      // DEBUG: Show raw data if response is missing
+
 
       const simulatorMessage: Message = {
         role: "simulator",
-        content: data.response || "Error: Respuesta vacía del servidor",
+        content: data.response || (data.analysis ? `[Modo Análisis]: ${data.analysis.summary}` : "Error: Respuesta vacía del servidor"),
       };
       setMessages(prev => [...prev, simulatorMessage]);
     } catch (error: any) {
@@ -155,10 +159,8 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
       // Generate feedback after last round
       generateFeedback([...messages, userMessage]);
     } else {
-      // Pass updated messages directly to avoid stale closure
-      setTimeout(() => {
-        generateSimulatorResponse(false);
-      }, 500);
+      // Generate next simulator response
+      setTimeout(() => generateSimulatorResponse(), 500);
     }
   };
 
@@ -216,6 +218,10 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
     if (!session?.user?.id || !scripts) return;
 
     setIsSaving(true);
+
+    // DEBUG AUDIT
+    alert(`AUDIT FEEDBACK: ${JSON.stringify(feedback, null, 2)}`);
+
     try {
       const { error } = await supabase.from("scanner_history").insert([{
         user_id: session.user.id,
@@ -226,14 +232,37 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
           scripts,
           savedAt: new Date().toISOString(),
         })),
-        recommended_tools: ["conversation-simulator"],
+        recommended_tools: ["conversation-simulator", ...(feedback?.recommended_tools || [])],
       }]);
 
       if (error) throw error;
 
+      // Also save to Journal
+      const { error: journalError } = await supabase.from("journal_entries").insert([{
+        user_id: session.user.id,
+        entry_type: "simulation_result",
+        content: `Simulación: ${selectedScenario?.label}\n\nFeedback General: ${feedback?.overall}`,
+        tags: ["simulación", "comunicación", ...(feedback?.recommended_tools || [])],
+        metadata: {
+          scenario: selectedScenario?.label,
+          personality: selectedPersonality?.label,
+          feedback: feedback,
+          scripts: scripts
+        }
+      }]);
+
+      if (journalError) {
+        console.warn("Error saving to journal:", journalError);
+        toast({
+          title: "Error al guardar en Diario",
+          description: journalError.message || "No se pudo crear la entrada en el diario.",
+          variant: "destructive",
+        });
+      }
+
       toast({
         title: "¡Guardado!",
-        description: "Tu plan de acción ha sido guardado exitosamente.",
+        description: "Tu plan de acción ha sido guardado exitosamente en tu historial y diario.",
       });
     } catch (error) {
       console.error("Error saving:", error);
