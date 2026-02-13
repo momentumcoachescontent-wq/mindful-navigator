@@ -7,7 +7,7 @@ import { QuickActions } from "@/components/home/QuickActions";
 import { StreakCard } from "@/components/home/StreakCard";
 import { RankingPreviewCard } from "@/components/home/RankingPreviewCard";
 import { DailyChallenge } from "@/components/daily-challenge";
-import { Bell, LogIn, User } from "lucide-react";
+import { Bell, LogIn, User, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,9 +37,12 @@ const Index = () => {
     loadDailyReflection();
   }, [user]);
 
-  const loadDailyReflection = async () => {
+  /* 
+   * Loads a random reflection from the database.
+   * Originally valid daily, but switched to random to allow user to explore content.
+   */
+  const getRandomReflection = async () => {
     try {
-      // 1. Get all active reflections
       const { data: reflections, error } = await supabase
         .from("daily_reflections")
         .select("content, author")
@@ -47,35 +50,23 @@ const Index = () => {
 
       if (error) throw error;
 
-      let reflection = null;
-
       if (reflections && reflections.length > 0) {
-        // 2. Calculate deterministic index based on date
-        // Use local time to respect user's "day", or UTC for global consistency.
-        // Using local date string ensures it changes at midnight local time.
-        const todayStr = new Date().toDateString(); // e.g. "Fri Nov 10 2023"
-
-        // Simple hash function for the date string to get a number
-        let hash = 0;
-        for (let i = 0; i < todayStr.length; i++) {
-          hash = ((hash << 5) - hash) + todayStr.charCodeAt(i);
-          hash |= 0; // Convert to 32bit integer
-        }
-
-        // Ensure positive index
-        const index = Math.abs(hash) % reflections.length;
-        reflection = reflections[index];
-
-        console.log(`Daily Reflection: Selected index ${index} from ${reflections.length} options for date ${todayStr}`);
-      }
-
-      if (reflection) {
-        setDailyReflection(reflection);
+        // Pick a random index
+        const randomIndex = Math.floor(Math.random() * reflections.length);
+        setDailyReflection(reflections[randomIndex]);
+        console.log(`Loaded reflection ${randomIndex + 1} of ${reflections.length}`);
       }
     } catch (error) {
-      console.error("Error loading daily reflection:", error);
+      console.error("Error loading reflection:", error);
     }
   };
+
+  useEffect(() => {
+    if (user) {
+      loadProfileData();
+    }
+    getRandomReflection();
+  }, [user]);
 
   const loadProfileData = async () => {
     if (!user) return;
@@ -253,9 +244,20 @@ const Index = () => {
 
         {/* Daily Tip */}
         <section className="bg-gradient-to-br from-secondary to-primary rounded-2xl p-5 text-primary-foreground">
-          <p className="text-xs uppercase tracking-wider opacity-70 mb-2">
-            Reflexión del día
-          </p>
+          <div className="flex justify-between items-start mb-2">
+            <p className="text-xs uppercase tracking-wider opacity-70">
+              Reflexión del día
+            </p>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-primary-foreground/70 hover:text-primary-foreground hover:bg-white/10"
+              onClick={() => getRandomReflection()}
+            >
+              <RefreshCw className="h-3 w-3" />
+              <span className="sr-only">Nueva reflexión</span>
+            </Button>
+          </div>
           <p className="font-display text-lg leading-relaxed">
             "{dailyReflection?.content || "Cargando reflexión..."}"
           </p>
