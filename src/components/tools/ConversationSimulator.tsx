@@ -235,22 +235,35 @@ export const ConversationSimulator = () => {
             // Also save to Journal
             const { error: journalError } = await supabase.from("journal_entries").insert([{
                 user_id: session.user.id,
-                entry_type: "simulation_result",
+                entry_type: "scanner_result", // Special type that enables checkboxes in JournalEntry
                 content: `Simulación: ${selectedScenario?.label}\n\nFeedback General: ${feedback?.overall}`,
                 tags: ["simulación", "comunicación", ...(feedback?.recommended_tools || [])],
                 metadata: {
+                    title: `Plan: ${selectedScenario?.label}`,
+                    follow_up: true, // Mark as pending for follow-up
                     scenario: selectedScenario?.label,
                     personality: selectedPersonality?.label,
                     feedback: feedback,
-                    scripts: scripts
+                    // Map Scripts to Action Plan Steps for checkboxes
+                    action_plan: [
+                        { step: 1, action: `Intentar respuesta suave: "${scripts.soft}"`, completed: false },
+                        { step: 2, action: `Si persiste, usar respuesta firme: "${scripts.firm}"`, completed: false },
+                        { step: 3, action: `En caso extremo, ultimátum: "${scripts.final_warning}"`, completed: false }
+                    ],
+                    // Map Tools to RecommendedTool objects
+                    recommended_tools: (feedback?.recommended_tools || []).map(t => ({
+                        name: t,
+                        reason: "Recomendado por el simulador",
+                        completed: false
+                    }))
                 }
             }]);
 
             if (journalError) {
                 console.warn("Error saving to journal:", journalError);
                 toast({
-                    title: "Error al guardar en Diario",
-                    description: journalError.message || "No se pudo crear la entrada en el diario.",
+                    title: "Error al crear entrada en Diario",
+                    description: "Se guardó en historial, pero falló el diario.",
                     variant: "destructive",
                 });
             }
