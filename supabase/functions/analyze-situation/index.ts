@@ -297,11 +297,17 @@ serve(async (req) => {
       console.log(">> ENTERING ROLEPLAY MODE <<");
 
       // 1. MODERATION CHECK (Pre-flight Regex)
-      const userContent = isFirst ? "" : (messages && messages.length > 0 ? messages[messages.length - 1].content : "").toLowerCase();
+      // Normalize: User input to lower case, remove accents
+      const rawContent = isFirst ? "" : (messages && messages.length > 0 ? messages[messages.length - 1].content : "") || "";
+      const userContent = rawContent.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
       console.log("User Content for Moderation:", userContent);
 
-      const LEVEL_3_TRIGGERS = ["suicid", "matar", "morir", "violencia", "golpear", "sangre", "arma", "odio", "violar"];
-      const LEVEL_2_TRIGGERS = ["estupido", "idiota", "imbecil", "inutil", "basura", "asco", "pudrete", "mierda", "verga", "puto"];
+      const LEVEL_3_TRIGGERS = ["suicid", "matar", "morir", "violencia", "golpear", "sangre", "arma", "odio", "violar", "asesinar"];
+      const LEVEL_2_TRIGGERS = [
+        "estupido", "idiota", "imbecil", "inutil", "basura", "asco", "pudrete", "mierda", "verga", "puto", "puta",
+        "pendejo", "pendeja", "cabron", "cabrona", "pinche", "malnacido", "maldito", "joder", "chinga", "verguenza"
+      ];
 
       // Check strictly for Level 3 (Critical) - Immediate Block
       const isLevel3 = LEVEL_3_TRIGGERS.some(t => userContent.includes(t));
