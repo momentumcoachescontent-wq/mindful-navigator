@@ -4,7 +4,7 @@ import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 // Input validation constants
@@ -223,7 +223,7 @@ async function checkRateLimits(supabaseClient: SupabaseClient, userId: string, i
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
@@ -329,7 +329,6 @@ Instrucciones:
           model: "google/gemini-3-flash-preview",
           messages: [
             { role: "system", content: systemPromptRoleplay },
-            // Include message history for context if needed, but be mindful of token limits
             ...(messages?.map((m: any) => ({
               role: m.role === 'simulator' ? 'assistant' : 'user',
               content: m.content
@@ -347,7 +346,9 @@ Instrucciones:
       }
 
       const data = await response.json();
+      console.log("Roleplay AI response keys:", Object.keys(data));
       const aiResponse = data.choices?.[0]?.message?.content || "...";
+      console.log("Roleplay AI content length:", aiResponse.length);
 
       return new Response(JSON.stringify({
         response: aiResponse

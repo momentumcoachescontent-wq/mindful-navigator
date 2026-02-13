@@ -121,12 +121,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
         throw new Error(detail.error || error.message || "Error desconocido");
       }
 
-      console.log("Edge Function Response Data [v2]:", data);
-
-      // DEBUG: Show raw data if response is missing
-      if (!data.response) {
-        alert("DEBUG SIMULATOR: " + JSON.stringify(data, null, 2));
-      }
+      console.log("Edge Function Response Data:", JSON.stringify(data));
 
       const simulatorMessage: Message = {
         role: "simulator",
@@ -160,8 +155,10 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
       // Generate feedback after last round
       generateFeedback([...messages, userMessage]);
     } else {
-      // Generate next simulator response
-      setTimeout(() => generateSimulatorResponse(), 500);
+      // Pass updated messages directly to avoid stale closure
+      setTimeout(() => {
+        generateSimulatorResponse(false);
+      }, 500);
     }
   };
 
