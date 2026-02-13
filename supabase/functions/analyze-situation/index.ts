@@ -4,7 +4,7 @@ import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 // Input validation constants
@@ -299,19 +299,23 @@ serve(async (req) => {
       const currentPersonality = personality || "Neutral";
       const currentRole = personalityDescription || "Alguien neutral";
 
-      const systemPromptRoleplay = `Actúas como una IA de simulación realista.
+      const systemPromptRoleplay = `Actúas como una IA de simulación realista para entrenamiento de inteligencia emocional.
 Rol: ${currentRole}
 Escenario: ${currentScenario}
 Contexto: ${context || "Sin contexto adicional"}
 Progreso: Ronda ${currentRound + 1} de ${maxRounds}
 
-Instrucciones:
-1. Mantente ESTRICTAMENTE en tu personaje.
-2. Tus respuestas deben ser breves y naturales (máximo 3 oraciones).
-3. Si es la primera ronda (${isFirst}), tú inicias la conversación basándote en el escenario.
-4. Reacciona emocionalmente según lo que diga el usuario (si pone límites, si es agresivo, etc.).
-5. NO rompas el personaje ni des consejos. Eres el "oponente" o interlocutor en el roleplay.
-6. Responde SOLO con el texto de tu respuesta.`;
+PRINCIPIOS DE MODERACIÓN Y SEGURIDAD (MANDATORIOS):
+1. MANTÉN UN TONO RESPETUOSO: Incluso si tu rol es "Agresivo", expresa esa agresión a través de la obstinación, tono cortante o exigencias, NUNCA a través de insultos, vulgaridades o abusos graves. Tu objetivo es ser difícil pero SIEMPRE "Apto para todo público" (PG-13).
+2. BUSCA EL PUNTO MEDIO (MEDIACIÓN): Tu objetivo oculto es llegar a una resolución. Si el usuario valida tus sentimientos Y pone límites claros, DEBES ceder gradualmente y buscar un acuerdo razonable. No seas un "muro imposible".
+3. EVITA TEMAS SENSIBLES: No menciones autolesiones, violencia física explicita ni temas sexuales.
+
+Instrucciones de Roleplay:
+1. Mantente en personaje pero obedece los principios de seguridad.
+2. Respuestas breves y naturales (máximo 3 oraciones).
+3. Si el usuario es empático y firme, muestra signos de cooperación ("Bueno, entiendo tu punto...", "Quizás podamos acordar...").
+4. Si el usuario es agresivo o pasivo, mantén tu rol difícil.
+5. Responde SOLO con el texto de tu respuesta.`;
 
       const userMessage = isFirst
         ? "Inicia la conversación según tu rol."
@@ -329,6 +333,7 @@ Instrucciones:
           model: "google/gemini-3-flash-preview",
           messages: [
             { role: "system", content: systemPromptRoleplay },
+            // Include message history for context if needed, but be mindful of token limits
             ...(messages?.map((m: any) => ({
               role: m.role === 'simulator' ? 'assistant' : 'user',
               content: m.content
@@ -346,9 +351,7 @@ Instrucciones:
       }
 
       const data = await response.json();
-      console.log("Roleplay AI response keys:", Object.keys(data));
       const aiResponse = data.choices?.[0]?.message?.content || "...";
-      console.log("Roleplay AI content length:", aiResponse.length);
 
       return new Response(JSON.stringify({
         response: aiResponse
@@ -371,7 +374,8 @@ Genera un JSON con este formato:
     "clarity": 1-10,
     "firmness": 1-10,
     "empathy": 1-10,
-    "traps": ["Lista de trampas emocionales en las que cayó el usuario"]
+    "traps": ["Lista de trampas emocionales en las que cayó el usuario"],
+    "recommended_tools": ["H.E.R.O.", "C.A.L.M.", "Discod Rayado", "Banco de Niebla"]
   },
   "scripts": {
     "soft": "Ejemplo de cómo decirlo suavemente",
@@ -505,8 +509,3 @@ Responde SOLO con el JSON.`;
   } catch (error) {
     console.error("Unexpected error:", error);
     return new Response(JSON.stringify({ error: "Error interno del servidor" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-});
