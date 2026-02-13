@@ -520,12 +520,20 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
       <div className="flex gap-3">
         <Button
           onClick={handleSaveAsActionPlan}
-          variant="default"
-          className="flex-1"
           disabled={isSaving}
+          className="flex-1" // Changed from w-full to flex-1 to match original layout
         >
-          {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Guardar plan
+          {isSaving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Guardando...
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 h-4 w-4" />
+              Guardar Plan (TEST)
+            </>
+          )}
         </Button>
         <Button onClick={handleRestart} variant="outline" className="flex-1">
           <RefreshCw className="w-4 h-4" />
