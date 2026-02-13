@@ -68,52 +68,38 @@ export function ProfessionalResources({ onBack, onClose }: ProfessionalResources
 
   const fetchResources = async () => {
     try {
-      const { data, error } = await supabase
-        .from('sos_resources')
-        .select('*')
-        .order('order_index');
+      // Hardcoded resources since sos_resources table doesn't exist yet
+      const hardcodedResources: ResourceItem[] = [
+        { id: "1", category: "Líneas de Crisis 24/7", name: "Línea de la Vida", description: "Atención 24 horas para personas en crisis emocional", phone: "800 911 2000", url: null, country: "México" },
+        { id: "2", category: "Líneas de Crisis 24/7", name: "Teléfono de la Esperanza", description: "Línea de atención emocional 24/7", phone: "717 003 717", url: null, country: "España" },
+        { id: "3", category: "Violencia de Género", name: "Línea Nacional contra la Violencia", description: "Asesoría jurídica y psicológica 24/7", phone: "800 108 4053", url: null, country: "México" },
+        { id: "4", category: "Violencia de Género", name: "016 - Violencia de Género", description: "Información y asesoramiento jurídico", phone: "016", url: null, country: "España" },
+        { id: "5", category: "Recursos en Línea", name: "Crisis Text Line", description: "Envía un mensaje para hablar con un consejero", phone: null, url: "https://www.crisistextline.org", country: null },
+      ];
 
-      if (error) throw error;
+      const groups: Record<string, ResourceItem[]> = {};
+      const categoryOrder: string[] = [];
 
-      if (data) {
-        // Group by category
-        const groups: Record<string, ResourceItem[]> = {};
+      hardcodedResources.forEach((item) => {
+        if (!groups[item.category]) {
+          groups[item.category] = [];
+          categoryOrder.push(item.category);
+        }
+        groups[item.category].push(item);
+      });
 
-        // Use a set to maintain the order of categories as they first appear (or we could have a separate category order table)
-        // For now, we'll respect the order in the config keys if we want specific ordering, 
-        // or just insertion order. The query is ordered by 'order_index', so items come in desired order.
-        const categoryOrder: string[] = [];
+      const displayData: CategoryGroup[] = categoryOrder.map(catName => {
+        const config = CATEGORY_CONFIG[catName] || CATEGORY_CONFIG["default"];
+        return {
+          category: catName,
+          icon: config.icon,
+          color: config.color,
+          bgColor: config.bgColor,
+          items: groups[catName]
+        };
+      });
 
-        data.forEach((item) => {
-          if (!groups[item.category]) {
-            groups[item.category] = [];
-            categoryOrder.push(item.category);
-          }
-          groups[item.category].push({
-            id: item.id,
-            category: item.category,
-            name: item.name,
-            description: item.description,
-            phone: item.phone,
-            url: item.url,
-            country: item.country
-          });
-        });
-
-        // Map to display structure
-        const displayData: CategoryGroup[] = categoryOrder.map(catName => {
-          const config = CATEGORY_CONFIG[catName] || CATEGORY_CONFIG["default"];
-          return {
-            category: catName,
-            icon: config.icon,
-            color: config.color,
-            bgColor: config.bgColor,
-            items: groups[catName]
-          };
-        });
-
-        setResources(displayData);
-      }
+      setResources(displayData);
     } catch (error) {
       console.error("Error fetching resources:", error);
     } finally {

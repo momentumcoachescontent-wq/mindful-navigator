@@ -55,7 +55,6 @@ const AdminDashboard = () => {
                 setIsAdmin(true);
 
                 // 2. Fetch Stats via RPC
-                // @ts-expect-error - RPC types not generated yet
                 const { data, error } = await supabase.rpc("get_admin_stats");
 
                 if (error) throw error;
