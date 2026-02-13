@@ -1,571 +1,544 @@
-import { useState, useEffect } from "react";
-import { ArrowRight, Check, RefreshCw, Save, Sparkles, MessageCircle, Loader2 } from "lucide-react";
+
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2, Send, Save, RefreshCw, MessageSquare } from "lucide-react";
+import { useAuth } from "@/components/AuthProvider";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-interface Scenario {
-  id: string;
-  label: string;
-  icon: string;
-}
+const SCENARIOS = [
+    { id: "boundaries", label: "Establecer límites con un familiar" },
+    { id: "breakup", label: "Terminar una relación tóxica" },
+    { id: "work", label: "Pedir un aumento o cambio en el trabajo" },
+    { id: "social", label: "Rechazar una invitación social" },
+    { id: "custom", label: "Escenario personalizado" },
+] as const;
 
-interface Personality {
-  id: string;
-  label: string;
-  description: string;
-}
-
-interface ConversationSimulatorProps {
-  content: {
-    scenarios: Scenario[];
-    personalities: Personality[];
-    rounds: number;
-    feedback_categories: string[];
-    script_versions: string[];
-  };
-}
+const PERSONALITIES = [
+    { id: "aggressive", label: "Agresivo/Dominante", description: "Interrumpe, alza la voz, usa intimidación" },
+    { id: "passive_aggressive", label: "Pasivo-Agresivo", description: "Usa sarcasmo, victimización, culpa sutil" },
+    { id: "victim", label: "Victimista", description: "Te hace sentir culpable, llora, dice que nadie lo quiere" },
+    { id: "dismissive", label: "Evitativo/Indiferente", description: "Ignora tus sentimientos, cambia de tema, minimiza" },
+    { id: "manipulative", label: "Manipulador", description: "Tergiversa tus palabras, gaslighting, usa tus miedos" },
+] as const;
 
 interface Message {
-  role: "user" | "simulator";
-  content: string;
+    role: "user" | "simulator";
+    content: string;
 }
 
 interface Feedback {
-  clarity: number;
-  firmness: number;
-  empathy: number;
-  traps: string[];
-  overall: string;
-  recommended_tools?: string[];
+    clarity: number;
+    firmness: number;
+    empathy: number;
+    traps: string[];
+    overall: string;
+    recommended_tools?: string[];
 }
 
 interface Script {
-  soft: string;
-  firm: string;
-  final_warning: string;
+    soft: string;
+    firm: string;
+    final_warning: string;
 }
 
-type SimulatorStep = "scenario" | "personality" | "context" | "chat" | "feedback" | "scripts";
+export const ConversationSimulator = () => {
+    const { session } = useAuth();
+    const { toast } = useToast();
+    const [step, setStep] = useState<"setup" | "simulation" | "feedback" | "scripts">("setup");
+    const [selectedScenario, setSelectedScenario] = useState<(typeof SCENARIOS)[number] | null>(null);
+    const [customScenario, setCustomScenario] = useState("");
+    const [selectedPersonality, setSelectedPersonality] = useState<(typeof PERSONALITIES)[number] | null>(null);
+    const [context, setContext] = useState("");
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [currentInput, setCurrentInput] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const [feedback, setFeedback] = useState<Feedback | null>(null);
+    const [scripts, setScripts] = useState<Script | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
-export function ConversationSimulator({ content }: ConversationSimulatorProps) {
-  const { session } = useAuth();
-  const { toast } = useToast();
+    const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const [step, setStep] = useState<SimulatorStep>("scenario");
-  const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
-  const [selectedPersonality, setSelectedPersonality] = useState<Personality | null>(null);
-  const [context, setContext] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [currentInput, setCurrentInput] = useState("");
-  const [currentRound, setCurrentRound] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [feedback, setFeedback] = useState<Feedback | null>(null);
-  const [scripts, setScripts] = useState<Script | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-
-  const maxRounds = content.rounds;
-
-  const handleScenarioSelect = (scenario: Scenario) => {
-    setSelectedScenario(scenario);
-    setStep("personality");
-  };
-
-  const handlePersonalitySelect = (personality: Personality) => {
-    setSelectedPersonality(personality);
-    setStep("context");
-  };
-
-  const handleContextSubmit = () => {
-    if (!context.trim()) return;
-    setStep("chat");
-    generateSimulatorResponse(true);
-  };
-
-  const generateSimulatorResponse = async (isFirst = false) => {
-    if (!selectedScenario || !selectedPersonality) return;
-
-    // Validate session before making authenticated request
-    if (!session?.access_token) {
-      toast({
-        title: "Sesión expirada",
-        description: "Por favor inicia sesión nuevamente.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("analyze-situation", {
-        body: {
-          situation: `Simulación de rol: ${selectedScenario.label} - ${context.substring(0, 50)}...`, // Dummy field for old code compatibility
-          mode: "roleplay",
-          scenario: selectedScenario.label,
-          personality: selectedPersonality.id,
-          personalityDescription: selectedPersonality.description,
-          context,
-          messages,
-          isFirst,
-          currentRound,
-          maxRounds,
-        },
-      });
-
-      if (error) {
-        // Try to parse detailed error from Edge Function response
-        // @ts-ignore
-        const detail = error.context ? await error.context.json().catch(() => ({})) : {};
-        throw new Error(detail.error || error.message || "Error desconocido");
-      }
-
-      console.log("Edge Function Response Data [v2]:", data);
-
-      // DEBUG: Show raw data if response is missing
-
-
-      const simulatorMessage: Message = {
-        role: "simulator",
-        content: data.response || (data.analysis ? `[Modo Análisis]: ${data.analysis.summary}` : "Error: Respuesta vacía del servidor"),
-      };
-      setMessages(prev => [...prev, simulatorMessage]);
-    } catch (error: any) {
-      console.error("Error generating response:", error);
-      toast({
-        title: "Error de Simulación",
-        description: error.message || "No se pudo generar la respuesta.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleUserMessage = () => {
-    if (!currentInput.trim()) return;
-
-    const userMessage: Message = {
-      role: "user",
-      content: currentInput,
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
-    setMessages(prev => [...prev, userMessage]);
-    setCurrentInput("");
-    setCurrentRound(prev => prev + 1);
 
-    if (currentRound + 1 >= maxRounds) {
-      // Generate feedback after last round
-      generateFeedback([...messages, userMessage]);
-    } else {
-      // Generate next simulator response
-      setTimeout(() => generateSimulatorResponse(), 500);
-    }
-  };
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
 
-  const generateFeedback = async (allMessages: Message[]) => {
-    // Validate session before making authenticated request
-    if (!session?.access_token) {
-      toast({
-        title: "Sesión expirada",
-        description: "Por favor inicia sesión nuevamente.",
-        variant: "destructive",
-      });
-      return;
-    }
+    const handleStartSimulation = async () => {
+        if (!selectedScenario || !selectedPersonality) return;
 
-    setIsLoading(true);
-    setStep("feedback");
+        setStep("simulation");
+        setMessages([]);
+        setIsLoading(true);
 
-    try {
-      const { data, error } = await supabase.functions.invoke("analyze-situation", {
-        body: {
-          situation: `Generación de feedback: ${context.substring(0, 50)}...`, // Dummy field
-          mode: "feedback",
-          scenario: selectedScenario?.label,
-          personality: selectedPersonality?.id,
-          context,
-          messages: allMessages,
-        },
-      });
+        try {
+            // Helper message for context
+            const initialContext = `Escenario: ${selectedScenario.id === 'custom' ? customScenario : selectedScenario.label}. 
+      Personalidad: ${selectedPersonality.label} (${selectedPersonality.description}).
+      Contexto extra: ${context}`;
 
-      if (error) {
-        // @ts-ignore
-        const detail = error.context ? await error.context.json().catch(() => ({})) : {};
-        throw new Error(detail.error || error.message);
-      }
+            // First call to initialize the "Opponent"
+            const { data, error } = await supabase.functions.invoke("analyze-situation", {
+                body: {
+                    situation: "START_SIMULATION", // Dummy
+                    mode: "roleplay",
+                    scenario: selectedScenario.id === 'custom' ? customScenario : selectedScenario.label,
+                    personality: selectedPersonality.id,
+                    personalityDescription: selectedPersonality.description,
+                    context: initialContext,
+                    isFirst: true,
+                    currentRound: 0,
+                    maxRounds: 5
+                },
+            });
 
-      setFeedback(data.feedback);
-      setScripts(data.scripts);
-    } catch (error: any) {
-      console.error("Error generating feedback:", error);
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo generar el feedback.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+            if (error) throw error;
 
-  const handleViewScripts = () => {
-    setStep("scripts");
-  };
-
-  const handleSaveAsActionPlan = async () => {
-    if (!session?.user?.id || !scripts) return;
-
-    setIsSaving(true);
-
-    // DEBUG AUDIT
-    alert(`AUDIT FEEDBACK: ${JSON.stringify(feedback, null, 2)}`);
-
-    try {
-      const { error } = await supabase.from("scanner_history").insert([{
-        user_id: session.user.id,
-        situation_text: `Simulación: ${selectedScenario?.label} con persona ${selectedPersonality?.label}`,
-        ai_response: JSON.stringify({ feedback, scripts }),
-        action_plan: JSON.parse(JSON.stringify({
-          context,
-          scripts,
-          savedAt: new Date().toISOString(),
-        })),
-        recommended_tools: ["conversation-simulator", ...(feedback?.recommended_tools || [])],
-      }]);
-
-      if (error) throw error;
-
-      // Also save to Journal
-      const { error: journalError } = await supabase.from("journal_entries").insert([{
-        user_id: session.user.id,
-        entry_type: "simulation_result",
-        content: `Simulación: ${selectedScenario?.label}\n\nFeedback General: ${feedback?.overall}`,
-        tags: ["simulación", "comunicación", ...(feedback?.recommended_tools || [])],
-        metadata: {
-          scenario: selectedScenario?.label,
-          personality: selectedPersonality?.label,
-          feedback: feedback,
-          scripts: scripts
+            if (data.response) {
+                setMessages([{ role: "simulator", content: data.response }]);
+            }
+        } catch (error: any) {
+            console.error("Error starting simulation:", error);
+            toast({
+                title: "Error",
+                description: "No se pudo iniciar la simulación. Verifica tu conexión.",
+                variant: "destructive",
+            });
+            setStep("setup"); // Go back
+        } finally {
+            setIsLoading(false);
         }
-      }]);
+    };
 
-      if (journalError) {
-        console.warn("Error saving to journal:", journalError);
-        toast({
-          title: "Error al guardar en Diario",
-          description: journalError.message || "No se pudo crear la entrada en el diario.",
-          variant: "destructive",
-        });
-      }
+    const handleSendMessage = async () => {
+        if (!currentInput.trim()) return;
 
-      toast({
-        title: "¡Guardado!",
-        description: "Tu plan de acción ha sido guardado exitosamente en tu historial y diario.",
-      });
-    } catch (error) {
-      console.error("Error saving:", error);
-      toast({
-        title: "Error",
-        description: "No se pudo guardar. Intenta de nuevo.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
+        const userMsg: Message = { role: "user", content: currentInput };
+        setMessages((prev) => [...prev, userMsg]);
+        setCurrentInput("");
+        setIsLoading(true);
+
+        try {
+            // Check if we should end simulation (e.g., after 5 rounds or if user says "stop")
+            // For now, let's keep it simple: Simulator responds
+
+            const { data, error } = await supabase.functions.invoke("analyze-situation", {
+                body: {
+                    situation: "CONTINUE_SIMULATION",
+                    mode: "roleplay",
+                    scenario: selectedScenario!.label,
+                    personality: selectedPersonality!.id,
+                    personalityDescription: selectedPersonality!.description,
+                    context: context,
+                    messages: [...messages, userMsg], // Send history
+                    isFirst: false,
+                    currentRound: Math.floor(messages.length / 2) + 1,
+                    maxRounds: 5
+                },
+            });
+
+            if (error) throw error;
+
+            const simulatorMessage: Message = {
+                role: "simulator",
+                content: data.response || (data.analysis ? `[Modo Análisis]: ${data.analysis.summary}` : "Error: Respuesta vacía del servidor"),
+            };
+
+            setMessages((prev) => [...prev, simulatorMessage]);
+
+        } catch (error: any) {
+            console.error("Error in simulation loop:", error);
+            toast({
+                title: "Error",
+                description: "Error al obtener respuesta del simulador.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleFinishSimulation = async () => {
+        setStep("feedback");
+        setIsLoading(true);
+
+        try {
+            const { data, error } = await supabase.functions.invoke("analyze-situation", {
+                body: {
+                    situation: "ANALYZE_FEEDBACK",
+                    mode: "feedback",
+                    scenario: selectedScenario!.label,
+                    context: context,
+                    messages: messages,
+                },
+            });
+
+            if (error) throw error;
+
+            if (data.feedback) {
+                setFeedback(data.feedback);
+            }
+            if (data.scripts) {
+                setScripts(data.scripts);
+            }
+
+        } catch (error: any) {
+            console.error("Error generating feedback:", error);
+            toast({
+                title: "Error",
+                description: error.message || "No se pudo generar el feedback.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleViewScripts = () => {
+        setStep("scripts");
+    };
+
+    const handleSaveAsActionPlan = async () => {
+        if (!session?.user?.id || !scripts) return;
+
+        setIsSaving(true);
+
+        try {
+            const { error } = await supabase.from("scanner_history").insert([{
+                user_id: session.user.id,
+                situation_text: `Simulación: ${selectedScenario?.label} con persona ${selectedPersonality?.label}`,
+                ai_response: JSON.stringify({ feedback, scripts }),
+                action_plan: JSON.parse(JSON.stringify({
+                    context,
+                    scripts,
+                    savedAt: new Date().toISOString(),
+                })),
+                recommended_tools: ["conversation-simulator", ...(feedback?.recommended_tools || [])],
+            }]);
+
+            if (error) throw error;
+
+            // Also save to Journal
+            const { error: journalError } = await supabase.from("journal_entries").insert([{
+                user_id: session.user.id,
+                entry_type: "simulation_result",
+                content: `Simulación: ${selectedScenario?.label}\n\nFeedback General: ${feedback?.overall}`,
+                tags: ["simulación", "comunicación", ...(feedback?.recommended_tools || [])],
+                metadata: {
+                    scenario: selectedScenario?.label,
+                    personality: selectedPersonality?.label,
+                    feedback: feedback,
+                    scripts: scripts
+                }
+            }]);
+
+            if (journalError) {
+                console.warn("Error saving to journal:", journalError);
+                toast({
+                    title: "Error al guardar en Diario",
+                    description: journalError.message || "No se pudo crear la entrada en el diario.",
+                    variant: "destructive",
+                });
+            }
+
+            toast({
+                title: "¡Guardado!",
+                description: "Tu plan de acción ha sido guardado exitosamente en tu historial y diario.",
+            });
+        } catch (error) {
+            console.error("Error saving:", error);
+            toast({
+                title: "Error",
+                description: "No se pudo guardar el plan.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleRestart = () => {
+        setStep("setup");
+        setMessages([]);
+        setFeedback(null);
+        setScripts(null);
+        setContext("");
+        setCustomScenario("");
+        setSelectedScenario(null);
+        setSelectedPersonality(null);
+    };
+
+    // --- RENDER ---
+
+    if (step === "setup") {
+        return (
+            <Card className="p-6 max-w-2xl mx-auto space-y-6">
+                <div className="space-y-2">
+                    <h2 className="text-2xl font-bold flex items-center gap-2">
+                        <MessageSquare className="w-6 h-6 text-primary" />
+                        Simulador de Conversaciones
+                    </h2>
+                    <p className="text-muted-foreground">
+                        Practica situaciones difíciles en un entorno seguro antes de enfrentarlas en la vida real.
+                    </p>
+                </div>
+
+                <div className="space-y-4">
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">1. Elige el escenario</label>
+                        <Select
+                            onValueChange={(val) => {
+                                const scen = SCENARIOS.find(s => s.id === val);
+                                setSelectedScenario(scen || null);
+                            }}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Selecciona una situación..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {SCENARIOS.map((s) => (
+                                    <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        {selectedScenario?.id === "custom" && (
+                            <Textarea
+                                placeholder="Describe tu situación específica..."
+                                value={customScenario}
+                                onChange={(e) => setCustomScenario(e.target.value)}
+                            />
+                        )}
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">2. Elige la personalidad del otro</label>
+                        <Select
+                            onValueChange={(val) => {
+                                const pers = PERSONALITIES.find(p => p.id === val);
+                                setSelectedPersonality(pers || null);
+                            }}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Selecciona un estilo de respuesta..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {PERSONALITIES.map((p) => (
+                                    <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        {selectedPersonality && (
+                            <p className="text-xs text-muted-foreground italic">
+                                {selectedPersonality.description}
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">3. Contexto adicional (Opcional)</label>
+                        <Textarea
+                            placeholder="¿Hay antecedentes? ¿Detalles importantes?"
+                            value={context}
+                            onChange={(e) => setContext(e.target.value)}
+                        />
+                    </div>
+
+                    <Button
+                        className="w-full"
+                        onClick={handleStartSimulation}
+                        disabled={!selectedScenario || !selectedPersonality || isLoading}
+                    >
+                        {isLoading ? <Loader2 className="animate-spin" /> : "Comenzar Simulación"}
+                    </Button>
+                </div>
+            </Card>
+        );
     }
-  };
 
-  const handleRestart = () => {
-    setStep("scenario");
-    setSelectedScenario(null);
-    setSelectedPersonality(null);
-    setContext("");
-    setMessages([]);
-    setCurrentInput("");
-    setCurrentRound(0);
-    setFeedback(null);
-    setScripts(null);
-  };
+    if (step === "simulation") {
+        return (
+            <Card className="flex flex-col h-[600px] max-w-2xl mx-auto">
+                <div className="p-4 border-b bg-muted/50 flex justify-between items-center">
+                    <div>
+                        <h3 className="font-semibold">{selectedScenario?.label}</h3>
+                        <p className="text-xs text-muted-foreground">vs. {selectedPersonality?.label}</p>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={handleFinishSimulation}>Terminar</Button>
+                </div>
 
-  const renderScenarioStep = () => (
-    <div className="space-y-4">
-      <div className="text-center space-y-2">
-        <h3 className="text-lg font-display font-bold text-foreground">
-          ¿Con quién necesitas practicar?
-        </h3>
-        <p className="text-sm text-muted-foreground">
-          Elige el tipo de relación para personalizar el entrenamiento
-        </p>
-      </div>
+                <ScrollArea className="flex-1 p-4">
+                    <div className="space-y-4">
+                        {messages.map((m, i) => (
+                            <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                                <div className={`max-w-[80%] p-3 rounded-lg ${m.role === "user"
+                                        ? "bg-primary text-primary-foreground"
+                                        : "bg-muted"
+                                    }`}>
+                                    {m.content}
+                                </div>
+                            </div>
+                        ))}
+                        {isLoading && (
+                            <div className="flex justify-start">
+                                <div className="bg-muted p-3 rounded-lg animate-pulse">
+                                    Escribiendo...
+                                </div>
+                            </div>
+                        )}
+                        <div ref={messagesEndRef} />
+                    </div>
+                </ScrollArea>
 
-      <div className="grid grid-cols-2 gap-3">
-        {content.scenarios.map((scenario) => (
-          <button
-            key={scenario.id}
-            onClick={() => handleScenarioSelect(scenario)}
-            className="bg-card p-4 rounded-xl border-2 border-transparent hover:border-primary/50 transition-all text-left shadow-soft"
-          >
-            <p className="font-medium text-foreground">{scenario.label}</p>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+                <div className="p-4 border-t flex gap-2">
+                    <Textarea
+                        value={currentInput}
+                        onChange={(e) => setCurrentInput(e.target.value)}
+                        placeholder="Escribe tu respuesta..."
+                        className="min-h-[50px]"
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSendMessage();
+                            }
+                        }}
+                    />
+                    <Button onClick={handleSendMessage} disabled={!currentInput.trim() || isLoading}>
+                        <Send className="w-4 h-4" />
+                    </Button>
+                </div>
+            </Card>
+        );
+    }
 
-  const renderPersonalityStep = () => (
-    <div className="space-y-4">
-      <div className="text-center space-y-2">
-        <h3 className="text-lg font-display font-bold text-foreground">
-          ¿Cómo es esta persona?
-        </h3>
-        <p className="text-sm text-muted-foreground">
-          Selecciona el patrón de comportamiento más común
-        </p>
-      </div>
+    if (step === "feedback") {
+        return (
+            <Card className="p-6 max-w-2xl mx-auto space-y-6 animate-in fade-in">
+                <h2 className="text-2xl font-bold text-center">Análisis de Desempeño</h2>
 
-      <div className="space-y-3">
-        {content.personalities.map((personality) => (
-          <button
-            key={personality.id}
-            onClick={() => handlePersonalitySelect(personality)}
-            className="w-full bg-card p-4 rounded-xl border-2 border-transparent hover:border-primary/50 transition-all text-left shadow-soft"
-          >
-            <p className="font-medium text-foreground">{personality.label}</p>
-            <p className="text-sm text-muted-foreground mt-1">{personality.description}</p>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+                {feedback ? (
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-3 gap-4 text-center">
+                            <div className="p-3 bg-muted rounded-lg">
+                                <div className="text-2xl font-bold text-primary">{feedback.clarity}/10</div>
+                                <div className="text-xs text-muted-foreground">Claridad</div>
+                            </div>
+                            <div className="p-3 bg-muted rounded-lg">
+                                <div className="text-2xl font-bold text-primary">{feedback.firmness}/10</div>
+                                <div className="text-xs text-muted-foreground">Firmeza</div>
+                            </div>
+                            <div className="p-3 bg-muted rounded-lg">
+                                <div className="text-2xl font-bold text-primary">{feedback.empathy}/10</div>
+                                <div className="text-xs text-muted-foreground">Empatía</div>
+                            </div>
+                        </div>
 
-  const renderContextStep = () => (
-    <div className="space-y-4">
-      <div className="text-center space-y-2">
-        <h3 className="text-lg font-display font-bold text-foreground">
-          Describe la situación
-        </h3>
-        <p className="text-sm text-muted-foreground">
-          ¿Qué límite quieres poner? ¿Cuál es el contexto?
-        </p>
-      </div>
+                        <div className="p-4 border rounded-lg bg-card">
+                            <h3 className="font-semibold mb-2">Comentario General</h3>
+                            <p>{feedback.overall}</p>
+                        </div>
 
-      <Textarea
-        value={context}
-        onChange={(e) => setContext(e.target.value)}
-        placeholder="Ej: Mi jefe me pide que trabaje los fines de semana sin compensación y quiero establecer un límite claro..."
-        className="min-h-[150px] bg-card border-border resize-none"
-      />
+                        {feedback.traps && feedback.traps.length > 0 && (
+                            <Alert variant="destructive">
+                                <AlertTitle>Trampas Emocionales Detectadas</AlertTitle>
+                                <AlertDescription>
+                                    <ul className="list-disc pl-4 mt-2">
+                                        {feedback.traps.map((trap, i) => (
+                                            <li key={i}>{trap}</li>
+                                        ))}
+                                    </ul>
+                                </AlertDescription>
+                            </Alert>
+                        )}
 
-      <Button
-        onClick={handleContextSubmit}
-        disabled={!context.trim()}
-        className="w-full"
-        variant="calm"
-      >
-        Comenzar simulación
-        <ArrowRight className="w-4 h-4" />
-      </Button>
-    </div>
-  );
+                        {feedback.recommended_tools && feedback.recommended_tools.length > 0 && (
+                            <div className="p-4 border rounded-lg bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900">
+                                <h3 className="font-semibold mb-2 text-green-800 dark:text-green-300">Herramientas Recomendadas</h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {feedback.recommended_tools.map((tool, i) => (
+                                        <span key={i} className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-md text-sm">
+                                            {tool}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
-  const renderChatStep = () => (
-    <div className="space-y-4">
-      <div className="bg-muted/50 rounded-xl p-3 text-center">
-        <p className="text-xs text-muted-foreground">
-          Ronda {currentRound + 1} de {maxRounds} • {selectedPersonality?.label}
-        </p>
-      </div>
+                        <Button onClick={handleViewScripts} className="w-full">
+                            Ver Mejores Respuestas
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="text-center py-10">
+                        <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+                        <p>Analizando conversación...</p>
+                    </div>
+                )}
+            </Card>
+        );
+    }
 
-      <div className="space-y-3 max-h-[300px] overflow-y-auto">
-        {messages.map((msg, index) => (
-          <div
-            key={index}
-            className={cn(
-              "p-3 rounded-2xl max-w-[85%] text-sm",
-              msg.role === "user"
-                ? "bg-primary text-primary-foreground ml-auto rounded-br-md"
-                : "bg-card text-foreground border border-border rounded-bl-md"
-            )}
-          >
-            {msg.content}
-          </div>
-        ))}
+    if (step === "scripts") {
+        return (
+            <Card className="p-6 max-w-2xl mx-auto space-y-6 animate-in slide-in-from-right">
+                <h2 className="text-2xl font-bold">Scripts Sugeridos</h2>
+                <p className="text-muted-foreground">Aquí tienes formas alternativas de manejar la situación:</p>
 
-        {isLoading && (
-          <div className="bg-card p-3 rounded-2xl rounded-bl-md max-w-[85%] flex items-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Escribiendo...</span>
-          </div>
-        )}
-      </div>
+                <div className="space-y-4">
+                    <div className="p-4 border rounded-lg">
+                        <h3 className="font-semibold text-green-600 mb-1">Respuesta Suave (Asertiva-Empática)</h3>
+                        <p className="italic">"{scripts?.soft}"</p>
+                    </div>
+                    <div className="p-4 border rounded-lg">
+                        <h3 className="font-semibold text-blue-600 mb-1">Respuesta Firme (Límites Claros)</h3>
+                        <p className="italic">"{scripts?.firm}"</p>
+                    </div>
+                    <div className="p-4 border rounded-lg">
+                        <h3 className="font-semibold text-red-600 mb-1">Ultimátum (Protección)</h3>
+                        <p className="italic">"{scripts?.final_warning}"</p>
+                    </div>
+                </div>
 
-      {currentRound < maxRounds && !isLoading && (
-        <div className="flex gap-2">
-          <Textarea
-            value={currentInput}
-            onChange={(e) => setCurrentInput(e.target.value)}
-            placeholder="Escribe tu respuesta..."
-            className="min-h-[80px] bg-card border-border resize-none flex-1"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleUserMessage();
-              }
-            }}
-          />
-          <Button
-            onClick={handleUserMessage}
-            disabled={!currentInput.trim()}
-            size="icon"
-            className="h-auto"
-          >
-            <ArrowRight className="w-5 h-5" />
-          </Button>
-        </div>
-      )}
-    </div>
-  );
+                <div className="flex gap-3">
+                    <Button
+                        onClick={handleSaveAsActionPlan}
+                        disabled={isSaving}
+                        className="flex-1" // Changed from w-full to flex-1 to match original layout
+                    >
+                        {isSaving ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Guardando...
+                            </>
+                        ) : (
+                            <>
+                                <Save className="mr-2 h-4 w-4" />
+                                Guardar plan
+                            </>
+                        )}
+                    </Button>
+                    <Button onClick={handleRestart} variant="outline" className="flex-1">
+                        <RefreshCw className="w-4 h-4" />
+                        Nueva Simulación
+                    </Button>
+                </div>
+            </Card>
+        )
+    }
 
-  const renderFeedbackStep = () => (
-    <div className="space-y-4">
-      {isLoading ? (
-        <div className="text-center py-12 space-y-4">
-          <Sparkles className="w-12 h-12 text-primary mx-auto animate-pulse" />
-          <p className="text-muted-foreground">Analizando tu conversación...</p>
-        </div>
-      ) : feedback ? (
-        <>
-          <div className="text-center space-y-2">
-            <h3 className="text-lg font-display font-bold text-foreground">
-              Tu Feedback
-            </h3>
-            <p className="text-sm text-muted-foreground">{feedback.overall}</p>
-          </div>
+    return null;
+};
 
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-card p-4 rounded-xl text-center shadow-soft">
-              <div className="text-2xl font-bold text-primary">{feedback.clarity}/10</div>
-              <p className="text-xs text-muted-foreground mt-1">Claridad</p>
-            </div>
-            <div className="bg-card p-4 rounded-xl text-center shadow-soft">
-              <div className="text-2xl font-bold text-secondary">{feedback.firmness}/10</div>
-              <p className="text-xs text-muted-foreground mt-1">Firmeza</p>
-            </div>
-            <div className="bg-card p-4 rounded-xl text-center shadow-soft">
-              <div className="text-2xl font-bold text-turquoise">{feedback.empathy}/10</div>
-              <p className="text-xs text-muted-foreground mt-1">Empatía</p>
-            </div>
-          </div>
-
-          {feedback.traps.length > 0 && (
-            <div className="bg-coral/10 border border-coral/20 rounded-xl p-4 space-y-2">
-              <p className="text-sm font-medium text-coral">⚠️ Trampas detectadas:</p>
-              <ul className="space-y-1">
-                {feedback.traps.map((trap, i) => (
-                  <li key={i} className="text-sm text-foreground">• {trap}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <Button onClick={handleViewScripts} variant="calm" className="w-full">
-            Ver scripts sugeridos
-            <ArrowRight className="w-4 h-4" />
-          </Button>
-        </>
-      ) : null}
-    </div>
-  );
-
-  const renderScriptsStep = () => (
-    <div className="space-y-4">
-      <div className="text-center space-y-2">
-        <h3 className="text-lg font-display font-bold text-foreground">
-          Tus Scripts
-        </h3>
-        <p className="text-sm text-muted-foreground">
-          3 versiones según el nivel de firmeza que necesites
-        </p>
-      </div>
-
-      {scripts && (
-        <div className="space-y-3">
-          <div className="bg-card p-4 rounded-xl shadow-soft space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-turquoise"></span>
-              <p className="text-sm font-medium text-foreground">Versión suave</p>
-            </div>
-            <p className="text-sm text-muted-foreground">{scripts.soft}</p>
-          </div>
-
-          <div className="bg-card p-4 rounded-xl shadow-soft space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-warning"></span>
-              <p className="text-sm font-medium text-foreground">Versión firme</p>
-            </div>
-            <p className="text-sm text-muted-foreground">{scripts.firm}</p>
-          </div>
-
-          <div className="bg-card p-4 rounded-xl shadow-soft space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-coral"></span>
-              <p className="text-sm font-medium text-foreground">Última advertencia</p>
-            </div>
-            <p className="text-sm text-muted-foreground">{scripts.final_warning}</p>
-          </div>
-        </div>
-      )}
-
-      <div className="flex gap-3">
-        <Button
-          onClick={handleSaveAsActionPlan}
-          disabled={isSaving}
-          className="flex-1" // Changed from w-full to flex-1 to match original layout
-        >
-          {isSaving ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Guardando...
-            </>
-          ) : (
-            <>
-              <Save className="mr-2 h-4 w-4" />
-              Guardar Plan (TEST)
-            </>
-          )}
-        </Button>
-        <Button onClick={handleRestart} variant="outline" className="flex-1">
-          <RefreshCw className="w-4 h-4" />
-          Nueva simulación
-        </Button>
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="space-y-6">
-      {/* Progress indicator */}
-      <div className="flex items-center justify-center gap-2">
-        {["scenario", "personality", "context", "chat", "feedback", "scripts"].map((s, i) => (
-          <div
-            key={s}
-            className={cn(
-              "w-2 h-2 rounded-full transition-all",
-              step === s ? "w-6 bg-primary" :
-                ["scenario", "personality", "context", "chat", "feedback", "scripts"].indexOf(step) > i
-                  ? "bg-primary/50" : "bg-muted"
-            )}
-          />
-        ))}
-      </div>
-
-      {step === "scenario" && renderScenarioStep()}
-      {step === "personality" && renderPersonalityStep()}
-      {step === "context" && renderContextStep()}
-      {step === "chat" && renderChatStep()}
-      {step === "feedback" && renderFeedbackStep()}
-      {step === "scripts" && renderScriptsStep()}
-    </div>
-  );
-}
