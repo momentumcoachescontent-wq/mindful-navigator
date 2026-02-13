@@ -39,11 +39,10 @@ const Index = () => {
    */
   const getRandomReflection = async () => {
     try {
-      console.log("Fetching reflections...");
+      console.log("Fetching quotes from new table...");
       const { data: reflections, error } = await supabase
-        .from("daily_reflections")
-        .select("content, author")
-        .eq("is_active", true);
+        .from("daily_quotes" as any) // Cast as any because types.ts isn't updated yet
+        .select("content, author");
 
       if (error) {
         console.error("Supabase Error:", error);
