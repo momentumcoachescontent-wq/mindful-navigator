@@ -394,11 +394,56 @@ Responde SOLO con el texto de tu respuesta (Rol o Mediación).`;
         throw new Error(`AI Service Error: ${response.status}`);
       }
 
+      console.log(`Roleplay request: Round ${currentRound}, First: ${isFirst}, ToxicFlag: ${hasToxicKeywords}`);
+
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            { role: "system", content: systemPromptRoleplay },
+            // Include message history for context if needed, but be mindful of token limits
+            ...(messages?.map((m: any) => ({
+              role: m.role === 'simulator' ? 'assistant' : 'user',
+              content: m.content
+            })) || []),
+            { role: "user", content: userMessage }
+          ],
+          temperature: 0.7,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Lovable API Error (Roleplay):", errorText);
+        throw new Error(`AI Service Error: ${response.status}`);
+      }
+
       const data = await response.json();
-      const aiResponse = data.choices?.[0]?.message?.content || "...";
+      let aiResponse = data.choices?.[0]?.message?.content || "...";
+
+      // 8. OUTPUT MODERATION (Safety Net)
+      // Check if AI generated something toxic despite instructions
+      const aiContentNormalized = aiResponse.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const outputHasToxic = LEVEL_2_TRIGGERS.some(t => aiContentNormalized.includes(t)) || LEVEL_3_TRIGGERS.some(t => aiContentNormalized.includes(t));
+
+      if (outputHasToxic) {
+        console.warn("Output Moderation Triggered! Blocking AI response.");
+        aiResponse = "✋ [SISTEMA]: La respuesta generada por la IA ha sido bloqueada porque infringía las normas de respeto. Por favor, intenta reformular tu último mensaje.";
+      }
 
       return new Response(JSON.stringify({
-        response: aiResponse
+        response: aiResponse,
+        debug_moderation: {
+          scanned_content: userContent,
+          is_level_3: isLevel3,
+          is_level_2: hasToxicKeywords,
+          output_filtered: outputHasToxic
+        }
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
