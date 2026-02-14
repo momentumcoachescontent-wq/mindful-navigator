@@ -279,6 +279,7 @@ export function useDailyChallenge() {
       const { error: victoryError } = await supabase.from('daily_victories').insert([{
         user_id: user.id,
         victory_text: victoryText,
+        content: victoryText, // Added to satisfy NOT NULL constraint
         victory_date: today,
         xp_bonus: 10,
       }] as never);
