@@ -270,20 +270,30 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
     setIsSaving(true);
 
     try {
-      // Save to dedicated conversation_simulations table
-      const { error, data } = await supabase.from("conversation_simulations").insert({
-        user_id: session.user.id,
+      // Save to journal_entries with JSON content
+      const contentData = {
+        type: "simulation_result",
         scenario: selectedScenario?.label || "",
         personality: selectedPersonality?.label || "",
-        clarity_score: feedback?.clarity || 0,
-        firmness_score: feedback?.firmness || 0,
-        empathy_score: feedback?.empathy || 0,
-        feedback_text: feedback?.overall || "",
+        evaluation: {
+          clarity: feedback?.clarity || 0,
+          firmness: feedback?.firmness || 0,
+          empathy: feedback?.empathy || 0
+        },
+        feedback: feedback?.overall || "",
         traps: feedback?.traps || [],
         recommended_tools: feedback?.recommended_tools || [],
-        script_soft: scripts.soft,
-        script_firm: scripts.firm,
-        script_final_warning: scripts.final_warning
+        scripts: {
+          soft: scripts.soft,
+          firm: scripts.firm,
+          final_warning: scripts.final_warning
+        }
+      };
+
+      const { error, data } = await supabase.from("journal_entries").insert({
+        user_id: session.user.id,
+        entry_type: "simulation_result",
+        content: JSON.stringify(contentData)
       }).select();
 
       if (error) {
