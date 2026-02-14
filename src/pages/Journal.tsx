@@ -129,10 +129,15 @@ const Journal = () => {
       return "Ver detalles de la simulación";
     }
 
+    // For other entry types, ensure content is a string
     if (!entry.content) return "Sin contenido";
-    return entry.content.length > 80
-      ? entry.content.substring(0, 80) + "..."
-      : entry.content;
+
+    // If content is not a string (e.g., JSON object), stringify it
+    const contentStr = typeof entry.content === 'string' ? entry.content : JSON.stringify(entry.content);
+
+    return contentStr.length > 80
+      ? contentStr.substring(0, 80) + "..."
+      : contentStr;
   };
 
   return (
