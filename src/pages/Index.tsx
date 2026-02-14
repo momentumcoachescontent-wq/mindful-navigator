@@ -135,6 +135,28 @@ const Index = () => {
           currentStreak: profile.streak_count || 0,
         }));
         if (profile.display_name) setUserName(profile.display_name);
+      } else {
+        // Profile doesn't exist - create it automatically
+        console.log("Profile not found, creating new profile...");
+        const { error: insertError } = await supabase
+          .from("profiles")
+          .insert({
+            id: user.id,
+            user_id: user.id,
+            display_name: user.email?.split('@')[0] || 'Usuario',
+            streak_count: 0,
+            last_check_in_date: null,
+            is_premium: false,
+            is_admin: false
+          });
+
+        if (insertError) {
+          console.error("Error creating profile:", insertError);
+        } else {
+          console.log("Profile created successfully!");
+          // Reload profile data
+          await loadProfileData();
+        }
       }
     } catch (error) {
       console.error("Error loading profile:", error);
