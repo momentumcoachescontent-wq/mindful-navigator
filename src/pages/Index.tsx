@@ -272,10 +272,8 @@ const Index = () => {
           thisWeek={streakData.thisWeek}
         />
 
-        {/* Mood Check-in - Hides after completion to save space */}
-        {!hasCheckedIn && (
-          <MoodCheckIn onComplete={handleCheckIn} />
-        )}
+        {/* Mood Check-in - Always visible for debugging */}
+        <MoodCheckIn onComplete={handleCheckIn} />
 
         {/* Daily Challenge - Main Feature */}
         <DailyChallenge />
