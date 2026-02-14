@@ -283,12 +283,12 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
         entry_type: "simulation_result",
         content: `Simulación: ${selectedScenario?.label}\n\nFeedback General: ${feedback?.overall}`,
         tags: ["simulación", "comunicación", ...(feedback?.recommended_tools || [])],
-        metadata: {
+        metadata: JSON.parse(JSON.stringify({
           scenario: selectedScenario?.label,
           personality: selectedPersonality?.label,
           feedback: feedback,
           scripts: scripts
-        }
+        }))
       }]);
 
       if (journalError) {
@@ -504,6 +504,17 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
               <ul className="space-y-1">
                 {feedback.traps.map((trap, i) => (
                   <li key={i} className="text-sm text-foreground">• {trap}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {feedback.recommended_tools && feedback.recommended_tools.length > 0 && (
+            <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 space-y-2">
+              <p className="text-sm font-medium text-primary">🛠️ Herramientas recomendadas:</p>
+              <ul className="space-y-1">
+                {feedback.recommended_tools.map((tool, i) => (
+                  <li key={i} className="text-sm text-foreground">• {tool}</li>
                 ))}
               </ul>
             </div>
