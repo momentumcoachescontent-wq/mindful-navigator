@@ -263,29 +263,30 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
     setIsSaving(true);
 
     try {
-      // Simplified save - only essential fields
-      const contentText = `🎭 Simulación: ${selectedScenario?.label}
-      
-📊 Evaluación:
-• Claridad: ${feedback?.clarity || 0}/10
-• Firmeza: ${feedback?.firmness || 0}/10
-• Empatía: ${feedback?.empathy || 0}/10
-
-💬 Feedback: ${feedback?.overall || 'Sin análisis'}
-
-${feedback?.traps && feedback.traps.length > 0 ? `⚠️ Trampas detectadas:\n${feedback.traps.map(t => `• ${t}`).join('\n')}` : ''}
-
-${feedback?.recommended_tools && feedback.recommended_tools.length > 0 ? `🛠️ Herramientas recomendadas:\n${feedback.recommended_tools.map(t => `• ${t}`).join('\n')}` : ''}
-
-📝 Scripts sugeridos:
-• Suave: ${scripts.soft}
-• Firme: ${scripts.firm}
-• Última advertencia: ${scripts.final_warning}`;
+      // Content as JSON object (column is jsonb type)
+      const contentObject = {
+        type: "simulation_result",
+        scenario: selectedScenario?.label || "",
+        personality: selectedPersonality?.label || "",
+        evaluation: {
+          clarity: feedback?.clarity || 0,
+          firmness: feedback?.firmness || 0,
+          empathy: feedback?.empathy || 0
+        },
+        feedback: feedback?.overall || "",
+        traps: feedback?.traps || [],
+        recommended_tools: feedback?.recommended_tools || [],
+        scripts: {
+          soft: scripts.soft,
+          firm: scripts.firm,
+          final_warning: scripts.final_warning
+        }
+      };
 
       const { error: journalError } = await supabase.from("journal_entries").insert({
         user_id: session.user.id,
         entry_type: "simulation_result",
-        content: contentText
+        content: contentObject as any // jsonb column accepts objects
       });
 
       if (journalError) {
