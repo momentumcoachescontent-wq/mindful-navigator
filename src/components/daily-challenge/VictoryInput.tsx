@@ -16,14 +16,17 @@ export function VictoryInput({ onSave }: VictoryInputProps) {
 
   const handleSave = async () => {
     if (!victoryText.trim() || isSaving) return;
-    
+
     setIsSaving(true);
     const result = await onSave(victoryText.trim());
     setIsSaving(false);
-    
+
     if (result.success) {
       setSaved(true);
       setVictoryText('');
+    } else {
+      // We assume the hook handles the specific toast, but if not:
+      console.error("Victory save failed");
     }
   };
 
@@ -40,9 +43,9 @@ export function VictoryInput({ onSave }: VictoryInputProps) {
           <p className="text-sm text-muted-foreground">
             +10 XP bonus por registrar tu victoria
           </p>
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             className="mt-4"
             onClick={() => setSaved(false)}
           >
@@ -73,8 +76,8 @@ export function VictoryInput({ onSave }: VictoryInputProps) {
           <span className="text-xs text-muted-foreground">
             {victoryText.length}/280 caracteres
           </span>
-          <Button 
-            size="sm" 
+          <Button
+            size="sm"
             onClick={handleSave}
             disabled={!victoryText.trim() || isSaving}
             className="gap-1"

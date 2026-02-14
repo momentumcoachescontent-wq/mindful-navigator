@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -269,12 +270,12 @@ export function useDailyChallenge() {
 
   // Save daily victory
   const saveVictory = useCallback(async (victoryText: string) => {
-    if (!user) return { success: false };
+    if (!user) return { success: false, error: 'Inicia sesión para guardar' };
 
     try {
       const today = getLocalDateString();
 
-      // 1. Save to daily_victories table (for logic/XP)
+      // 1. Save to daily_victories table
       const { error: victoryError } = await supabase.from('daily_victories').insert([{
         user_id: user.id,
         victory_text: victoryText,
@@ -282,10 +283,13 @@ export function useDailyChallenge() {
         xp_bonus: 10,
       }] as never);
 
-      if (victoryError) throw victoryError;
+      if (victoryError) {
+        console.error('Error in daily_victories:', victoryError);
+        toast({ title: "Error", description: "No se pudo guardar en victorias: " + victoryError.message, variant: "destructive" });
+        return { success: false, error: victoryError.message };
+      }
 
-      // 2. Save to journal_entries table (for the Journal UI)
-      // We format content as JSON so the Journal page can parse it correctly
+      // 2. Save to journal_entries table
       const journalContent = {
         title: "Victoria: " + victoryText.substring(0, 30) + (victoryText.length > 30 ? "..." : ""),
         text: victoryText,
@@ -306,16 +310,24 @@ export function useDailyChallenge() {
 
       // 3. Add XP bonus
       const newXP = progress.totalXP + 10;
-      await supabase
+      const { error: progressError } = await supabase
         .from('user_progress')
         .update({ total_xp: newXP })
         .eq('user_id', user.id);
 
-      setProgress(prev => ({ ...prev, totalXP: newXP }));
+      if (progressError) {
+        console.error('Error updating progress XP:', progressError);
+        toast({ title: "Aviso", description: "Victoria guardada, pero hubo un problema al actualizar tu XP.", variant: "default" });
+      } else {
+        setProgress(prev => ({ ...prev, totalXP: newXP }));
+      }
+
+      toast({ title: "¡Victoria registrada!", description: "Se ha guardado en tu diario y has ganado 10 XP." });
       return { success: true };
     } catch (error) {
-      console.error('Error saving victory:', error);
-      return { success: false };
+      console.error('Unexpected error saving victory:', error);
+      toast({ title: "Error inesperado", description: "Hubo un error al procesar tu victoria.", variant: "destructive" });
+      return { success: false, error: (error as Error).message };
     }
   }, [user, progress.totalXP]);
 
