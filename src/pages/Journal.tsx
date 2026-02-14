@@ -68,19 +68,39 @@ const Journal = () => {
   }, [user]);
 
   const filteredEntries = entries.filter((entry) => {
-    // Always show simulation results
-    if (entry.entry_type === "simulation_result") return true;
-
-    // Filter by entry type
-    if (activeTab === "victories" && entry.entry_type !== "victory") return false;
-    if (activeTab === "pending") return false; // No pending support without metadata
-
-    // Filter out empty entries for other types
+    // Filter out empty entries first
     if (!entry.content) return false;
-
-    // Check if content is string before calling trim()
     if (typeof entry.content === 'string' && entry.content.trim().length === 0) return false;
-
+    
+    // Always show simulation results in "entries" tab only
+    if (entry.entry_type === "simulation_result") {
+      return activeTab === "entries";
+    }
+    
+    // Filter by entry type for victories
+    if (activeTab === "victories" && entry.entry_type !== "victory") return false;
+    
+    // Parse JSON content to access tags and follow_up
+    let contentData: any = null;
+    try {
+      contentData = typeof entry.content === 'string' ? JSON.parse(entry.content) : entry.content;
+    } catch (e) {
+      // If parsing fails, only show in "entries" tab
+      return activeTab === "entries";
+    }
+    
+    // Filter by pending/follow-up status
+    if (activeTab === "pending") {
+      // Only show entries marked for follow-up
+      if (!contentData?.follow_up) return false;
+    }
+    
+    // Filter by selected tag
+    if (selectedTag) {
+      const entryTags = contentData?.tags || [];
+      if (!entryTags.includes(selectedTag)) return false;
+    }
+    
     return true;
   });
 
