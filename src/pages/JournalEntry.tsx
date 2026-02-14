@@ -141,29 +141,6 @@ const JournalEntry = () => {
         setMood(data.mood_score || 3);
         setIsVictory(data.entry_type === "victory");
 
-          if (data.entry_type === "scanner_result") {
-            setIsScannerEntry(true);
-            if (meta.action_plan) setActionPlan(meta.action_plan as ActionStep[]);
-            if (meta.recommended_tools) setTools(meta.recommended_tools as RecommendedTool[]);
-
-            // Restore progress state
-            if (meta.progress) {
-              const progress = meta.progress as { actionPlan?: boolean[], tools?: boolean[] };
-              if (progress.actionPlan && Array.isArray(meta.action_plan)) {
-                setActionPlan((prev) => (meta.action_plan as ActionStep[]).map((item, index) => ({
-                  ...item,
-                  completed: progress.actionPlan?.[index] || false
-                })));
-              }
-              if (progress.tools && Array.isArray(meta.recommended_tools)) {
-                setTools((prev) => (meta.recommended_tools as RecommendedTool[]).map((item, index) => ({
-                  ...item,
-                  completed: progress.tools?.[index] || false
-                })));
-              }
-            }
-          }
-        }
       }
     } catch (error) {
       console.error("Error loading entry:", error);
