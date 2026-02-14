@@ -68,7 +68,10 @@ const Journal = () => {
   }, [user]);
 
   const filteredEntries = entries.filter((entry) => {
-    // Filter out empty/broken entries
+    // Always show simulation results
+    if (entry.entry_type === "simulation_result") return true;
+
+    // Filter out empty/broken entries for other types
     const hasContent = entry.content && entry.content.trim().length > 0;
     const hasTitle = entry.metadata && typeof entry.metadata === 'object' && 'title' in entry.metadata && (entry.metadata.title as string).trim().length > 0;
 
@@ -84,6 +87,23 @@ const Journal = () => {
   });
 
   const getTitle = (entry: JournalEntry) => {
+    // Handle simulation results
+    if (entry.entry_type === "simulation_result") {
+      try {
+        const content = typeof entry.content === 'string' ? JSON.parse(entry.content) : entry.content;
+        if (content.scenario) {
+          return `🎭 Simulación: ${content.scenario}`;
+        }
+      } catch (e) {
+        // If parsing fails, check if it's a text format
+        if (typeof entry.content === 'string' && entry.content.includes('Simulación:')) {
+          const match = entry.content.match(/🎭 Simulación: ([^\n]+)/);
+          if (match) return match[0];
+        }
+      }
+      return "🎭 Simulación de Conversación";
+    }
+
     if (entry.metadata && typeof entry.metadata === 'object' && 'title' in entry.metadata) {
       return (entry.metadata.title as string) || "Sin título";
     }
@@ -91,6 +111,28 @@ const Journal = () => {
   };
 
   const getPreview = (entry: JournalEntry) => {
+    // Handle simulation results
+    if (entry.entry_type === "simulation_result") {
+      try {
+        const content = typeof entry.content === 'string' ? JSON.parse(entry.content) : entry.content;
+        if (content.feedback) {
+          return content.feedback.substring(0, 80) + "...";
+        }
+        if (content.evaluation) {
+          return `Claridad: ${content.evaluation.clarity}/10 • Firmeza: ${content.evaluation.firmness}/10 • Empatía: ${content.evaluation.empathy}/10`;
+        }
+      } catch (e) {
+        // If parsing fails, try to extract from text format
+        if (typeof entry.content === 'string') {
+          const feedbackMatch = entry.content.match(/💬 Feedback: ([^\n]+)/);
+          if (feedbackMatch) {
+            return feedbackMatch[1].substring(0, 80) + "...";
+          }
+        }
+      }
+      return "Ver detalles de la simulación";
+    }
+
     if (!entry.content) return "Sin contenido";
     return entry.content.length > 80
       ? entry.content.substring(0, 80) + "..."
