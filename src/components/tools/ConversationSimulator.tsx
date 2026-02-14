@@ -258,7 +258,15 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
   };
 
   const handleSaveAsActionPlan = async () => {
-    if (!session?.user?.id || !scripts) return;
+    console.log("=== SAVE DEBUG START ===");
+    console.log("session:", session);
+    console.log("session?.user?.id:", session?.user?.id);
+    console.log("scripts:", scripts);
+
+    if (!session?.user?.id || !scripts) {
+      console.log("EARLY RETURN: Missing session or scripts");
+      return;
+    }
 
     setIsSaving(true);
 
@@ -283,11 +291,17 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
         }
       };
 
-      const { error: journalError } = await supabase.from("journal_entries").insert({
+      console.log("contentObject:", contentObject);
+      console.log("About to insert with user_id:", session.user.id);
+
+      const { error: journalError, data } = await supabase.from("journal_entries").insert({
         user_id: session.user.id,
         entry_type: "simulation_result",
         content: contentObject as any // jsonb column accepts objects
-      });
+      }).select();
+
+      console.log("Insert result - data:", data);
+      console.log("Insert result - error:", journalError);
 
       if (journalError) {
         console.error("Error saving to journal:", journalError);
