@@ -99,10 +99,8 @@ const Journal = () => {
       return "🎭 Simulación de Conversación";
     }
 
-    if (entry.metadata && typeof entry.metadata === 'object' && 'title' in entry.metadata) {
-      return (entry.metadata.title as string) || "Sin título";
-    }
-    return "Sin título";
+    // For other entry types, use entry_type as title
+    return entry.entry_type === "victory" ? "🏆 Victoria" : "📝 Entrada de Diario";
   };
 
   const getPreview = (entry: JournalEntry) => {
