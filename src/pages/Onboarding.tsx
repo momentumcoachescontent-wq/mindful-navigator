@@ -75,9 +75,12 @@ const Onboarding = () => {
     setIsLoading(true);
 
     try {
+      console.log("Completing onboarding for user:", user.id);
       const { error } = await supabase
         .from('profiles')
-        .update({
+        .upsert({
+          id: user.id,
+          user_id: user.id,
           display_name: name,
           age_range: ageRange,
           gender: gender,
@@ -85,14 +88,18 @@ const Onboarding = () => {
           goals: selectedGoals,
           onboarding_completed: true,
           updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', user.id);
+        });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase upsert error:", error);
+        throw error;
+      }
 
+      console.log("Onboarding completed successfully");
       toast.success("¡Perfil creado con éxito!");
       navigate("/");
     } catch (error) {
+      console.error("Caught error in handleComplete:", error);
       toast.error("Error al guardar perfil: " + (error as Error).message);
     } finally {
       setIsLoading(false);
