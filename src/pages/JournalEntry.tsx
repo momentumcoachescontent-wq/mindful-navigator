@@ -181,24 +181,26 @@ const JournalEntry = () => {
 
     setIsSaving(true);
     try {
+      // Store all data in content as JSON since metadata/tags columns don't exist
+      const contentData = {
+        text: content.trim(),
+        title: title.trim(),
+        follow_up: isFollowUp,
+        parent_id: parentEntryId,
+        tags: selectedTags, // Store tags within the content JSON
+        action_plan: actionPlan,
+        recommended_tools: tools,
+        progress: {
+          actionPlan: actionPlan.map(a => !!a.completed),
+          tools: tools.map(t => !!t.completed)
+        }
+      };
+
       const entryData = {
         user_id: user.id,
-        content: content.trim(),
+        content: JSON.stringify(contentData),
         entry_type: isVictory ? "victory" : "daily",
         mood_score: mood,
-        tags: selectedTags,
-        metadata: {
-          title: title.trim(),
-          follow_up: isFollowUp,
-          parent_id: parentEntryId,
-          // Persist interactive state
-          action_plan: actionPlan as any,
-          recommended_tools: tools as any,
-          progress: {
-            actionPlan: actionPlan.map(a => !!a.completed),
-            tools: tools.map(t => !!t.completed)
-          }
-        },
       };
 
       if (id && id !== "new") {
