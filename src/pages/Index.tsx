@@ -126,7 +126,9 @@ const Index = () => {
         .maybeSingle();
 
       if (profile) {
-        const today = new Date().toISOString().split("T")[0];
+        // Use local date instead of UTC for check-in comparison
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         setHasCheckedIn(profile.last_check_in_date === today);
         setStreakData((prev) => ({
           ...prev,
