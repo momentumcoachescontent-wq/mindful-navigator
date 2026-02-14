@@ -285,8 +285,7 @@ ${feedback?.recommended_tools && feedback.recommended_tools.length > 0 ? `🛠�
       const { error: journalError } = await supabase.from("journal_entries").insert({
         user_id: session.user.id,
         entry_type: "simulation_result",
-        content: contentText,
-        tags: ["simulación", "comunicación"]
+        content: contentText
       });
 
       if (journalError) {
