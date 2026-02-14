@@ -273,14 +273,38 @@ export function useDailyChallenge() {
 
     try {
       const today = getLocalDateString();
-      await supabase.from('daily_victories').insert([{
+
+      // 1. Save to daily_victories table (for logic/XP)
+      const { error: victoryError } = await supabase.from('daily_victories').insert([{
         user_id: user.id,
         victory_text: victoryText,
         victory_date: today,
         xp_bonus: 10,
       }] as never);
 
-      // Add XP bonus
+      if (victoryError) throw victoryError;
+
+      // 2. Save to journal_entries table (for the Journal UI)
+      // We format content as JSON so the Journal page can parse it correctly
+      const journalContent = {
+        title: "Victoria: " + victoryText.substring(0, 30) + (victoryText.length > 30 ? "..." : ""),
+        text: victoryText,
+        tags: ["Victoria"]
+      };
+
+      const { error: journalError } = await supabase.from('journal_entries').insert([{
+        user_id: user.id,
+        content: JSON.stringify(journalContent),
+        entry_type: 'victory',
+        tags: ['Victoria']
+      }] as never);
+
+      if (journalError) {
+        console.error('Error saving victory to journal:', journalError);
+        // We don't throw here to avoid blocking the XP flow if journal fails
+      }
+
+      // 3. Add XP bonus
       const newXP = progress.totalXP + 10;
       await supabase
         .from('user_progress')
