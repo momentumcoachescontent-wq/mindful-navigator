@@ -212,7 +212,7 @@ const Index = () => {
         }
       }
 
-      await supabase
+      const { error: updateError } = await supabase
         .from("profiles")
         .update({
           streak_count: newStreak,
@@ -220,8 +220,12 @@ const Index = () => {
         })
         .eq("user_id", user.id);
 
+      if (updateError) throw updateError;
+
       setStreakData((prev) => ({ ...prev, currentStreak: newStreak }));
       setHasCheckedIn(true);
+
+      console.log("Check-in successful, streak updated to:", newStreak);
 
       toast({
         title: "¡Check-in guardado!",

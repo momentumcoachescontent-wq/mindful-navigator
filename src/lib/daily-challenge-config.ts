@@ -176,7 +176,11 @@ function seededRandom(seed: number) {
 
 // Generate a seed from the date string (YYYY-MM-DD)
 function getSeedFromDate(date: Date): number {
-  const str = date.toISOString().split('T')[0].replace(/-/g, '');
+  // Use local date components instead of toISOString (UTC)
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const str = `${year}${month}${day}`;
   return parseInt(str, 10);
 }
 

@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  getTodaysMissions, 
-  getLevelFromXP, 
+import {
+  getTodaysMissions,
+  getLevelFromXP,
   calculateXP,
   PERFECT_DAY_BONUS,
   ACHIEVEMENTS,
-  type Mission 
+  type Mission
 } from '@/lib/daily-challenge-config';
 
 interface UserProgress {
@@ -75,13 +75,20 @@ export function useDailyChallenge() {
         });
       } else {
         // Create initial progress record
-        await supabase.from('user_progress').insert([{
+        const { error: insertError } = await supabase.from('user_progress').insert([{
           user_id: user.id,
           total_xp: 0,
           power_tokens: 0,
           current_level: 'explorer',
           streak_rescues_available: isPremium ? 3 : 1,
         }] as never);
+
+        if (insertError) {
+          console.error('Error creating initial progress:', insertError);
+        } else {
+          // Retry loading data after successful insert
+          await loadData();
+        }
       }
 
       // Get today's completed missions
@@ -224,7 +231,7 @@ export function useDailyChallenge() {
       if (achievements.includes(achievement.id)) continue;
 
       const { type, count } = achievement.requirement;
-      
+
       if (type === 'streak') {
         if (streak >= count) {
           await awardAchievement(achievement.id);
@@ -324,12 +331,12 @@ export function useDailyChallenge() {
   const progressToNextLevel = () => {
     const currentLevelData = getLevelFromXP(progress.totalXP);
     const nextLevelIndex = ACHIEVEMENTS.findIndex(l => l.id === currentLevelData.name) + 1;
-    
+
     if (currentLevelData.maxXP === Infinity) return 100;
-    
+
     const xpInLevel = progress.totalXP - currentLevelData.minXP;
     const levelRange = currentLevelData.maxXP - currentLevelData.minXP + 1;
-    
+
     return Math.floor((xpInLevel / levelRange) * 100);
   };
 
