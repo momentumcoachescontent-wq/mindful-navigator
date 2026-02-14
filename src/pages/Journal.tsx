@@ -29,9 +29,9 @@ interface JournalEntry {
   created_at: string;
   content: string | null;
   entry_type: string | null;
-  tags: string[] | null;
   mood_score: number | null;
-  metadata: Record<string, unknown> | null;
+  energy_score: number | null;
+  stress_score: number | null;
 }
 
 const Journal = () => {
@@ -52,7 +52,7 @@ const Journal = () => {
       setIsLoading(true);
       const { data, error } = await supabase
         .from("journal_entries")
-        .select("id, created_at, content, entry_type, tags, mood_score, metadata")
+        .select("id, created_at, content, entry_type, mood_score, energy_score, stress_score")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
@@ -68,21 +68,16 @@ const Journal = () => {
   }, [user]);
 
   const filteredEntries = entries.filter((entry) => {
+    // Filter by entry type
+    if (activeTab === "victories" && entry.entry_type !== "victory") return false;
+    if (activeTab === "pending") return false; // No pending support without metadata
+
     // Always show simulation results
     if (entry.entry_type === "simulation_result") return true;
 
-    // Filter out empty/broken entries for other types
-    const hasContent = entry.content && entry.content.trim().length > 0;
-    const hasTitle = entry.metadata && typeof entry.metadata === 'object' && 'title' in entry.metadata && (entry.metadata.title as string).trim().length > 0;
+    // Filter out empty entries for other types
+    if (!entry.content || entry.content.trim().length === 0) return false;
 
-    if (!hasContent && !hasTitle) return false;
-
-    if (activeTab === "victories" && entry.entry_type !== "victory") return false;
-    if (activeTab === "pending") {
-      const meta = entry.metadata as Record<string, unknown> | null;
-      if (!meta?.follow_up) return false;
-    }
-    if (selectedTag && !entry.tags?.includes(selectedTag)) return false;
     return true;
   });
 
@@ -234,18 +229,7 @@ const Journal = () => {
                     </div>
                     <h4 className="font-display font-semibold text-foreground truncate">{getTitle(entry)}</h4>
                     <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">{getPreview(entry)}</p>
-                    {entry.tags && entry.tags.length > 0 && (
-                      <div className="flex gap-1.5 mt-2">
-                        {entry.tags.map((tagId) => {
-                          const tag = tagConfig.find((t) => t.id === tagId);
-                          return tag ? (
-                            <span key={tagId} className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium", tag.color)}>
-                              {tag.label}
-                            </span>
-                          ) : null;
-                        })}
-                      </div>
-                    )}
+                    {/* Tags removed - column doesn't exist */}
                   </div>
                 </div>
               </button>
