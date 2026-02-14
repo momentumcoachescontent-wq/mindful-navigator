@@ -258,55 +258,40 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
   };
 
   const handleSaveAsActionPlan = async () => {
-    console.log("=== SAVE DEBUG START ===");
-    console.log("session:", session);
-    console.log("session?.user?.id:", session?.user?.id);
-    console.log("scripts:", scripts);
-
     if (!session?.user?.id || !scripts) {
-      console.log("EARLY RETURN: Missing session or scripts");
+      toast({
+        title: "Error",
+        description: "Debes estar autenticado para guardar.",
+        variant: "destructive",
+      });
       return;
     }
 
     setIsSaving(true);
 
     try {
-      // Content as JSON object (column is jsonb type)
-      const contentObject = {
-        type: "simulation_result",
+      // Save to dedicated conversation_simulations table
+      const { error, data } = await supabase.from("conversation_simulations").insert({
+        user_id: session.user.id,
         scenario: selectedScenario?.label || "",
         personality: selectedPersonality?.label || "",
-        evaluation: {
-          clarity: feedback?.clarity || 0,
-          firmness: feedback?.firmness || 0,
-          empathy: feedback?.empathy || 0
-        },
-        feedback: feedback?.overall || "",
+        clarity_score: feedback?.clarity || 0,
+        firmness_score: feedback?.firmness || 0,
+        empathy_score: feedback?.empathy || 0,
+        feedback_text: feedback?.overall || "",
         traps: feedback?.traps || [],
         recommended_tools: feedback?.recommended_tools || [],
-        scripts: {
-          soft: scripts.soft,
-          firm: scripts.firm,
-          final_warning: scripts.final_warning
-        }
-      };
-
-      console.log("contentObject:", contentObject);
-      console.log("About to insert with user_id:", session.user.id);
-
-      const { error: journalError, data } = await supabase.from("journal_entries").insert({
-        user_id: session.user.id,
-        entry_type: "simulation_result",
-        content: contentObject as any // jsonb column accepts objects
+        script_soft: scripts.soft,
+        script_firm: scripts.firm,
+        script_final_warning: scripts.final_warning
       }).select();
 
-      console.log("Insert result - data:", data);
-      console.log("Insert result - error:", journalError);
-
-      if (journalError) {
-        console.error("Error saving to journal:", journalError);
-        throw journalError;
+      if (error) {
+        console.error("Error saving simulation:", error);
+        throw error;
       }
+
+      console.log("Simulation saved successfully:", data);
 
       toast({
         title: "¡Guardado!",
