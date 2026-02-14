@@ -113,20 +113,34 @@ const JournalEntry = () => {
       if (error) throw error;
 
       if (data) {
-        setContent(data.content || "");
+        // Parse JSON content
+        try {
+          const contentData = typeof data.content === 'string' ? JSON.parse(data.content) : data.content;
+          
+          setContent(contentData.text || "");
+          setTitle(contentData.title || "");
+          setSelectedTags(contentData.tags || []);
+          setIsFollowUp(!!contentData.follow_up);
+          
+          if (contentData.parent_id) {
+            setParentEntryId(contentData.parent_id);
+          }
+          
+          // Restore action plan and tools if they exist
+          if (contentData.action_plan) {
+            setActionPlan(contentData.action_plan);
+          }
+          if (contentData.recommended_tools) {
+            setTools(contentData.recommended_tools);
+          }
+        } catch (e) {
+          // Fallback for old format or non-JSON content
+          setContent(data.content || "");
+        }
+        
         setMood(data.mood_score || 3);
         setIsVictory(data.entry_type === "victory");
-        setSelectedTags(data.tags || []);
 
-        if (data.metadata && typeof data.metadata === 'object') {
-          const meta = data.metadata as Record<string, unknown>;
-          setTitle((meta.title as string) || "");
-          setIsFollowUp(!!meta.follow_up);
-          if (meta.parent_id) {
-            setParentEntryId(meta.parent_id as string);
-          }
-
-          // Hydrate interactive checklists
           if (data.entry_type === "scanner_result") {
             setIsScannerEntry(true);
             if (meta.action_plan) setActionPlan(meta.action_plan as ActionStep[]);

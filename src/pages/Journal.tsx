@@ -102,7 +102,17 @@ const Journal = () => {
       return "🎭 Simulación de Conversación";
     }
 
-    // For other entry types, use entry_type as title
+    // For daily/victory entries, parse JSON to get title
+    try {
+      const content = typeof entry.content === 'string' ? JSON.parse(entry.content) : entry.content;
+      if (content.title) {
+        const icon = entry.entry_type === "victory" ? "🏆 " : "📝 ";
+        return icon + content.title;
+      }
+    } catch (e) {
+      // Fallback
+    }
+    
     return entry.entry_type === "victory" ? "🏆 Victoria" : "📝 Entrada de Diario";
   };
 
@@ -129,8 +139,17 @@ const Journal = () => {
       return "Ver detalles de la simulación";
     }
 
-    // For other entry types, ensure content is a string
+    // For daily/victory entries, parse JSON to get text
     if (!entry.content) return "Sin contenido";
+    
+    try {
+      const content = typeof entry.content === 'string' ? JSON.parse(entry.content) : entry.content;
+      if (content.text) {
+        return content.text.length > 80 ? content.text.substring(0, 80) + "..." : content.text;
+      }
+    } catch (e) {
+      // Fallback
+    }
 
     // If content is not a string (e.g., JSON object), stringify it
     const contentStr = typeof entry.content === 'string' ? entry.content : JSON.stringify(entry.content);
