@@ -63,7 +63,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   const checkSubscription = useCallback(async () => {
-    if (!session?.access_token) return;
+    if (!session?.access_token) {
+      setSubscriptionStatus(null); // Ensure status is reset if no session
+      return;
+    }
 
     try {
       const { data, error } = await supabase.functions.invoke("check-subscription", {
@@ -73,7 +76,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) {
-        console.error("Error checking subscription:", error);
+        console.warn("Subscription check failed (non-critical):", error);
+        // Continue without premium status rather than blocking the app
+        setSubscriptionStatus({ subscribed: false, productId: null, subscriptionEnd: null });
         return;
       }
 
@@ -83,7 +88,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         subscriptionEnd: data.subscription_end,
       });
     } catch (err) {
-      console.error("Failed to check subscription:", err);
+      console.warn("Subscription check error (non-critical):", err);
+      // Continue without premium status rather than blocking the app
+      setSubscriptionStatus({ subscribed: false, productId: null, subscriptionEnd: null });
     }
   }, [session?.access_token]);
 
