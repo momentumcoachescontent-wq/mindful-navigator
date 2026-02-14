@@ -124,9 +124,20 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
 
       console.log("Edge Function Response Data [v2]:", data);
 
+      let content = "Error: Respuesta vacía o formato inválido";
+
+      if (data?.response) {
+        content = data.response;
+      } else if (data?.analysis) {
+        content = `[Modo Análisis]: ${data.analysis.summary || "Análisis completado sin resumen."}`;
+      } else if (data?.success && data?.analysis) {
+        // Fallback for success=true format
+        content = `[Modo Análisis]: ${data.analysis.summary || "Análisis completado sin resumen."}`;
+      }
+
       const simulatorMessage: Message = {
         role: "simulator",
-        content: data.response || (data.analysis ? `[Modo Análisis]: ${data.analysis.summary}` : "Error: Respuesta vacía del servidor"),
+        content: content,
       };
       setMessages(prev => [...prev, simulatorMessage]);
     } catch (error: any) {
@@ -196,8 +207,29 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
         throw new Error(detail.error || error.message);
       }
 
-      setFeedback(data.feedback);
-      setScripts(data.scripts);
+      if (data?.feedback) {
+        setFeedback(data.feedback);
+      } else {
+        console.warn("Feedback missing in response", data);
+        setFeedback({
+          overall: "No se pudo generar el análisis detallado.",
+          clarity: 0,
+          firmness: 0,
+          empathy: 0,
+          traps: [],
+          recommended_tools: []
+        });
+      }
+
+      if (data?.scripts) {
+        setScripts(data.scripts);
+      } else {
+        setScripts({
+          soft: "No disponible",
+          firm: "No disponible",
+          final_warning: "No disponible"
+        });
+      }
     } catch (error: any) {
       console.error("Error generating feedback:", error);
       toast({
