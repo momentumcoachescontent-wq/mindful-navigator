@@ -208,7 +208,14 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
       }
 
       if (data?.feedback) {
-        setFeedback(data.feedback);
+        setFeedback({
+          overall: data.feedback?.overall || "Sin análisis detallado",
+          clarity: data.feedback?.clarity || 0,
+          firmness: data.feedback?.firmness || 0,
+          empathy: data.feedback?.empathy || 0,
+          traps: Array.isArray(data.feedback?.traps) ? data.feedback.traps : [],
+          recommended_tools: Array.isArray(data.feedback?.recommended_tools) ? data.feedback.recommended_tools : []
+        });
       } else {
         console.warn("Feedback missing in response", data);
         setFeedback({
@@ -222,7 +229,11 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
       }
 
       if (data?.scripts) {
-        setScripts(data.scripts);
+        setScripts({
+          soft: data.scripts?.soft || "No disponible",
+          firm: data.scripts?.firm || "No disponible",
+          final_warning: data.scripts?.final_warning || "No disponible"
+        });
       } else {
         setScripts({
           soft: "No disponible",
