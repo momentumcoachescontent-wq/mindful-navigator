@@ -22,6 +22,17 @@ interface CompletedMission {
   xpEarned: number;
 }
 
+
+// Helper function to get local date string (YYYY-MM-DD)
+// Uses local timezone instead of UTC to properly handle daily resets
+const getLocalDateString = (): string => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export function useDailyChallenge() {
   const { user, isPremium } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -74,7 +85,7 @@ export function useDailyChallenge() {
       }
 
       // Get today's completed missions
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
       const { data: missionsData } = await supabase
         .from('daily_missions')
         .select('mission_id, xp_earned')
@@ -124,7 +135,7 @@ export function useDailyChallenge() {
   const completeMission = useCallback(async (mission: Mission, metadata?: Record<string, unknown>) => {
     if (!user) return { success: false, error: 'Not logged in' };
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     const xpEarned = calculateXP(mission.xp, streak);
 
     try {
@@ -254,7 +265,7 @@ export function useDailyChallenge() {
     if (!user) return { success: false };
 
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
       await supabase.from('daily_victories').insert([{
         user_id: user.id,
         victory_text: victoryText,
