@@ -263,20 +263,31 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
     setIsSaving(true);
 
     try {
-      // Save to Journal only (scanner_history table has schema issues)
-      const { error: journalError } = await supabase.from("journal_entries").insert([{
+      // Simplified save - only essential fields
+      const contentText = `🎭 Simulación: ${selectedScenario?.label}
+      
+📊 Evaluación:
+• Claridad: ${feedback?.clarity || 0}/10
+• Firmeza: ${feedback?.firmness || 0}/10
+• Empatía: ${feedback?.empathy || 0}/10
+
+💬 Feedback: ${feedback?.overall || 'Sin análisis'}
+
+${feedback?.traps && feedback.traps.length > 0 ? `⚠️ Trampas detectadas:\n${feedback.traps.map(t => `• ${t}`).join('\n')}` : ''}
+
+${feedback?.recommended_tools && feedback.recommended_tools.length > 0 ? `🛠️ Herramientas recomendadas:\n${feedback.recommended_tools.map(t => `• ${t}`).join('\n')}` : ''}
+
+📝 Scripts sugeridos:
+• Suave: ${scripts.soft}
+• Firme: ${scripts.firm}
+• Última advertencia: ${scripts.final_warning}`;
+
+      const { error: journalError } = await supabase.from("journal_entries").insert({
         user_id: session.user.id,
         entry_type: "simulation_result",
-        content: `Simulación: ${selectedScenario?.label}\n\nFeedback General: ${feedback?.overall}\n\nClaridad: ${feedback?.clarity}/10\nFirmeza: ${feedback?.firmness}/10\nEmpatía: ${feedback?.empathy}/10`,
-        tags: ["simulación", "comunicación", ...(feedback?.recommended_tools || [])],
-        metadata: JSON.parse(JSON.stringify({
-          scenario: selectedScenario?.label,
-          personality: selectedPersonality?.label,
-          context: context,
-          feedback: feedback,
-          scripts: scripts
-        }))
-      }]);
+        content: contentText,
+        tags: ["simulación", "comunicación"]
+      });
 
       if (journalError) {
         console.error("Error saving to journal:", journalError);
