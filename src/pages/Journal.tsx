@@ -68,15 +68,18 @@ const Journal = () => {
   }, [user]);
 
   const filteredEntries = entries.filter((entry) => {
+    // Always show simulation results
+    if (entry.entry_type === "simulation_result") return true;
+
     // Filter by entry type
     if (activeTab === "victories" && entry.entry_type !== "victory") return false;
     if (activeTab === "pending") return false; // No pending support without metadata
 
-    // Always show simulation results
-    if (entry.entry_type === "simulation_result") return true;
-
     // Filter out empty entries for other types
-    if (!entry.content || entry.content.trim().length === 0) return false;
+    if (!entry.content) return false;
+
+    // Check if content is string before calling trim()
+    if (typeof entry.content === 'string' && entry.content.trim().length === 0) return false;
 
     return true;
   });
