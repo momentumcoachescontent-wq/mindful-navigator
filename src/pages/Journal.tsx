@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, PenLine, Plus, Calendar, Tag, Trophy, Loader2 } from "lucide-react";
+import { ArrowLeft, PenLine, Plus, Calendar, Tag, Trophy, Loader2, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/layout/MobileNav";
@@ -7,6 +7,7 @@ import { SOSButton } from "@/components/layout/SOSButton";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const tagConfig = [
   { id: "family", label: "Familia", color: "bg-coral/20 text-coral" },
@@ -37,6 +38,7 @@ interface JournalEntry {
 const Journal = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("entries");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
@@ -71,15 +73,15 @@ const Journal = () => {
     // Filter out empty entries first
     if (!entry.content) return false;
     if (typeof entry.content === 'string' && entry.content.trim().length === 0) return false;
-    
+
     // Always show simulation results in "entries" tab only
     if (entry.entry_type === "simulation_result") {
       return activeTab === "entries";
     }
-    
+
     // Filter by entry type for victories
     if (activeTab === "victories" && entry.entry_type !== "victory") return false;
-    
+
     // Parse JSON content to access tags and follow_up
     let contentData: any = null;
     try {
@@ -88,19 +90,19 @@ const Journal = () => {
       // If parsing fails, only show in "entries" tab
       return activeTab === "entries";
     }
-    
+
     // Filter by pending/follow-up status
     if (activeTab === "pending") {
       // Only show entries marked for follow-up
       if (!contentData?.follow_up) return false;
     }
-    
+
     // Filter by selected tag
     if (selectedTag) {
       const entryTags = contentData?.tags || [];
       if (!entryTags.includes(selectedTag)) return false;
     }
-    
+
     return true;
   });
 
@@ -132,7 +134,7 @@ const Journal = () => {
     } catch (e) {
       // Fallback
     }
-    
+
     return entry.entry_type === "victory" ? "🏆 Victoria" : "📝 Entrada de Diario";
   };
 
@@ -161,7 +163,7 @@ const Journal = () => {
 
     // For daily/victory entries, parse JSON to get text
     if (!entry.content) return "Sin contenido";
-    
+
     try {
       const content = typeof entry.content === 'string' ? JSON.parse(entry.content) : entry.content;
       if (content.text) {
@@ -177,6 +179,33 @@ const Journal = () => {
     return contentStr.length > 80
       ? contentStr.substring(0, 80) + "..."
       : contentStr;
+  };
+
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!window.confirm("¿Estás seguro de que quieres borrar esta entrada?")) return;
+
+    try {
+      const { error } = await supabase
+        .from("journal_entries")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setEntries((prev) => prev.filter((entry) => entry.id !== id));
+      toast({
+        title: "Entrada eliminada",
+        description: "La entrada ha sido borrada correctamente.",
+      });
+    } catch (error) {
+      console.error("Error deleting entry:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo borrar la entrada.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -254,10 +283,10 @@ const Journal = () => {
         {user && !isLoading && (
           <div className="space-y-3">
             {filteredEntries.map((entry) => (
-              <button
+              <div
                 key={entry.id}
+                className="group relative w-full bg-card rounded-2xl p-4 shadow-soft text-left transition-all hover:shadow-medium cursor-pointer"
                 onClick={() => navigate(`/journal/${entry.id}`)}
-                className="w-full bg-card rounded-2xl p-4 shadow-soft text-left transition-all hover:shadow-medium"
               >
                 <div className="flex items-start gap-3">
                   {entry.entry_type === "victory" && (
@@ -274,10 +303,17 @@ const Journal = () => {
                     </div>
                     <h4 className="font-display font-semibold text-foreground truncate">{getTitle(entry)}</h4>
                     <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">{getPreview(entry)}</p>
-                    {/* Tags removed - column doesn't exist */}
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive h-8 w-8"
+                    onClick={(e) => handleDelete(e, entry.id)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         )}
