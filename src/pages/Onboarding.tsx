@@ -71,39 +71,62 @@ const Onboarding = () => {
   };
 
   const handleComplete = async () => {
-    if (!user) return;
+    console.log("handleComplete called - User:", user?.id, "Loading:", isLoading);
+
+    if (!user) {
+      console.error("No user found in handleComplete. session might be invalid.");
+      toast.error("Tu sesión ha expirado o es inválida. Por favor, intenta cerrar sesión e iniciar de nuevo.");
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      console.log("Completing onboarding for user:", user.id);
-      const { error } = await supabase
+      console.log("Attempting upsert for user:", user.id);
+      const profileData = {
+        id: user.id,
+        user_id: user.id,
+        display_name: name,
+        age_range: ageRange,
+        gender: gender,
+        occupation: occupation,
+        goals: selectedGoals,
+        onboarding_completed: true,
+        updated_at: new Date().toISOString(),
+      };
+
+      console.log("Profile data to save:", profileData);
+
+      const { data, error, status } = await supabase
         .from('profiles')
-        .upsert({
-          id: user.id,
-          user_id: user.id,
-          display_name: name,
-          age_range: ageRange,
-          gender: gender,
-          occupation: occupation,
-          goals: selectedGoals,
-          onboarding_completed: true,
-          updated_at: new Date().toISOString(),
-        });
+        .upsert(profileData);
 
       if (error) {
-        console.error("Supabase upsert error:", error);
+        console.error("Supabase upsert error (Status " + status + "):", error);
         throw error;
       }
 
+      console.log("Upsert response status:", status, "Data:", data);
       console.log("Onboarding completed successfully");
       toast.success("¡Perfil creado con éxito!");
-      navigate("/");
+
+      // Force a small delay to ensure DB reflects changes before navigation
+      setTimeout(() => {
+        navigate("/");
+      }, 500);
     } catch (error) {
       console.error("Caught error in handleComplete:", error);
       toast.error("Error al guardar perfil: " + (error as Error).message);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+    toast.info("Sesión cerrada correctamente");
   };
 
   // Render Functions
@@ -278,6 +301,15 @@ const Onboarding = () => {
           >
             {isLoading ? "Guardando..." : "Comenzar mi camino"}
             {!isLoading && <Sparkles className="w-5 h-5 ml-2" />}
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full text-muted-foreground"
+            onClick={handleSignOut}
+          >
+            ¿Problemas con tu sesión? Cerrar sesión
           </Button>
         </div>
       </div>
