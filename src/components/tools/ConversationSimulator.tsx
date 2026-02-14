@@ -263,46 +263,29 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
     setIsSaving(true);
 
     try {
-      const { error } = await supabase.from("scanner_history").insert([{
-        user_id: session.user.id,
-        situation_text: `Simulación: ${selectedScenario?.label} con persona ${selectedPersonality?.label}`,
-        ai_response: JSON.stringify({ feedback, scripts }),
-        action_plan: JSON.parse(JSON.stringify({
-          context,
-          scripts,
-          savedAt: new Date().toISOString(),
-        })),
-        recommended_tools: ["conversation-simulator", ...(feedback?.recommended_tools || [])],
-      }]);
-
-      if (error) throw error;
-
-      // Also save to Journal
+      // Save to Journal only (scanner_history table has schema issues)
       const { error: journalError } = await supabase.from("journal_entries").insert([{
         user_id: session.user.id,
         entry_type: "simulation_result",
-        content: `Simulación: ${selectedScenario?.label}\n\nFeedback General: ${feedback?.overall}`,
+        content: `Simulación: ${selectedScenario?.label}\n\nFeedback General: ${feedback?.overall}\n\nClaridad: ${feedback?.clarity}/10\nFirmeza: ${feedback?.firmness}/10\nEmpatía: ${feedback?.empathy}/10`,
         tags: ["simulación", "comunicación", ...(feedback?.recommended_tools || [])],
         metadata: JSON.parse(JSON.stringify({
           scenario: selectedScenario?.label,
           personality: selectedPersonality?.label,
+          context: context,
           feedback: feedback,
           scripts: scripts
         }))
       }]);
 
       if (journalError) {
-        console.warn("Error saving to journal:", journalError);
-        toast({
-          title: "Error al guardar en Diario",
-          description: journalError.message || "No se pudo crear la entrada en el diario.",
-          variant: "destructive",
-        });
+        console.error("Error saving to journal:", journalError);
+        throw journalError;
       }
 
       toast({
         title: "¡Guardado!",
-        description: "Tu plan de acción ha sido guardado exitosamente en tu historial y diario.",
+        description: "Tu simulación ha sido guardada exitosamente en tu diario.",
       });
     } catch (error) {
       console.error("Error saving:", error);
