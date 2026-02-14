@@ -164,7 +164,9 @@ const Index = () => {
       if (journalError) throw journalError;
 
       // Update profile streak
-      const today = new Date().toISOString().split("T")[0];
+      // Use local date instead of UTC
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       const { data: profile } = await supabase
         .from("profiles")
         .select("streak_count, last_check_in_date")
