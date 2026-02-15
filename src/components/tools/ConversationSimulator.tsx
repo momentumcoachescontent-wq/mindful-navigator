@@ -74,8 +74,15 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
     { id: "explosivo", label: "Perfil Explosivo", description: "Reacciones desproporcionadas y desborde emocional." }
   ];
 
-  const scenarios = (content?.scenarios && content.scenarios.length > 0) ? content.scenarios : defaultScenarios;
-  const personalities = (content?.personalities && content.personalities.length > 0) ? content.personalities : defaultPersonalities;
+  const scenarios = [
+    ...defaultScenarios,
+    ...(content?.scenarios || [])
+  ].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+
+  const personalities = [
+    ...defaultPersonalities,
+    ...(content?.personalities || [])
+  ].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
 
   const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
   const [isCustomScenario, setIsCustomScenario] = useState(false);
@@ -296,7 +303,8 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
           firm: scripts.firm,
           final_warning: scripts.final_warning
         },
-        is_completed: false // Logic for the user to mark as completed
+        is_completed: false, // Logic for the user to mark as completed
+        follow_up: true // Activar seguimiento por defecto para simulaciones
       };
 
       const { error } = await supabase.from("journal_entries").insert({
