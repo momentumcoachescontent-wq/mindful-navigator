@@ -141,6 +141,8 @@ export function useScanner() {
     }
 
     try {
+      console.log("[saveToJournal] Received scanResult:", scanResult);
+
       // Create tags from alert level and cleaned red flags
       const safeTags = ["escáner", scanResult.alertLevel];
       if (scanResult.redFlags && Array.isArray(scanResult.redFlags)) {
@@ -168,19 +170,20 @@ ${scanResult.summary}
 ${scanResult.observations || "No especificado"}
 
 **🚩 Señales de alerta:**
-${(scanResult.redFlags || []).map(f => `- ${f}`).join("\n")}
+${(scanResult.redFlags && scanResult.redFlags.length > 0) ? scanResult.redFlags.map(f => `- ${f}`).join("\n") : "No se detectaron señales específicas."}
 
 **🛠️ Herramientas Recomendadas:**
-${(scanResult.recommendedTools || []).map(t => `- **${t.name}**: ${t.reason}`).join("\n")}
+${(scanResult.recommendedTools && scanResult.recommendedTools.length > 0) ? scanResult.recommendedTools.map(t => `- **${t.name}**: ${t.reason}`).join("\n") : "No hay herramientas específicas para esta situación."}
 
 **📋 Plan de acción:**
-${(scanResult.actionPlan || []).map((p) => `${p.step}. ${p.action}`).join("\n")}
+${(scanResult.actionPlan && scanResult.actionPlan.length > 0) ? scanResult.actionPlan.map((p) => `${p.step}. ${p.action}`).join("\n") : "No hay acciones sugeridas."}
 
 **💚 Mensaje de Apoyo:**
 ${scanResult.validationMessage || "Tú puedes con esto."}`;
 
       const { data, error } = await supabase.from("journal_entries").insert({
         user_id: user.id,
+        title: `Análisis de la situación - ${dateStr}`, // INSERTING TO TITLE COLUMN
         content: contentBody,
         entry_type: "scanner_result",
         tags: safeTags,
@@ -202,7 +205,7 @@ ${scanResult.validationMessage || "Tú puedes con esto."}`;
 
       toast({
         title: "Guardado en Diario",
-        description: "El análisis completo ha sido registrado.",
+        description: "El análisis completo ha sido registrado correctamente.",
       });
       return data.id;
     } catch (error) {
