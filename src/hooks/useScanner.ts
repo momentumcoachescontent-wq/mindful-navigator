@@ -72,7 +72,10 @@ export function useScanner() {
           name: tool,
           reason: getToolReason(tool),
         })),
-        actionPlan: analysis.action_plan || [],
+        actionPlan: (analysis.action_plan || []).map((p: any, i: number) => ({
+          step: p.step || i + 1,
+          action: typeof p === 'string' ? p : (p.action || p.description || p.text || "Paso sugerido"),
+        })),
         validationMessage: analysis.validation_message || "",
       };
 
@@ -141,21 +144,102 @@ export function useScanner() {
     }
 
     try {
+      console.log("[saveToJournal] Received scanResult:", scanResult);
+
+      // Map action plan robustly to ensure UI renders non-empty values
+      const robustActionPlan = (scanResult.actionPlan || []).map((p: any, i: number) => ({
+        step: p.step || i + 1,
+        action: p.action || p.description || p.text || "Paso sugerido",
+      }));
+
+      // Keyword matching for standard journal tags
+      const textToAnalyze = (situationText + " " + scanResult.summary).toLowerCase();
+      const standardTags: string[] = [];
+
+      const keywords = {
+        family: ["familia", "mamá", "papá", "hijo", "hija", "hermano", "hermana", "casa", "padres"],
+        work: ["trabajo", "jefe", "compañero", "oficina", "proyecto", "cliente", "negocio", "dinero"],
+        relationships: ["pareja", "novio", "novia", "esposo", "esposa", "relación", "amor", "ex"],
+        friends: ["amigo", "amiga", "grupo", "salida", "social"],
+        self: ["miedo", "yo", "mí", "siento", "ansiedad", "tristeza", "cuerpo", "salud"]
+      };
+
+      Object.entries(keywords).forEach(([tagId, words]) => {
+        if (words.some(w => textToAnalyze.includes(w))) {
+          standardTags.push(tagId);
+        }
+      });
+
+      // Default to "self" if no other tag matches
+      if (standardTags.length === 0) standardTags.push("self");
+
+      // Merge tags: Standard tags (for UI mapping) + Scanner tags (for search)
+      // Note: Scanner tags like "Nivel Alto" don't match the UI tag IDs, so they won't show as colored chips
+      // unless we add them to the JournalEntry tags list, but standardTags WILL show.
+      const finalTags = [...new Set([...standardTags, "escáner", scanResult.alertLevel])];
+
+      // Also add red flags as searchable text tags but not necessarily UI tags if they don't match known IDs
+      if (scanResult.redFlags && Array.isArray(scanResult.redFlags)) {
+        finalTags.push(...scanResult.redFlags.slice(0, 5).map(f =>
+          f.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9 ]/g, '').trim()
+        ));
+      }
+
+      const dateStr = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+      // FORCE explicit string construction to avoid reference issues
+      const contentBody = `**Situación analizada:**
+${situationText}
+
+**Nivel de Alerta:** ${scanResult.alertLevel.toUpperCase()}
+
+**Resumen:**
+${scanResult.summary}
+
+**💡 Qué Observar:**
+${scanResult.observations || "No especificado"}
+
+**🚩 Señales de alerta:**
+${(scanResult.redFlags && scanResult.redFlags.length > 0) ? scanResult.redFlags.map(f => `- ${f}`).join("\n") : "No se detectaron señales específicas."}
+
+**🛠️ Herramientas Recomendadas:**
+${(scanResult.recommendedTools && scanResult.recommendedTools.length > 0) ? scanResult.recommendedTools.map(t => `- **${t.name}**: ${t.reason}`).join("\n") : "No hay herramientas específicas para esta situación."}
+
+**📋 Plan de acción:**
+${robustActionPlan.length > 0 ? robustActionPlan.map((p) => `${p.step}. ${p.action}`).join("\n") : "No hay acciones sugeridas."}
+
+**💚 Mensaje de Apoyo:**
+${scanResult.validationMessage || "Tú puedes con esto."}`;
+
+      // Construct JSON content to support title, tags, etc. since columns don't exist
+      const jsonContent = {
+        title: `Análisis de la situación - ${dateStr}`,
+        text: contentBody,
+        tags: standardTags, // Use standard tags for the UI chips
+        search_tags: finalTags, // Keep all tags for search/filtering
+        follow_up: true,
+        alert_level: scanResult.alertLevel,
+        red_flags: scanResult.redFlags,
+        recommended_tools: scanResult.recommendedTools,
+        action_plan: robustActionPlan, // Use robust plan
+        scan_result: { ...scanResult, actionPlan: robustActionPlan } // Update scan result with robust data
+      };
+
       const { data, error } = await supabase.from("journal_entries").insert({
         user_id: user.id,
-        content: `**Situación analizada:**\n${situationText}\n\n**Resumen:**\n${scanResult.summary}\n\n**Señales de alerta:**\n${scanResult.redFlags.join("\n- ")}\n\n**Plan de acción:**\n${scanResult.actionPlan.map((p) => `${p.step}. ${p.action}`).join("\n")}`,
+        content: JSON.stringify(jsonContent), // Save as JSON string
         entry_type: "scanner_result",
-        tags: ["escáner", scanResult.alertLevel],
+        tags: finalTags, // Save ALL tags to db column for search
         metadata: {
-          title: `Resultado Escáner de Situaciones ${new Date().toLocaleDateString()}`,
+          title: `Análisis de la situación - ${dateStr}`,
           follow_up: true,
           alert_level: scanResult.alertLevel,
           red_flags: scanResult.redFlags,
           recommended_tools: scanResult.recommendedTools,
-          action_plan: scanResult.actionPlan,
+          action_plan: robustActionPlan,
           progress: {
-            actionPlan: scanResult.actionPlan.map(() => false),
-            tools: scanResult.recommendedTools.map(() => false)
+            actionPlan: robustActionPlan.map(() => false),
+            tools: (scanResult.recommendedTools || []).map(() => false)
           }
         },
       }).select().single();
@@ -164,14 +248,14 @@ export function useScanner() {
 
       toast({
         title: "Guardado en Diario",
-        description: "El análisis se guardó en tu diario",
+        description: "El análisis completo ha sido registrado correctamente.",
       });
       return data.id;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving to journal:", error);
       toast({
-        title: "Error",
-        description: "No se pudo guardar en el diario",
+        title: "Error al guardar",
+        description: error.message || "No se pudo guardar en el diario",
         variant: "destructive",
       });
       return null;

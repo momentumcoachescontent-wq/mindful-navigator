@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle, Info, Lightbulb, BookOpen, Save, ListChecks } from "lucide-react";
+import { AlertTriangle, CheckCircle, Info, Lightbulb, BookOpen, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -6,9 +6,10 @@ export interface ScanResultData {
   summary: string;
   alertLevel: "low" | "medium" | "high";
   redFlags: string[];
-  observations: string[];
+  observations: string;
   recommendedTools: { name: string; reason: string }[];
-  actionPlan: string[];
+  actionPlan: { step: number; action: string }[];
+  validationMessage: string;
 }
 
 interface ScanResultProps {
@@ -41,7 +42,7 @@ const alertStyles = {
   },
 };
 
-export function ScanResult({ result, onSaveToJournal, onCreatePlan }: ScanResultProps) {
+export default function ScanResult({ result, onSaveToJournal, onCreatePlan }: ScanResultProps) {
   const alertStyle = alertStyles[result.alertLevel];
   const AlertIcon = alertStyle.icon;
 
@@ -82,14 +83,9 @@ export function ScanResult({ result, onSaveToJournal, onCreatePlan }: ScanResult
           <Lightbulb className="w-5 h-5 text-warning" />
           Qué observar
         </h4>
-        <ul className="space-y-2">
-          {result.observations.map((obs, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-              <span className="w-1.5 h-1.5 rounded-full bg-warning mt-2 flex-shrink-0" />
-              {obs}
-            </li>
-          ))}
-        </ul>
+        <div className="bg-warning/5 rounded-xl p-4 text-sm text-muted-foreground leading-relaxed">
+          {result.observations}
+        </div>
       </div>
 
       {/* Recommended Tools */}
@@ -115,26 +111,28 @@ export function ScanResult({ result, onSaveToJournal, onCreatePlan }: ScanResult
           Plan de acción (3 pasos)
         </h4>
         <ol className="space-y-2">
-          {result.actionPlan.map((step, i) => (
+          {result.actionPlan.map((step: any, i) => (
             <li key={i} className="flex items-start gap-3 text-sm">
               <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium flex-shrink-0">
-                {i + 1}
+                {step.step || i + 1}
               </span>
-              <span className="text-foreground pt-0.5">{step}</span>
+              <span className="text-foreground pt-0.5">
+                {step.action || step.description || step.text || (typeof step === 'string' ? step : "Acción detectada")}
+              </span>
             </li>
           ))}
         </ol>
       </div>
 
       {/* Actions */}
-      <div className="flex gap-3 pt-2">
-        <Button variant="outline" className="flex-1" onClick={onSaveToJournal}>
-          <Save className="w-4 h-4" />
+      <div className="flex gap-4 pt-4">
+        <Button
+          onClick={onSaveToJournal}
+          className="flex-1 gap-2 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 transition-all duration-300"
+          size="lg"
+        >
+          <BookOpen className="w-4 h-4" />
           <span>Guardar en Diario</span>
-        </Button>
-        <Button variant="calm" className="flex-1" onClick={onCreatePlan}>
-          <ListChecks className="w-4 h-4" />
-          <span>Crear seguimiento</span>
         </Button>
       </div>
     </div>

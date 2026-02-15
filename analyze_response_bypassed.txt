@@ -1,0 +1,20 @@
+HTTP/2 200 
+date: Sun, 15 Feb 2026 13:53:51 GMT
+content-type: application/json
+server: cloudflare
+cf-ray: 9ce54b0eccd83293-QRO
+cf-cache-status: DYNAMIC
+access-control-allow-origin: *
+strict-transport-security: max-age=31536000; includeSubDomains; preload
+vary: Accept-Encoding
+access-control-allow-headers: authorization, x-client-info, apikey, content-type
+sb-gateway-version: 1
+sb-project-ref: yllafuxwlyrkfdsawisq
+sb-request-id: 019c6194-2543-7263-b946-0365e0d36c53
+x-deno-execution-id: 06d6b140-6a64-4b95-9458-1ea2a12a8193
+x-sb-edge-region: us-west-1
+x-served-by: supabase-edge-runtime
+set-cookie: __cf_bm=k5l9lt1PmaTGtfbR5hPz47RX3HHqfrCBn7fg.R3IcuE-1771163631-1.0.1.1-uzFrHglWP8HKs1LagEXvrCV4R_6WJzQyH4dtcmrPrShsC0839S4eJym9UyxGMxK0RpiPKkVYppUt.kbf6EuISVAWEFUrGBTfeG2Ty68p6w4; path=/; expires=Sun, 15-Feb-26 14:23:51 GMT; domain=.supabase.co; HttpOnly; Secure; SameSite=None
+alt-svc: h3=":443"; ma=86400
+
+{"success":true,"analysis":{"alert_level":"medium","summary":"Te sientes ignorado por tu pareja cuando intentas expresar tus sentimientos, lo cual puede ser una experiencia frustrante y dolorosa. Es importante abordar esta dinámica para asegurar que tus necesidades emocionales sean reconocidas en la relación.","red_flags":["Invalidación emocional","Minimización de sentimientos"],"what_to_observe":"Observa si este comportamiento es constante o solo ocurre en ciertas situaciones. Presta atención a cómo reacciona tu pareja (cambia de tema, se distrae, se enoja, se queda en silencio) y si hay momentos en los que sí te escucha. También, considera si este patrón se extiende a otras áreas de la relación.","recommended_tools":["H.E.R.O.","Scripts de comunicación asertiva","C.A.L.M."],"action_plan":[{"step":1,"action":"Utiliza H.E.R.O. para hacer una pausa y evaluar cuándo y cómo te sientes ignorado. Identifica momentos específicos y cómo te hacen sentir."},{"step":2,"action":"Prepara una conversación usando scripts de comunicación asertiva. Expresa tus sentimientos con 'yo' (ej. 'Yo me siento ignorado cuando...') en un momento de calma, no durante una discusión."},{"step":3,"action":"Observa la respuesta de tu pareja a tu comunicación. Si el patrón persiste o no hay voluntad de cambio, considera la posibilidad de buscar apoyo profesional, como terapia de pareja, para mejorar la co"}],"validation_message":"Es completamente válido y natural querer ser escuchado y comprendido por tu pareja. Tus sentimientos importan y mereces un espacio donde puedas expresarlos libremente sin sentirte ignorado. Este es un paso importante para cuidar tu bienestar emocional en la relación."},"provider":"gemini"}

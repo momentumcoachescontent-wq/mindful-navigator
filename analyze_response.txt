@@ -1,0 +1,20 @@
+HTTP/2 401 
+date: Sun, 15 Feb 2026 13:52:53 GMT
+content-type: application/json
+server: cloudflare
+cf-ray: 9ce549c87d8614af-QRO
+cf-cache-status: DYNAMIC
+access-control-allow-origin: *
+strict-transport-security: max-age=31536000; includeSubDomains; preload
+vary: Accept-Encoding
+access-control-allow-headers: authorization, x-client-info, apikey, content-type
+sb-gateway-version: 1
+sb-project-ref: yllafuxwlyrkfdsawisq
+sb-request-id: 019c6193-594e-72e8-bc5c-1469cbd5d340
+x-deno-execution-id: 26da3d10-898b-4c5c-afac-7e83bdb3c5bc
+x-sb-edge-region: us-west-1
+x-served-by: supabase-edge-runtime
+set-cookie: __cf_bm=KayT6_hEOkJconpWm5N4qiU9NalryIyRgkQmyzGQA.c-1771163573-1.0.1.1-TweZC4e5985BcR9sVxqvgKzmCvqTjSayAxsPcTa8c4sGWobKR0658q8E7OaFJczBiO5a63NErFkqFxOP7eu20kUeO5c0SJAOElU.5Sax0xM; path=/; expires=Sun, 15-Feb-26 14:22:53 GMT; domain=.supabase.co; HttpOnly; Secure; SameSite=None
+alt-svc: h3=":443"; ma=86400
+
+{"error":"Invalid token"}

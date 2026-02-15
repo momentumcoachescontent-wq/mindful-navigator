@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { ArrowRight, Check, RefreshCw, Save, Sparkles, MessageCircle, Loader2, Send, User, Bot, AlertCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -55,6 +56,7 @@ type SimulatorStep = "scenario" | "personality" | "context" | "chat" | "feedback
 export function ConversationSimulator({ content }: ConversationSimulatorProps) {
   const { session } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const [step, setStep] = useState<SimulatorStep>("scenario");
 
@@ -98,6 +100,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [scripts, setScripts] = useState<Script | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [savedEntryId, setSavedEntryId] = useState<string | null>(null);
 
   const maxRounds = 3; // Limitar a 3 interacciones
 
@@ -287,6 +290,26 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
     setStep("scripts");
   };
 
+  // Helper para mapear personalidad a etiqueta de grupo
+  const getPersonalityTag = (personalityLabel: string): string[] => {
+    const lowerLabel = personalityLabel.toLowerCase();
+
+    if (lowerLabel.includes('jefe') || lowerLabel.includes('colega') || lowerLabel.includes('entrevistador')) {
+      return ['work'];
+    }
+    if (lowerLabel.includes('pareja') || lowerLabel.includes('ex')) {
+      return ['relationships'];
+    }
+    if (lowerLabel.includes('padre') || lowerLabel.includes('madre') || lowerLabel.includes('familiar')) {
+      return ['family'];
+    }
+    if (lowerLabel.includes('amigo') || lowerLabel.includes('vecino')) {
+      return ['friends'];
+    }
+
+    return ['self']; // Default fallback
+  };
+
   const handleSaveAsActionPlan = async () => {
     if (!session?.user?.id || !scripts) {
       toast({
@@ -314,7 +337,11 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
         },
         feedback: feedback?.overall || "",
         traps: feedback?.traps || [],
-        recommended_tools: feedback?.recommended_tools || [],
+        recommended_tools: feedback?.recommended_tools?.map(t => ({
+          name: t,
+          reason: "Recomendado por el Asistente",
+          completed: false
+        })) || [],
         scripts: {
           soft: scripts.soft,
           firm: scripts.firm,
@@ -326,18 +353,26 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
         follow_up: true // Activar seguimiento por defecto para simulaciones
       };
 
-      const { error } = await supabase.from("journal_entries").insert({
+      const { data, error } = await supabase.from("journal_entries").insert({
         user_id: session.user.id,
         entry_type: "simulation_result",
-        content: JSON.stringify(contentData)
-      });
+        content: JSON.stringify({
+          ...contentData,
+          tags: getPersonalityTag(selectedPersonality?.label || ''),
+          title: `Simulación: ${scenarioLabel}`,
+          text: `Simulación de rol: ${scenarioLabel} con ${selectedPersonality?.label}. Resultado: ${feedback?.overall}`
+        })
+      }).select().single();
 
       if (error) throw error;
 
-      toast({
-        title: "¡Guardado!",
-        description: "Tu simulación ha sido guardada exitosamente en tu diario.",
-      });
+      if (data) {
+        setSavedEntryId(data.id);
+        toast({
+          title: "¡Guardado con éxito!",
+          description: "Tu simulación ha sido guardada. Puedes ver los detalles en tu diario.",
+        });
+      }
     } catch (error) {
       console.error("Error saving:", error);
       toast({
@@ -568,61 +603,95 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
       ) : feedback ? (
         <>
           {/* ... existing feedback render logic ... */}
-          <div className="text-center space-y-2">
-            <h3 className="text-xl font-display font-bold text-foreground">
-              Análisis del Umbral
-            </h3>
-            <div className="bg-card p-4 rounded-2xl border border-border shadow-soft text-sm text-foreground leading-relaxed italic">
-              "{feedback.overall}"
+          <div className="space-y-4">
+            <div className="bg-muted/30 p-4 rounded-2xl border border-border/50 space-y-2">
+              <p className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground italic">Análisis del Umbral</p>
+              <p className="text-sm leading-relaxed italic">"{feedback.overall}"</p>
             </div>
-          </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { label: 'Claridad', value: feedback.clarity, color: 'text-primary' },
-              { label: 'Firmeza', value: feedback.firmness, color: 'text-secondary' },
-              { label: 'Empatía', value: feedback.empathy, color: 'text-turquoise' }
-            ].map((stat) => (
-              <div key={stat.label} className="bg-card p-3 rounded-xl text-center shadow-soft border border-border/50">
-                <div className={cn("text-xl font-bold", stat.color)}>{stat.value}/10</div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mt-1">{stat.label}</p>
-              </div>
-            ))}
-          </div>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: 'Claridad', value: feedback.clarity, color: 'text-primary' },
+                { label: 'Firmeza', value: feedback.firmness, color: 'text-secondary' },
+                { label: 'Empatía', value: feedback.empathy, color: 'text-turquoise' }
+              ].map((stat) => (
+                <div key={stat.label} className="bg-card p-3 rounded-xl text-center shadow-soft border border-border/50">
+                  <div className={cn("text-xl font-bold", stat.color)}>{stat.value}/10</div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mt-1">{stat.label}</p>
+                </div>
+              ))}
+            </div>
 
-          <div className="space-y-3">
-            <div className="bg-coral/5 border border-coral/20 rounded-2xl p-4 space-y-3 shadow-sm">
-              <div className="flex items-center gap-2 text-coral">
-                <span className="text-lg">⚠️</span>
-                <p className="text-sm font-bold uppercase tracking-tight">Trampas Detectadas</p>
-              </div>
-              {feedback.traps.length > 0 ? (
+            {/* Action Plan Section */}
+            {feedback.action_plan && feedback.action_plan.length > 0 && (
+              <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 space-y-3">
+                <div className="flex items-center gap-2 text-primary">
+                  <Check className="w-5 h-5" />
+                  <p className="text-sm font-bold uppercase tracking-tight">Plan de Acción Sugerido</p>
+                </div>
                 <ul className="space-y-2">
-                  {feedback.traps.map((trap, i) => (
+                  {feedback.action_plan.map((step, i) => (
                     <li key={i} className="text-sm text-foreground flex items-start gap-2">
-                      <span className="text-coral mt-1">•</span>
-                      <span>{trap}</span>
+                      <div className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
+                        {step.step || i + 1}
+                      </div>
+                      <span>{step.action}</span>
                     </li>
                   ))}
                 </ul>
-              ) : (
-                <p className="text-sm text-muted-foreground italic">No se detectaron trampas comunes. ¡Buen manejo!</p>
-              )}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="bg-coral/5 border border-coral/20 rounded-2xl p-4 space-y-3 shadow-sm">
+                <div className="flex items-center gap-2 text-coral">
+                  <AlertCircle className="w-4 h-4" />
+                  <p className="text-xs font-bold uppercase tracking-tight">Trampas Detectadas</p>
+                </div>
+                {feedback.traps.length > 0 ? (
+                  <ul className="space-y-2">
+                    {feedback.traps.map((trap, i) => (
+                      <li key={i} className="text-xs text-foreground flex items-start gap-2">
+                        <span className="text-coral mt-1">•</span>
+                        <span>{trap}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-muted-foreground italic">¡Sin trampas! Manejo impecable.</p>
+                )}
+              </div>
+
+              <div className="bg-turquoise/5 border border-turquoise/20 rounded-2xl p-4 space-y-3 shadow-sm">
+                <div className="flex items-center gap-2 text-turquoise">
+                  <Sparkles className="w-4 h-4" />
+                  <p className="text-xs font-bold uppercase tracking-tight">Claves de Poder</p>
+                </div>
+                <p className="text-[11px] text-foreground leading-relaxed italic">
+                  Para este perfil, recuerda: mantén tu centro y no morder el anzuelo de la {extraTrait === 'victim' ? 'culpa' : 'reactividad'}.
+                </p>
+              </div>
             </div>
 
-            <div className="bg-turquoise/5 border border-turquoise/20 rounded-2xl p-4 space-y-3 shadow-sm">
-              <div className="flex items-center gap-2 text-turquoise">
-                <span className="text-lg">🔑</span>
-                <p className="text-sm font-bold uppercase tracking-tight">Claves de Transformación</p>
+            {scripts && (
+              <div className="pt-4 border-t border-border space-y-3">
+                <p className="text-xs font-bold uppercase tracking-tight text-muted-foreground">Scripts de Transformación</p>
+                <div className="grid gap-2">
+                  <div className="p-3 rounded-xl bg-turquoise/5 border border-turquoise/20">
+                    <p className="text-[9px] font-bold uppercase text-turquoise mb-1">Empatía + Límite</p>
+                    <p className="text-xs italic">"{scripts.soft}"</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-primary/5 border border-primary/20">
+                    <p className="text-[9px] font-bold uppercase text-primary mb-1">Firmeza Directa</p>
+                    <p className="text-xs italic">"{scripts.firm}"</p>
+                  </div>
+                </div>
               </div>
-              <p className="text-sm text-foreground leading-relaxed">
-                Para romper este patrón con un perfil <strong>{selectedPersonality?.label}</strong>, recuerda mantener tu centro y no morder el anzuelo de la {extraTrait === 'victim' ? 'culpa' : 'reactividad'}.
-              </p>
-            </div>
+            )}
           </div>
 
-          <Button onClick={handleViewScripts} variant="calm" className="w-full h-12 text-md shadow-medium">
-            Ver scripts de poder
+          <Button onClick={() => setStep("scripts")} variant="calm" className="w-full h-12 text-md shadow-medium">
+            Ver Todos los Scripts y Guardar
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </>
@@ -727,8 +796,12 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
             <RefreshCw className="w-4 h-4 mr-2" />
             Reiniciar
           </Button>
-          <Button onClick={() => window.location.href = '/journal'} variant="ghost" className="flex-1 h-10">
-            Ir al Diario
+          <Button
+            onClick={() => navigate(savedEntryId ? `/journal/${savedEntryId}` : '/journal')}
+            variant="ghost"
+            className="flex-1 h-10"
+          >
+            {savedEntryId ? "Ver Entrada" : "Ir al Diario"}
           </Button>
         </div>
       </div>

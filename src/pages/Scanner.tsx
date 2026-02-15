@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { SOSButton } from "@/components/layout/SOSButton";
 import { ScannerInput } from "@/components/scanner/ScannerInput";
-import { ScanResult } from "@/components/scanner/ScanResult";
+import ScanResult from "@/components/scanner/ScanResult";
 import { useScanner } from "@/hooks/useScanner";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -106,13 +106,7 @@ const Scanner = () => {
         ) : (
           <>
             <ScanResult
-              result={{
-                ...result,
-                observations: result.observations
-                  ? [result.observations]
-                  : [],
-                actionPlan: result.actionPlan.map(p => p.action),
-              }}
+              result={result}
               onSaveToJournal={handleSaveToJournal}
               onCreatePlan={handleCreatePlan}
             />

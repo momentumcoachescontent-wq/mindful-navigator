@@ -106,7 +106,9 @@ const Journal = () => {
 
     // Filter by pending/follow-up status
     if (activeTab === "pending") {
-      if (!contentData?.follow_up) return false;
+      const isFollowUp = !!contentData?.follow_up;
+      const isUnfinishedSimulation = entry.entry_type === "simulation_result" && contentData?.is_completed === false;
+      if (!isFollowUp && !isUnfinishedSimulation) return false;
     }
 
     // Filter by selected tag

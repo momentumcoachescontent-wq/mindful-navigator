@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { AIService } from "../_shared/ai-service.ts";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -289,17 +290,10 @@ serve(async (req) => {
             });
         }
 
-        // 4. (requestBody is already parsed at line 266)
         const { situation, mode, scenario, personality, personalityDescription, extraTrait, context, messages, isFirst, currentRound, maxRounds } = requestBody;
 
-        const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-        if (!OPENAI_API_KEY) {
-            console.error("OPENAI_API_KEY is missing");
-            return new Response(JSON.stringify({ error: "Service configuration error" }), {
-                status: 500,
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
-        }
+        // Initialize AI Service
+        const aiService = new AIService();
 
         // --- MODE: ROLEPLAY ---
         if (mode === "roleplay") {
@@ -332,40 +326,16 @@ Responde ÚNICAMENTE como el personaje. NO añadidas explicaciones externas.`;
                     ? "Inicia la conversación tú como el personaje, planteando el conflicto del escenario."
                     : (messages && messages.length > 0 ? messages[messages.length - 1].content : "Hola");
 
-                const response = await fetch("https://api.openai.com/v1/chat/completions", {
-                    method: "POST",
-                    headers: {
-                        Authorization: `Bearer ${OPENAI_API_KEY}`,
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        model: "gpt-4o-mini",
-                        messages: [
-                            { role: "system", content: systemPromptRoleplay },
-                            ...(messages?.map((m: any) => ({
-                                role: m.role === 'simulator' ? 'assistant' : 'user',
-                                content: m.content
-                            })) || []),
-                            { role: "user", content: userMessage }
-                        ],
-                        temperature: 0.8,
-                    }),
+                // Gemini works best with a concatenated prompt or implicit chat history
+                // We'll pass the system prompt as the first instruction
+
+                const aiResult = await aiService.generateText(userMessage, systemPromptRoleplay, {
+                    temperature: 0.8
                 });
 
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    console.error("[ANALYZE-SITUATION] Roleplay OpenAI Error:", errorData);
-                    return new Response(JSON.stringify({ error: "Servicio de IA temporalmente no disponible.", details: errorData }), {
-                        status: 500,
-                        headers: { ...corsHeaders, "Content-Type": "application/json" },
-                    });
-                }
-
-                const data = await response.json();
-                const aiResponse = data.choices?.[0]?.message?.content || "...";
-
                 return new Response(JSON.stringify({
-                    response: aiResponse
+                    response: aiResult.text,
+                    provider: aiResult.provider
                 }), {
                     headers: { ...corsHeaders, "Content-Type": "application/json" },
                 });
@@ -415,49 +385,32 @@ Responde EXCLUSIVAMENTE en formato JSON con esta estructura:
 
 NO incluyas texto fuera del JSON.`;
 
-            const response = await fetch("https://api.openai.com/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${OPENAI_API_KEY}`,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    model: "gpt-4o-mini",
-                    messages: [
-                        { role: "system", content: systemPromptFeedback },
-                        { role: "user", content: `Conversación:\n${JSON.stringify(messages)}` }
-                    ],
-                    temperature: 0.3,
-                }),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                console.error("[ANALYZE-SITUATION] OpenAI API Error:", errorData);
-                return new Response(JSON.stringify({
-                    error: "Error en la IA. Por favor intenta de nuevo.",
-                    details: errorData
-                }), {
-                    status: 500,
-                    headers: { ...corsHeaders, "Content-Type": "application/json" },
-                });
-            }
-
-            const data = await response.json();
-            const contentRaw = data.choices?.[0]?.message?.content;
-
-            if (!contentRaw) {
-                throw new Error("Empty response from AI");
-            }
-
             try {
+                const conversationStr = JSON.stringify(messages);
+                const feedbackPrompt = `Conversación a analizar:\n${conversationStr}`;
+
+                const aiResult = await aiService.generateText(feedbackPrompt, systemPromptFeedback, {
+                    temperature: 0.4
+                });
+
+                const contentRaw = aiResult.text;
+
+                // Extract JSON logic
                 const jsonMatch = contentRaw.match(/\{[\s\S]*\}/);
                 const feedbackData = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
-                return new Response(JSON.stringify(feedbackData || { error: "Failed to parse feedback" }), {
+
+                if (!feedbackData) throw new Error("Could not parse JSON from AI response");
+
+                return new Response(JSON.stringify(feedbackData), {
                     headers: { ...corsHeaders, "Content-Type": "application/json" },
                 });
-            } catch (e) {
-                return new Response(JSON.stringify({ error: "Invalid JSON from AI", raw: contentRaw }), {
+
+            } catch (error: any) {
+                console.error("[ANALYZE-SITUATION] Feedback API Error:", error);
+                return new Response(JSON.stringify({
+                    error: "Error en el análisis de feedback AI.",
+                    details: error.message
+                }), {
                     status: 500,
                     headers: { ...corsHeaders, "Content-Type": "application/json" },
                 });
@@ -474,88 +427,80 @@ NO incluyas texto fuera del JSON.`;
             });
         }
 
-        // 6. Call AI Service (via Lovable Gateway)
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${OPENAI_API_KEY}`,
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                model: "gpt-4o-mini",
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: `Analiza la siguiente situación y genera el reporte JSON: \n\n${validation.sanitized}` }
-                ],
-                temperature: 0.7,
-            }),
-        });
+        // 6. Call AI Service
+        try {
+            // For Gemini, we pass the user prompt and system prompt separately
+            const aiResult = await aiService.generateText(
+                `Analiza la siguiente situación y genera el reporte JSON: \n\n${validation.sanitized}`,
+                systemPrompt,
+                { temperature: 0.7 }
+            );
 
-        if (!response.ok) {
-            console.error("Lovable API Error:", await response.text());
+            const content = aiResult.text;
+
+            // 7. Parse and Validate AI Response
+            const jsonMatch = content?.match(/\{[\s\S]*\}/);
+
+            if (!jsonMatch) {
+                console.error("Invalid AI response (no JSON found):", content);
+                return new Response(JSON.stringify({ error: "La IA no generó un análisis válido. Intenta ser más específico." }), {
+                    status: 500,
+                    headers: { ...corsHeaders, "Content-Type": "application/json" },
+                });
+            }
+
+            let analysisResult;
+            try {
+                analysisResult = JSON.parse(jsonMatch[0]);
+            } catch (e) {
+                console.error("JSON Parse Error:", e);
+                return new Response(JSON.stringify({ error: "Error processing AI response" }), {
+                    status: 500,
+                    headers: { ...corsHeaders, "Content-Type": "application/json" },
+                });
+            }
+
+            const aiValidation = validateAndSanitizeAIResponse(analysisResult);
+
+            if (!aiValidation.valid || !aiValidation.sanitized) {
+                console.error("AI Response Validation Failed:", aiValidation.error);
+                return new Response(JSON.stringify({ error: "El análisis generado no cumple con los estándares de seguridad." }), {
+                    status: 500,
+                    headers: { ...corsHeaders, "Content-Type": "application/json" },
+                });
+            }
+
+            console.log(`Analysis successful for user ${user.id.substring(0, 8)} using provider: ${aiResult.provider}`);
+
+            // 8. Save to History
+            const { error: historyError } = await supabaseClient
+                .from('scanner_history')
+                .insert({
+                    user_id: user.id,
+                    situation: validation.sanitized!,
+                    analysis: aiValidation.sanitized
+                });
+
+            if (historyError) {
+                console.warn("Failed to save history:", historyError);
+                // We don't block the response for history implementation details
+            }
+
+            return new Response(JSON.stringify({
+                success: true,
+                analysis: aiValidation.sanitized,
+                provider: aiResult.provider
+            }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+
+        } catch (aiError: any) {
+            console.error("AI Service Error:", aiError);
             return new Response(JSON.stringify({ error: "Error communicating with AI service" }), {
                 status: 500,
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
         }
-
-        const data = await response.json();
-        const content = data.choices?.[0]?.message?.content;
-
-        // 7. Parse and Validate AI Response
-        const jsonMatch = content?.match(/\{[\s\S]*\}/);
-
-        if (!jsonMatch) {
-            console.error("Invalid AI response (no JSON found):", content);
-            return new Response(JSON.stringify({ error: "La IA no generó un análisis válido. Intenta ser más específico." }), {
-                status: 500,
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
-        }
-
-        let analysisResult;
-        try {
-            analysisResult = JSON.parse(jsonMatch[0]);
-        } catch (e) {
-            console.error("JSON Parse Error:", e);
-            return new Response(JSON.stringify({ error: "Error processing AI response" }), {
-                status: 500,
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
-        }
-
-        const aiValidation = validateAndSanitizeAIResponse(analysisResult);
-
-        if (!aiValidation.valid || !aiValidation.sanitized) {
-            console.error("AI Response Validation Failed:", aiValidation.error);
-            return new Response(JSON.stringify({ error: "El análisis generado no cumple con los estándares de seguridad." }), {
-                status: 500,
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
-        }
-
-        console.log(`Analysis successful for user ${user.id.substring(0, 8)}`);
-
-        // 8. Save to History (Async - fire and forget mostly, but here we wait to confirm)
-        const { error: historyError } = await supabaseClient
-            .from('scanner_history')
-            .insert({
-                user_id: user.id,
-                situation: validation.sanitized!,
-                analysis: aiValidation.sanitized
-            });
-
-        if (historyError) {
-            console.warn("Failed to save history:", historyError);
-            // We don't block the response for history implementation details
-        }
-
-        return new Response(JSON.stringify({
-            success: true,
-            analysis: aiValidation.sanitized
-        }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
 
     } catch (error) {
         console.error("Unexpected error:", error);
