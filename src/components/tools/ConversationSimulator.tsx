@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowRight, Check, RefreshCw, Save, Sparkles, MessageCircle, Loader2 } from "lucide-react";
+import { ArrowRight, Check, RefreshCw, Save, Sparkles, MessageCircle, Loader2, Send, User, Bot, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
