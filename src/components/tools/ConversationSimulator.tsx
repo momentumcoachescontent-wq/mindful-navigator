@@ -57,7 +57,10 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
 
   const [step, setStep] = useState<SimulatorStep>("scenario");
   const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
+  const [isCustomScenario, setIsCustomScenario] = useState(false);
+  const [customScenarioText, setCustomScenarioText] = useState("");
   const [selectedPersonality, setSelectedPersonality] = useState<Personality | null>(null);
+  const [extraTrait, setExtraTrait] = useState<string>("neutral");
   const [context, setContext] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentInput, setCurrentInput] = useState("");
@@ -67,10 +70,16 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
   const [scripts, setScripts] = useState<Script | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const maxRounds = content.rounds;
+  const maxRounds = 3; // Limitar a 3 interacciones
 
-  const handleScenarioSelect = (scenario: Scenario) => {
-    setSelectedScenario(scenario);
+  const handleScenarioSelect = (scenario: Scenario | 'custom') => {
+    if (scenario === 'custom') {
+      setIsCustomScenario(true);
+      setSelectedScenario({ id: 'custom', label: 'Situación Personalizada', icon: 'edit' });
+    } else {
+      setIsCustomScenario(false);
+      setSelectedScenario(scenario);
+    }
     setStep("personality");
   };
 
@@ -80,7 +89,8 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
   };
 
   const handleContextSubmit = () => {
-    if (!context.trim()) return;
+    if (isCustomScenario && !customScenarioText.trim()) return;
+    if (!isCustomScenario && !context.trim()) return;
     setStep("chat");
     generateSimulatorResponse(true);
   };
@@ -88,7 +98,6 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
   const generateSimulatorResponse = async (isFirst = false, currentMessages: Message[] = messages) => {
     if (!selectedScenario || !selectedPersonality) return;
 
-    // Validate session before making authenticated request
     if (!session?.access_token) {
       toast({
         title: "Sesión expirada",
@@ -100,14 +109,15 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
 
     setIsLoading(true);
     try {
+      const scenarioLabel = isCustomScenario ? customScenarioText : selectedScenario.label;
       const { data, error } = await supabase.functions.invoke("analyze-situation", {
         body: {
-          situation: `Simulación de rol: ${selectedScenario.label} - ${context.substring(0, 50)}...`, // Dummy field for old code compatibility
+          situation: `Simulación de rol: ${scenarioLabel} - Trait: ${extraTrait}`,
           mode: "roleplay",
-          scenario: selectedScenario.label,
+          scenario: scenarioLabel,
           personality: selectedPersonality.id,
-          personalityDescription: selectedPersonality.description,
-          context,
+          personalityDescription: `${selectedPersonality.description}. Rasgo adicional: ${extraTrait}`,
+          context: isCustomScenario ? customScenarioText : context,
           messages: currentMessages,
           isFirst,
           currentRound,
@@ -116,22 +126,16 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
       });
 
       if (error) {
-        // Try to parse detailed error from Edge Function response
         // @ts-ignore
         const detail = error.context ? await error.context.json().catch(() => ({})) : {};
         throw new Error(detail.error || error.message || "Error desconocido");
       }
-
-      console.log("Edge Function Response Data [v2]:", data);
 
       let content = "Error: Respuesta vacía o formato inválido";
 
       if (data?.response) {
         content = data.response;
       } else if (data?.analysis) {
-        content = `[Modo Análisis]: ${data.analysis.summary || "Análisis completado sin resumen."}`;
-      } else if (data?.success && data?.analysis) {
-        // Fallback for success=true format
         content = `[Modo Análisis]: ${data.analysis.summary || "Análisis completado sin resumen."}`;
       }
 
@@ -160,23 +164,20 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
       content: currentInput,
     };
 
-    // Optimistic update
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     setCurrentInput("");
-    setCurrentRound(prev => prev + 1);
+    const nextRound = currentRound + 1;
+    setCurrentRound(nextRound);
 
-    if (currentRound + 1 >= maxRounds) {
-      // Generate feedback after last round
+    if (nextRound >= maxRounds) {
       generateFeedback(newMessages);
     } else {
-      // Generate next simulator response immediately with fresh state
       generateSimulatorResponse(false, newMessages);
     }
   };
 
   const generateFeedback = async (allMessages: Message[]) => {
-    // Validate session before making authenticated request
     if (!session?.access_token) {
       toast({
         title: "Sesión expirada",
@@ -190,13 +191,13 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
     setStep("feedback");
 
     try {
+      const scenarioLabel = isCustomScenario ? customScenarioText : selectedScenario?.label;
       const { data, error } = await supabase.functions.invoke("analyze-situation", {
         body: {
-          situation: `Generación de feedback: ${context.substring(0, 50)}...`, // Dummy field
           mode: "feedback",
-          scenario: selectedScenario?.label,
+          scenario: scenarioLabel,
           personality: selectedPersonality?.id,
-          context,
+          context: isCustomScenario ? customScenarioText : context,
           messages: allMessages,
         },
       });
@@ -216,16 +217,6 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
           traps: Array.isArray(data.feedback?.traps) ? data.feedback.traps : [],
           recommended_tools: Array.isArray(data.feedback?.recommended_tools) ? data.feedback.recommended_tools : []
         });
-      } else {
-        console.warn("Feedback missing in response", data);
-        setFeedback({
-          overall: "No se pudo generar el análisis detallado.",
-          clarity: 0,
-          firmness: 0,
-          empathy: 0,
-          traps: [],
-          recommended_tools: []
-        });
       }
 
       if (data?.scripts) {
@@ -233,12 +224,6 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
           soft: data.scripts?.soft || "No disponible",
           firm: data.scripts?.firm || "No disponible",
           final_warning: data.scripts?.final_warning || "No disponible"
-        });
-      } else {
-        setScripts({
-          soft: "No disponible",
-          firm: "No disponible",
-          final_warning: "No disponible"
         });
       }
     } catch (error: any) {
@@ -270,11 +255,13 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
     setIsSaving(true);
 
     try {
-      // Save to journal_entries with JSON content
+      const scenarioLabel = isCustomScenario ? customScenarioText : selectedScenario?.label;
+
       const contentData = {
         type: "simulation_result",
-        scenario: selectedScenario?.label || "",
+        scenario: scenarioLabel || "",
         personality: selectedPersonality?.label || "",
+        personality_trait: extraTrait,
         evaluation: {
           clarity: feedback?.clarity || 0,
           firmness: feedback?.firmness || 0,
@@ -287,21 +274,17 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
           soft: scripts.soft,
           firm: scripts.firm,
           final_warning: scripts.final_warning
-        }
+        },
+        is_completed: false // Logic for the user to mark as completed
       };
 
-      const { error, data } = await supabase.from("journal_entries").insert({
+      const { error } = await supabase.from("journal_entries").insert({
         user_id: session.user.id,
         entry_type: "simulation_result",
         content: JSON.stringify(contentData)
-      }).select();
+      });
 
-      if (error) {
-        console.error("Error saving simulation:", error);
-        throw error;
-      }
-
-      console.log("Simulation saved successfully:", data);
+      if (error) throw error;
 
       toast({
         title: "¡Guardado!",
@@ -322,7 +305,10 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
   const handleRestart = () => {
     setStep("scenario");
     setSelectedScenario(null);
+    setIsCustomScenario(false);
+    setCustomScenarioText("");
     setSelectedPersonality(null);
+    setExtraTrait("neutral");
     setContext("");
     setMessages([]);
     setCurrentInput("");
@@ -338,7 +324,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
           ¿Con quién necesitas practicar?
         </h3>
         <p className="text-sm text-muted-foreground">
-          Elige el tipo de relación para personalizar el entrenamiento
+          Elige el tipo de relación o registra tu propia situación
         </p>
       </div>
 
@@ -352,32 +338,75 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
             <p className="font-medium text-foreground">{scenario.label}</p>
           </button>
         ))}
+        <button
+          onClick={() => handleScenarioSelect('custom')}
+          className="bg-primary/5 p-4 rounded-xl border-2 border-dashed border-primary/30 hover:border-primary transition-all text-left flex flex-col items-center justify-center gap-2"
+        >
+          <Sparkles className="w-5 h-5 text-primary" />
+          <p className="font-medium text-primary">Situación Personalizada</p>
+        </button>
       </div>
     </div>
   );
 
   const renderPersonalityStep = () => (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="text-center space-y-2">
         <h3 className="text-lg font-display font-bold text-foreground">
           ¿Cómo es esta persona?
         </h3>
         <p className="text-sm text-muted-foreground">
-          Selecciona el patrón de comportamiento más común
+          Selecciona su perfil y un rasgo adicional
         </p>
       </div>
 
-      <div className="space-y-3">
-        {content.personalities.map((personality) => (
-          <button
-            key={personality.id}
-            onClick={() => handlePersonalitySelect(personality)}
-            className="w-full bg-card p-4 rounded-xl border-2 border-transparent hover:border-primary/50 transition-all text-left shadow-soft"
-          >
-            <p className="font-medium text-foreground">{personality.label}</p>
-            <p className="text-sm text-muted-foreground mt-1">{personality.description}</p>
-          </button>
-        ))}
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 gap-3">
+          {content.personalities.map((personality) => (
+            <button
+              key={personality.id}
+              onClick={() => handlePersonalitySelect(personality)}
+              className={cn(
+                "w-full bg-card p-4 rounded-xl border-2 transition-all text-left shadow-soft",
+                selectedPersonality?.id === personality.id ? "border-primary bg-primary/5" : "border-transparent"
+              )}
+            >
+              <p className="font-medium text-foreground">{personality.label}</p>
+              <p className="text-xs text-muted-foreground mt-1">{personality.description}</p>
+            </button>
+          ))}
+        </div>
+
+        {selectedPersonality && (
+          <div className="space-y-3 pt-4 border-t border-border">
+            <p className="text-sm font-medium text-foreground text-center">Rasgo de personalidad adicional:</p>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { id: 'aggressive', label: 'Enojado/a' },
+                { id: 'avoidant', label: 'Evitativo/a' },
+                { id: 'victim', label: 'Víctima' },
+                { id: 'neutral', label: 'Neutral' },
+                { id: 'ironic', label: 'Irónico/a' },
+                { id: 'explosive', label: 'Explosivo/a' }
+              ].map((trait) => (
+                <button
+                  key={trait.id}
+                  onClick={() => setExtraTrait(trait.id)}
+                  className={cn(
+                    "px-3 py-2 rounded-lg text-xs font-medium border transition-all",
+                    extraTrait === trait.id ? "bg-primary text-white border-primary" : "bg-muted text-muted-foreground border-transparent"
+                  )}
+                >
+                  {trait.label}
+                </button>
+              ))}
+            </div>
+            <Button onClick={() => setStep("context")} className="w-full mt-4">
+              Continuar
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -386,28 +415,31 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
     <div className="space-y-4">
       <div className="text-center space-y-2">
         <h3 className="text-lg font-display font-bold text-foreground">
-          Describe la situación
+          {isCustomScenario ? "Describe tu situación" : "Añade contexto"}
         </h3>
         <p className="text-sm text-muted-foreground">
-          ¿Qué límite quieres poner? ¿Cuál es el contexto?
+          Para una simulación más real, danos un poco más de detalle
         </p>
       </div>
 
       <Textarea
-        value={context}
-        onChange={(e) => setContext(e.target.value)}
-        placeholder="Ej: Mi jefe me pide que trabaje los fines de semana sin compensación y quiero establecer un límite claro..."
+        value={isCustomScenario ? customScenarioText : context}
+        onChange={(e) => isCustomScenario ? setCustomScenarioText(e.target.value) : setContext(e.target.value)}
+        placeholder={isCustomScenario
+          ? "Ej: Mi suegra siempre hace comentarios sobre mi cocina delante de mi esposo y no sé cómo pararla sin sonar grosera..."
+          : "Ej: Esto pasó ayer en la oficina después de la reunión de las 5..."
+        }
         className="min-h-[150px] bg-card border-border resize-none"
       />
 
       <Button
         onClick={handleContextSubmit}
-        disabled={!context.trim()}
+        disabled={isCustomScenario ? !customScenarioText.trim() : !context.trim()}
         className="w-full"
         variant="calm"
       >
-        Comenzar simulación
-        <ArrowRight className="w-4 h-4" />
+        Comenzar desafío (3 rondas)
+        <ArrowRight className="w-4 h-4 ml-2" />
       </Button>
     </div>
   );
@@ -416,19 +448,19 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
     <div className="space-y-4">
       <div className="bg-muted/50 rounded-xl p-3 text-center">
         <p className="text-xs text-muted-foreground">
-          Ronda {currentRound + 1} de {maxRounds} • {selectedPersonality?.label}
+          Interacción {currentRound + 1} de {maxRounds} • {selectedPersonality?.label} ({extraTrait})
         </p>
       </div>
 
-      <div className="space-y-3 max-h-[300px] overflow-y-auto">
+      <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
         {messages.map((msg, index) => (
           <div
             key={index}
             className={cn(
-              "p-3 rounded-2xl max-w-[85%] text-sm",
+              "p-4 rounded-2xl max-w-[90%] text-sm leading-relaxed shadow-sm",
               msg.role === "user"
-                ? "bg-primary text-primary-foreground ml-auto rounded-br-md"
-                : "bg-card text-foreground border border-border rounded-bl-md"
+                ? "bg-primary text-primary-foreground ml-auto rounded-br-none"
+                : "bg-card text-foreground border border-border rounded-bl-none"
             )}
           >
             {msg.content}
@@ -436,20 +468,20 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
         ))}
 
         {isLoading && (
-          <div className="bg-card p-3 rounded-2xl rounded-bl-md max-w-[85%] flex items-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Escribiendo...</span>
+          <div className="bg-card p-3 rounded-2xl rounded-bl-none max-w-[85%] flex items-center gap-2 border border-border shadow-sm">
+            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+            <span className="text-sm text-muted-foreground italic">La persona está pensando...</span>
           </div>
         )}
       </div>
 
       {currentRound < maxRounds && !isLoading && (
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-end pt-2">
           <Textarea
             value={currentInput}
             onChange={(e) => setCurrentInput(e.target.value)}
             placeholder="Escribe tu respuesta..."
-            className="min-h-[80px] bg-card border-border resize-none flex-1"
+            className="min-h-[80px] bg-card border-border resize-none flex-1 rounded-xl shadow-soft"
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
@@ -461,7 +493,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
             onClick={handleUserMessage}
             disabled={!currentInput.trim()}
             size="icon"
-            className="h-auto"
+            className="h-10 w-10 shrink-0"
           >
             <ArrowRight className="w-5 h-5" />
           </Button>
@@ -471,61 +503,78 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
   );
 
   const renderFeedbackStep = () => (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {isLoading ? (
-        <div className="text-center py-12 space-y-4">
-          <Sparkles className="w-12 h-12 text-primary mx-auto animate-pulse" />
-          <p className="text-muted-foreground">Analizando tu conversación...</p>
+        <div className="text-center py-16 space-y-4">
+          <div className="relative inline-block">
+            <Sparkles className="w-16 h-16 text-primary animate-pulse" />
+            <div className="absolute inset-0 w-16 h-16 text-primary animate-ping opacity-25">
+              <Sparkles className="w-16 h-16" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <p className="text-lg font-display font-bold">Analizando la dinámica...</p>
+            <p className="text-sm text-muted-foreground">Extrayendo claves de transformación</p>
+          </div>
         </div>
       ) : feedback ? (
         <>
           <div className="text-center space-y-2">
-            <h3 className="text-lg font-display font-bold text-foreground">
-              Tu Feedback
+            <h3 className="text-xl font-display font-bold text-foreground">
+              Análisis del Umbral
             </h3>
-            <p className="text-sm text-muted-foreground">{feedback.overall}</p>
+            <div className="bg-card p-4 rounded-2xl border border-border shadow-soft text-sm text-foreground leading-relaxed italic">
+              "{feedback.overall}"
+            </div>
           </div>
 
           <div className="grid grid-cols-3 gap-3">
-            <div className="bg-card p-4 rounded-xl text-center shadow-soft">
-              <div className="text-2xl font-bold text-primary">{feedback.clarity}/10</div>
-              <p className="text-xs text-muted-foreground mt-1">Claridad</p>
+            {[
+              { label: 'Claridad', value: feedback.clarity, color: 'text-primary' },
+              { label: 'Firmeza', value: feedback.firmness, color: 'text-secondary' },
+              { label: 'Empatía', value: feedback.empathy, color: 'text-turquoise' }
+            ].map((stat) => (
+              <div key={stat.label} className="bg-card p-3 rounded-xl text-center shadow-soft border border-border/50">
+                <div className={cn("text-xl font-bold", stat.color)}>{stat.value}/10</div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mt-1">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-3">
+            <div className="bg-coral/5 border border-coral/20 rounded-2xl p-4 space-y-3 shadow-sm">
+              <div className="flex items-center gap-2 text-coral">
+                <span className="text-lg">⚠️</span>
+                <p className="text-sm font-bold uppercase tracking-tight">Trampas Detectadas</p>
+              </div>
+              {feedback.traps.length > 0 ? (
+                <ul className="space-y-2">
+                  {feedback.traps.map((trap, i) => (
+                    <li key={i} className="text-sm text-foreground flex items-start gap-2">
+                      <span className="text-coral mt-1">•</span>
+                      <span>{trap}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground italic">No se detectaron trampas comunes. ¡Buen manejo!</p>
+              )}
             </div>
-            <div className="bg-card p-4 rounded-xl text-center shadow-soft">
-              <div className="text-2xl font-bold text-secondary">{feedback.firmness}/10</div>
-              <p className="text-xs text-muted-foreground mt-1">Firmeza</p>
-            </div>
-            <div className="bg-card p-4 rounded-xl text-center shadow-soft">
-              <div className="text-2xl font-bold text-turquoise">{feedback.empathy}/10</div>
-              <p className="text-xs text-muted-foreground mt-1">Empatía</p>
+
+            <div className="bg-turquoise/5 border border-turquoise/20 rounded-2xl p-4 space-y-3 shadow-sm">
+              <div className="flex items-center gap-2 text-turquoise">
+                <span className="text-lg">🔑</span>
+                <p className="text-sm font-bold uppercase tracking-tight">Claves de Transformación</p>
+              </div>
+              <p className="text-sm text-foreground leading-relaxed">
+                Para romper este patrón con un perfil <strong>{selectedPersonality?.label}</strong>, recuerda mantener tu centro y no morder el anzuelo de la {extraTrait === 'victim' ? 'culpa' : 'reactividad'}.
+              </p>
             </div>
           </div>
 
-          {feedback.traps.length > 0 && (
-            <div className="bg-coral/10 border border-coral/20 rounded-xl p-4 space-y-2">
-              <p className="text-sm font-medium text-coral">⚠️ Trampas detectadas:</p>
-              <ul className="space-y-1">
-                {feedback.traps.map((trap, i) => (
-                  <li key={i} className="text-sm text-foreground">• {trap}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {feedback.recommended_tools && feedback.recommended_tools.length > 0 && (
-            <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 space-y-2">
-              <p className="text-sm font-medium text-primary">🛠️ Herramientas recomendadas:</p>
-              <ul className="space-y-1">
-                {feedback.recommended_tools.map((tool, i) => (
-                  <li key={i} className="text-sm text-foreground">• {tool}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <Button onClick={handleViewScripts} variant="calm" className="w-full">
-            Ver scripts sugeridos
-            <ArrowRight className="w-4 h-4" />
+          <Button onClick={handleViewScripts} variant="calm" className="w-full h-12 text-md shadow-medium">
+            Ver scripts de poder
+            <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </>
       ) : null}
@@ -533,93 +582,109 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
   );
 
   const renderScriptsStep = () => (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="text-center space-y-2">
-        <h3 className="text-lg font-display font-bold text-foreground">
-          Tus Scripts
+        <h3 className="text-xl font-display font-bold text-foreground">
+          Tu Kit de Respuestas
         </h3>
         <p className="text-sm text-muted-foreground">
-          3 versiones según el nivel de firmeza que necesites
+          Adapta estas frases según la intensidad de la situación
         </p>
       </div>
 
       {scripts && (
-        <div className="space-y-3">
-          <div className="bg-card p-4 rounded-xl shadow-soft space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-turquoise"></span>
-              <p className="text-sm font-medium text-foreground">Versión suave</p>
+        <div className="space-y-4">
+          <div className="bg-card p-5 rounded-2xl shadow-soft border border-turquoise/20 relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-1 h-full bg-turquoise transition-all group-hover:w-2"></div>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-6 h-6 rounded-full bg-turquoise/20 flex items-center justify-center">
+                <Check className="w-3.5 h-3.5 text-turquoise" />
+              </div>
+              <p className="text-xs font-bold text-turquoise uppercase tracking-widest">Nivel 1: Empatía + Límite</p>
             </div>
-            <p className="text-sm text-muted-foreground">{scripts.soft}</p>
+            <p className="text-sm text-foreground leading-relaxed italic">"{scripts.soft}"</p>
           </div>
 
-          <div className="bg-card p-4 rounded-xl shadow-soft space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-warning"></span>
-              <p className="text-sm font-medium text-foreground">Versión firme</p>
+          <div className="bg-card p-5 rounded-2xl shadow-soft border border-warning/20 relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-1 h-full bg-warning transition-all group-hover:w-2"></div>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-6 h-6 rounded-full bg-warning/20 flex items-center justify-center">
+                <MessageCircle className="w-3.5 h-3.5 text-warning" />
+              </div>
+              <p className="text-xs font-bold text-warning uppercase tracking-widest">Nivel 2: Firmeza Absoluta</p>
             </div>
-            <p className="text-sm text-muted-foreground">{scripts.firm}</p>
+            <p className="text-sm text-foreground leading-relaxed italic">"{scripts.firm}"</p>
           </div>
 
-          <div className="bg-card p-4 rounded-xl shadow-soft space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-coral"></span>
-              <p className="text-sm font-medium text-foreground">Última advertencia</p>
+          <div className="bg-card p-5 rounded-2xl shadow-soft border border-coral/20 relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-1 h-full bg-coral transition-all group-hover:w-2"></div>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-6 h-6 rounded-full bg-coral/20 flex items-center justify-center">
+                <Sparkles className="w-3.5 h-3.5 text-coral" />
+              </div>
+              <p className="text-xs font-bold text-coral uppercase tracking-widest">Nivel 3: Corte de Patrón</p>
             </div>
-            <p className="text-sm text-muted-foreground">{scripts.final_warning}</p>
+            <p className="text-sm text-foreground leading-relaxed italic">"{scripts.final_warning}"</p>
           </div>
         </div>
       )}
 
-      <div className="flex gap-3">
+      <div className="flex flex-col gap-3">
         <Button
           onClick={handleSaveAsActionPlan}
           disabled={isSaving}
-          className="flex-1" // Changed from w-full to flex-1 to match original layout
+          className="w-full h-12 shadow-medium text-md"
         >
           {isSaving ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Guardando...
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              Guardando en Diario...
             </>
           ) : (
             <>
-              <Save className="mr-2 h-4 w-4" />
-              Guardar plan
+              <Save className="mr-2 h-5 w-5" />
+              Guardar en mi Diario
             </>
           )}
         </Button>
-        <Button onClick={handleRestart} variant="outline" className="flex-1">
-          <RefreshCw className="w-4 h-4" />
-          Nueva simulación
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleRestart} variant="outline" className="flex-1 h-10">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Reiniciar
+          </Button>
+          <Button onClick={() => window.location.href = '/journal'} variant="ghost" className="flex-1 h-10">
+            Ir al Diario
+          </Button>
+        </div>
       </div>
     </div>
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 max-w-2xl mx-auto">
       {/* Progress indicator */}
       <div className="flex items-center justify-center gap-2">
         {["scenario", "personality", "context", "chat", "feedback", "scripts"].map((s, i) => (
           <div
             key={s}
             className={cn(
-              "w-2 h-2 rounded-full transition-all",
-              step === s ? "w-6 bg-primary" :
+              "h-1.5 rounded-full transition-all duration-300",
+              step === s ? "w-8 bg-primary" :
                 ["scenario", "personality", "context", "chat", "feedback", "scripts"].indexOf(step) > i
-                  ? "bg-primary/50" : "bg-muted"
+                  ? "w-2 bg-primary/40" : "w-1.5 bg-muted"
             )}
           />
         ))}
       </div>
 
-      {step === "scenario" && renderScenarioStep()}
-      {step === "personality" && renderPersonalityStep()}
-      {step === "context" && renderContextStep()}
-      {step === "chat" && renderChatStep()}
-      {step === "feedback" && renderFeedbackStep()}
-      {step === "scripts" && renderScriptsStep()}
+      <div className="bg-card/30 backdrop-blur-sm rounded-3xl p-6 md:p-8 border border-white/20 shadow-xl min-h-[500px] flex flex-col">
+        {step === "scenario" && renderScenarioStep()}
+        {step === "personality" && renderPersonalityStep()}
+        {step === "context" && renderContextStep()}
+        {step === "chat" && renderChatStep()}
+        {step === "feedback" && renderFeedbackStep()}
+        {step === "scripts" && renderScriptsStep()}
+      </div>
     </div>
   );
 }

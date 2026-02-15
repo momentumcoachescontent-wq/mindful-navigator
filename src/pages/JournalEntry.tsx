@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Save, Trophy, Loader2, Check } from "lucide-react";
+import { ArrowLeft, Save, Trophy, Loader2, Check, RefreshCw } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -116,16 +116,16 @@ const JournalEntry = () => {
         // Parse JSON content
         try {
           const contentData = typeof data.content === 'string' ? JSON.parse(data.content) : data.content;
-          
+
           setContent(contentData.text || "");
           setTitle(contentData.title || "");
           setSelectedTags(contentData.tags || []);
           setIsFollowUp(!!contentData.follow_up);
-          
+
           if (contentData.parent_id) {
             setParentEntryId(contentData.parent_id);
           }
-          
+
           // Restore action plan and tools if they exist
           if (contentData.action_plan) {
             setActionPlan(contentData.action_plan);
@@ -137,7 +137,7 @@ const JournalEntry = () => {
           // Fallback for old format or non-JSON content
           setContent(data.content || "");
         }
-        
+
         setMood(data.mood_score || 3);
         setIsVictory(data.entry_type === "victory");
 
@@ -414,6 +414,96 @@ const JournalEntry = () => {
             className="min-h-[200px] resize-none"
           />
         </div>
+
+        {/* Simulation Results (Special Handling) */}
+        {id && id !== "new" && !isLoading && content && (
+          (() => {
+            try {
+              const data = typeof content === 'string' ? JSON.parse(content) : content;
+              if (data.type === "simulation_result") {
+                return (
+                  <div className="space-y-6 pt-6 border-t border-border">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-display font-bold">Resultado de Simulación</h3>
+                      <div className={cn(
+                        "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest",
+                        data.is_completed ? "bg-success/20 text-success" : "bg-warning/20 text-warning"
+                      )}>
+                        {data.is_completed ? "Completado" : "Pendiente de Acción"}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { label: 'Claridad', value: data.evaluation?.clarity || 0, color: 'text-primary' },
+                        { label: 'Firmeza', value: data.evaluation?.firmness || 0, color: 'text-secondary' },
+                        { label: 'Empatía', value: data.evaluation?.empathy || 0, color: 'text-turquoise' }
+                      ].map((stat) => (
+                        <div key={stat.label} className="bg-muted/30 p-3 rounded-xl text-center border border-border/50">
+                          <div className={cn("text-xl font-bold", stat.color)}>{stat.value}/10</div>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mt-1">{stat.label}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {data.recommended_tools && data.recommended_tools.length > 0 && (
+                      <div className="space-y-3">
+                        <p className="text-sm font-bold uppercase tracking-tight text-muted-foreground">Herramientas Sugeridas</p>
+                        <div className="grid gap-2">
+                          {data.recommended_tools.map((tool: any, idx: number) => (
+                            <div key={idx} className="bg-card p-3 rounded-xl border border-border flex items-center justify-between">
+                              <span className="text-sm text-foreground">• {typeof tool === 'string' ? tool : tool.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <Button
+                      onClick={async () => {
+                        try {
+                          setIsSaving(true);
+                          const updatedData = { ...data, is_completed: !data.is_completed };
+                          const { error } = await supabase
+                            .from("journal_entries")
+                            .update({ content: JSON.stringify(updatedData) })
+                            .eq("id", id);
+
+                          if (error) throw error;
+                          toast.success(updatedData.is_completed ? "¡Misión cumplida!" : "Marcado como pendiente");
+                          loadEntry(id);
+                        } catch (err) {
+                          console.error("Error updating status:", err);
+                          toast.error("No se pudo actualizar el estado");
+                        } finally {
+                          setIsSaving(false);
+                        }
+                      }}
+                      variant={data.is_completed ? "outline" : "calm"}
+                      className="w-full h-12 shadow-sm"
+                      disabled={isSaving}
+                    >
+                      {data.is_completed ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          Marcar como pendiente
+                        </>
+                      ) : (
+                        <>
+                          <Check className="w-5 h-5 mr-2" />
+                          Marcar como aplicada/completada
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                );
+              }
+            } catch (e) {
+              return null;
+            }
+            return null;
+          })()
+        )}
 
         {isScannerEntry && (actionPlan.length > 0 || tools.length > 0) && (
           <div className="space-y-6 pt-4 border-t border-border">
