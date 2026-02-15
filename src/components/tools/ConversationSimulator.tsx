@@ -98,6 +98,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [scripts, setScripts] = useState<Script | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [savedEntryId, setSavedEntryId] = useState<string | null>(null);
 
   const maxRounds = 3; // Limitar a 3 interacciones
 
@@ -326,18 +327,25 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
         follow_up: true // Activar seguimiento por defecto para simulaciones
       };
 
-      const { error } = await supabase.from("journal_entries").insert({
+      const { data, error } = await supabase.from("journal_entries").insert({
         user_id: session.user.id,
         entry_type: "simulation_result",
-        content: JSON.stringify(contentData)
-      });
+        content: JSON.stringify({
+          ...contentData,
+          title: `Simulación: ${scenarioLabel}`,
+          text: `Simulación de rol: ${scenarioLabel} con ${selectedPersonality?.label}. Resultado: ${feedback?.overall}`
+        })
+      }).select().single();
 
       if (error) throw error;
 
-      toast({
-        title: "¡Guardado!",
-        description: "Tu simulación ha sido guardada exitosamente en tu diario.",
-      });
+      if (data) {
+        setSavedEntryId(data.id);
+        toast({
+          title: "¡Guardado con éxito!",
+          description: "Tu simulación ha sido guardada. Puedes ver los detalles en tu diario.",
+        });
+      }
     } catch (error) {
       console.error("Error saving:", error);
       toast({
@@ -761,7 +769,11 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
             <RefreshCw className="w-4 h-4 mr-2" />
             Reiniciar
           </Button>
-          <Button onClick={() => window.location.href = '/journal'} variant="ghost" className="flex-1 h-10">
+          <Button
+            onClick={() => window.location.href = '/journal'}
+            variant="ghost"
+            className="flex-1 h-10"
+          >
             Ir al Diario
           </Button>
         </div>
