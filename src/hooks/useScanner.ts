@@ -72,7 +72,10 @@ export function useScanner() {
           name: tool,
           reason: getToolReason(tool),
         })),
-        actionPlan: analysis.action_plan || [],
+        actionPlan: (analysis.action_plan || []).map((p: any, i: number) => ({
+          step: p.step || i + 1,
+          action: typeof p === 'string' ? p : (p.action || p.description || p.text || "Paso sugerido"),
+        })),
         validationMessage: analysis.validation_message || "",
       };
 
