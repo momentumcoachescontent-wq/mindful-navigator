@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle, Info, Lightbulb, BookOpen, Save, ListChecks } from "lucide-react";
+import { AlertTriangle, CheckCircle, Info, Lightbulb, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -127,14 +127,14 @@ export function ScanResult({ result, onSaveToJournal, onCreatePlan }: ScanResult
       </div>
 
       {/* Actions */}
-      <div className="flex gap-3 pt-2">
-        <Button variant="outline" className="flex-1" onClick={onSaveToJournal}>
-          <Save className="w-4 h-4" />
+      <div className="flex gap-4 pt-4">
+        <Button
+          onClick={onSaveToJournal}
+          className="flex-1 gap-2 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 transition-all duration-300"
+          size="lg"
+        >
+          <BookOpen className="w-4 h-4" />
           <span>Guardar en Diario</span>
-        </Button>
-        <Button variant="calm" className="flex-1" onClick={onCreatePlan}>
-          <ListChecks className="w-4 h-4" />
-          <span>Crear seguimiento</span>
         </Button>
       </div>
     </div>
