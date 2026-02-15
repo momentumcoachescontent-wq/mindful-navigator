@@ -369,23 +369,23 @@ ESCENARIO: ${scenario}
 TAREAS:
 1. Evalúa Claridad, Firmeza y Empatía (escala 1-10).
 2. Identifica "Trampas" (auto-sabotaje, pasivo-agresividad, disculpas excesivas).
-3. Proporciona una "Clave de Transformación" personalizada.
-4. Sugiere 3 scripts (Suave, Firme, Alerta).
+- Claves de Transformación: (3 puntos psicológicos para romper el patrón de miedo).
+- Scripts sugeridos: (3 opciones: Suave, Firme, Alerta).
+  *IMPORTANTE*: Los scripts deben ser lenguaje NATURAL y HUMANO. 
+  *PROHIBIDO*: No menciones herramientas del sistema (como H.E.R.O., Disco Rayado, etc.) dentro del texto del script. El script debe ser lo que el usuario DIRÍA literalmente.
 
 Responde EXCLUSIVAMENTE en formato JSON con esta estructura:
 {
-  "feedback": {
-    "overall": "Análisis profundo en 2 oraciones sobre el patrón detectado.",
-    "clarity": number,
-    "firmness": number,
-    "empathy": number,
-    "traps": ["string", "string"],
-    "recommended_tools": ["H.E.R.O.", "C.A.L.M.", "Disco Rayado"]
-  },
+  "overall": "Análisis profundo en 2 oraciones sobre el patrón detectado.",
+  "clarity": number,
+  "firmness": number,
+  "empathy": number,
+  "traps": ["string", "string"],
+  "recommended_tools": ["H.E.R.O.", "C.A.L.M.", "Disco Rayado"],
   "scripts": {
-    "soft": "Mínima intervención con empatía",
-    "firm": "Límite claro sin justificación excesiva",
-    "final_warning": "Consecuencia clara ante la falta de respeto"
+    "soft": "Texto literal para decir (sin mencionar herramientas)",
+    "firm": "Texto literal para decir (sin mencionar herramientas)",
+    "final_warning": "Texto literal para decir (sin mencionar herramientas)"
   }
 }
 

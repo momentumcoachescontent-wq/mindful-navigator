@@ -74,8 +74,15 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
     { id: "explosivo", label: "Perfil Explosivo", description: "Reacciones desproporcionadas y desborde emocional." }
   ];
 
-  const scenarios = (content?.scenarios && content.scenarios.length > 0) ? content.scenarios : defaultScenarios;
-  const personalities = (content?.personalities && content.personalities.length > 0) ? content.personalities : defaultPersonalities;
+  const scenarios = [
+    ...defaultScenarios,
+    ...(content?.scenarios || [])
+  ].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+
+  const personalities = [
+    ...defaultPersonalities,
+    ...(content?.personalities || [])
+  ].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
 
   const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
   const [isCustomScenario, setIsCustomScenario] = useState(false);
@@ -229,22 +236,24 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
         throw new Error(detail.error || error.message);
       }
 
-      if (data?.feedback) {
+      const feedbackData = data?.feedback || data;
+      if (feedbackData) {
         setFeedback({
-          overall: data.feedback?.overall || "Sin análisis detallado",
-          clarity: data.feedback?.clarity || 0,
-          firmness: data.feedback?.firmness || 0,
-          empathy: data.feedback?.empathy || 0,
-          traps: Array.isArray(data.feedback?.traps) ? data.feedback.traps : [],
-          recommended_tools: Array.isArray(data.feedback?.recommended_tools) ? data.feedback.recommended_tools : []
+          overall: feedbackData.overall || "Sin análisis detallado",
+          clarity: feedbackData.clarity || 0,
+          firmness: feedbackData.firmness || 0,
+          empathy: feedbackData.empathy || 0,
+          traps: Array.isArray(feedbackData.traps) ? feedbackData.traps : [],
+          recommended_tools: Array.isArray(feedbackData.recommended_tools) ? feedbackData.recommended_tools : []
         });
       }
 
-      if (data?.scripts) {
+      const scriptsData = data?.scripts || feedbackData?.scripts;
+      if (scriptsData) {
         setScripts({
-          soft: data.scripts?.soft || "No disponible",
-          firm: data.scripts?.firm || "No disponible",
-          final_warning: data.scripts?.final_warning || "No disponible"
+          soft: scriptsData.soft || "No disponible",
+          firm: scriptsData.firm || "No disponible",
+          final_warning: scriptsData.final_warning || "No disponible"
         });
       }
     } catch (error: any) {
@@ -296,7 +305,8 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
           firm: scripts.firm,
           final_warning: scripts.final_warning
         },
-        is_completed: false // Logic for the user to mark as completed
+        is_completed: false, // Logic for the user to mark as completed
+        follow_up: true // Activar seguimiento por defecto para simulaciones
       };
 
       const { error } = await supabase.from("journal_entries").insert({
