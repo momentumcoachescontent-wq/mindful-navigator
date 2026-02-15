@@ -793,11 +793,11 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
             Reiniciar
           </Button>
           <Button
-            onClick={() => navigate('/journal')}
+            onClick={() => navigate(savedEntryId ? `/journal/${savedEntryId}` : '/journal')}
             variant="ghost"
             className="flex-1 h-10"
           >
-            Ir al Diario
+            {savedEntryId ? "Ver Entrada" : "Ir al Diario"}
           </Button>
         </div>
       </div>
