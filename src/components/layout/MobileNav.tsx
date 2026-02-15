@@ -1,10 +1,11 @@
-import { Home, Search, BookOpen, Users, User } from "lucide-react";
+import { Home, Search, BookOpen, Users, User, ShoppingBag } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { icon: Home, label: "Inicio", path: "/" },
   { icon: Search, label: "Escáner", path: "/scanner" },
+  { icon: ShoppingBag, label: "Tienda", path: "/shop" },
   { icon: BookOpen, label: "Herramientas", path: "/tools" },
   { icon: Users, label: "Comunidad", path: "/community" },
   { icon: User, label: "Perfil", path: "/profile" },
