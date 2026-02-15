@@ -15,6 +15,7 @@ const tagConfig = [
   { id: "relationships", label: "Pareja", color: "bg-destructive/20 text-destructive" },
   { id: "friends", label: "Amigos", color: "bg-warning/20 text-warning" },
   { id: "self", label: "Personal", color: "bg-primary/20 text-primary" },
+  { id: "Victoria", label: "Victoria", color: "bg-amber-500/20 text-amber-600" },
 ];
 
 const tabs = [
@@ -30,6 +31,7 @@ interface JournalEntry {
   created_at: string;
   content: string | null;
   entry_type: string | null;
+  tags: string[] | null;
   mood_score: number | null;
   energy_score: number | null;
   stress_score: number | null;
@@ -87,20 +89,24 @@ const Journal = () => {
     try {
       contentData = typeof entry.content === 'string' ? JSON.parse(entry.content) : entry.content;
     } catch (e) {
-      // If parsing fails, only show in "entries" tab
+      // If parsing fails, and it's not a victory, fallback to entry tab
+      if (entry.entry_type === "victory") return activeTab === "victories";
       return activeTab === "entries";
     }
 
     // Filter by pending/follow-up status
     if (activeTab === "pending") {
-      // Only show entries marked for follow-up
       if (!contentData?.follow_up) return false;
     }
 
     // Filter by selected tag
     if (selectedTag) {
-      const entryTags = contentData?.tags || [];
-      if (!entryTags.includes(selectedTag)) return false;
+      // Check both the JSON content tags AND the column tags
+      const jsonTags = contentData?.tags || [];
+      const columnTags = entry.tags || [];
+      const allTags = Array.from(new Set([...jsonTags, ...columnTags]));
+
+      if (!allTags.includes(selectedTag)) return false;
     }
 
     return true;
