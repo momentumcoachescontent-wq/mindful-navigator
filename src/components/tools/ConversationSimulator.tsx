@@ -337,7 +337,11 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
         },
         feedback: feedback?.overall || "",
         traps: feedback?.traps || [],
-        recommended_tools: feedback?.recommended_tools || [],
+        recommended_tools: feedback?.recommended_tools?.map(t => ({
+          name: t,
+          reason: "Recomendado por el Asistente",
+          completed: false
+        })) || [],
         scripts: {
           soft: scripts.soft,
           firm: scripts.firm,
