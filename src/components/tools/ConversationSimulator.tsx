@@ -288,6 +288,26 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
     setStep("scripts");
   };
 
+  // Helper para mapear personalidad a etiqueta de grupo
+  const getPersonalityTag = (personalityLabel: string): string[] => {
+    const lowerLabel = personalityLabel.toLowerCase();
+
+    if (lowerLabel.includes('jefe') || lowerLabel.includes('colega') || lowerLabel.includes('entrevistador')) {
+      return ['Trabajo'];
+    }
+    if (lowerLabel.includes('pareja') || lowerLabel.includes('ex')) {
+      return ['Relaciones'];
+    }
+    if (lowerLabel.includes('padre') || lowerLabel.includes('madre') || lowerLabel.includes('familiar')) {
+      return ['Familia'];
+    }
+    if (lowerLabel.includes('amigo') || lowerLabel.includes('vecino')) {
+      return ['Social'];
+    }
+
+    return ['Personal']; // Default fallback
+  };
+
   const handleSaveAsActionPlan = async () => {
     if (!session?.user?.id || !scripts) {
       toast({
