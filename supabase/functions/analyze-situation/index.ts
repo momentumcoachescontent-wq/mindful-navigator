@@ -402,6 +402,10 @@ Responde EXCLUSIVAMENTE en formato JSON con esta estructura:
   "empathy": number,
   "traps": ["string", "string"],
   "recommended_tools": ["H.E.R.O.", "C.A.L.M.", "Disco Rayado"],
+  "action_plan": [
+    { "step": 1, "action": "Breve descripción de la acción inmediata" },
+    { "step": 2, "action": "Próximo paso de seguimiento" }
+  ],
   "scripts": {
     "soft": "Texto literal para decir (sin mencionar herramientas)",
     "firm": "Texto literal para decir (sin mencionar herramientas)",

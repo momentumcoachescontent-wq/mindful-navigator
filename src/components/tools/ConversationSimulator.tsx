@@ -41,6 +41,7 @@ interface Feedback {
   traps: string[];
   overall: string;
   recommended_tools?: string[];
+  action_plan?: { step: number; action: string }[];
 }
 
 interface Script {
@@ -257,7 +258,8 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
           firmness: feedbackData.firmness || 0,
           empathy: feedbackData.empathy || 0,
           traps: Array.isArray(feedbackData.traps) ? feedbackData.traps : [],
-          recommended_tools: Array.isArray(feedbackData.recommended_tools) ? feedbackData.recommended_tools : []
+          recommended_tools: Array.isArray(feedbackData.recommended_tools) ? feedbackData.recommended_tools : [],
+          action_plan: Array.isArray(feedbackData.action_plan) ? feedbackData.action_plan : []
         });
       }
 
@@ -318,6 +320,8 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
           firm: scripts.firm,
           final_warning: scripts.final_warning
         },
+        messages: messages, // Persist the conversation transcript
+        action_plan: feedback?.action_plan || [], // Persist the action plan
         is_completed: false, // Logic for the user to mark as completed
         follow_up: true // Activar seguimiento por defecto para simulaciones
       };

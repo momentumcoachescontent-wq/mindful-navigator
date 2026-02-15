@@ -398,10 +398,14 @@ const JournalEntry = () => {
           </div>
         </div>
 
-        {/* Content */}
+        {/* Content / Notes */}
         <div className="space-y-2">
           <Label htmlFor="content">
-            {isVictory ? "Cuéntanos sobre tu victoria" : "¿Qué quieres escribir?"}
+            {isVictory
+              ? "Cuéntanos sobre tu victoria"
+              : isScannerEntry || (id && id !== "new" && content && JSON.parse(content || '{}').type === "simulation_result")
+                ? "Notas y reflexiones"
+                : "¿Qué quieres escribir?"}
           </Label>
           <Textarea
             id="content"
@@ -411,7 +415,7 @@ const JournalEntry = () => {
             }
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="min-h-[200px] resize-none"
+            className="min-h-[150px] resize-none"
           />
         </div>
 
@@ -422,7 +426,7 @@ const JournalEntry = () => {
               const data = typeof content === 'string' ? JSON.parse(content) : content;
               if (data.type === "simulation_result") {
                 return (
-                  <div className="space-y-6 pt-6 border-t border-border">
+                  <div className="space-y-8 pt-6 border-t border-border">
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-display font-bold">Resultado de Simulación</h3>
                       <div className={cn(
@@ -433,25 +437,109 @@ const JournalEntry = () => {
                       </div>
                     </div>
 
+                    <div className="bg-muted/30 p-4 rounded-2xl border border-border/50 space-y-2">
+                      <p className="text-xs font-bold uppercase tracking-tight text-muted-foreground">Análisis General</p>
+                      <p className="text-sm leading-relaxed italic">"{data.feedback || "Sin análisis detallado"}"</p>
+                    </div>
+
                     <div className="grid grid-cols-3 gap-3">
                       {[
                         { label: 'Claridad', value: data.evaluation?.clarity || 0, color: 'text-primary' },
                         { label: 'Firmeza', value: data.evaluation?.firmness || 0, color: 'text-secondary' },
                         { label: 'Empatía', value: data.evaluation?.empathy || 0, color: 'text-turquoise' }
                       ].map((stat) => (
-                        <div key={stat.label} className="bg-muted/30 p-3 rounded-xl text-center border border-border/50">
+                        <div key={stat.label} className="bg-card p-3 rounded-xl text-center border border-border/50 shadow-sm">
                           <div className={cn("text-xl font-bold", stat.color)}>{stat.value}/10</div>
                           <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mt-1">{stat.label}</p>
                         </div>
                       ))}
                     </div>
 
+                    {/* Conversation Transcript */}
+                    {data.messages && data.messages.length > 0 && (
+                      <div className="space-y-3">
+                        <p className="text-sm font-bold uppercase tracking-tight text-muted-foreground">Transcripción de la Práctica</p>
+                        <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar p-1">
+                          {data.messages.map((msg: any, idx: number) => (
+                            <div
+                              key={idx}
+                              className={cn(
+                                "p-3 rounded-xl text-xs leading-relaxed",
+                                msg.role === 'user'
+                                  ? "bg-primary/10 border border-primary/20 ml-6"
+                                  : "bg-muted border border-border mr-6"
+                              )}
+                            >
+                              <p className="font-bold mb-1 opacity-50 uppercase text-[9px]">
+                                {msg.role === 'user' ? 'Tú' : (data.personality || 'Simulador')}
+                              </p>
+                              {msg.content}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Traps */}
+                    {data.traps && data.traps.length > 0 && (
+                      <div className="bg-coral/5 border border-coral/20 rounded-2xl p-4 space-y-3">
+                        <div className="flex items-center gap-2 text-coral">
+                          <span className="text-lg">⚠️</span>
+                          <p className="text-xs font-bold uppercase tracking-tight">Trampas Detectadas</p>
+                        </div>
+                        <ul className="space-y-2">
+                          {data.traps.map((trap: string, i: number) => (
+                            <li key={i} className="text-xs text-foreground flex items-start gap-2">
+                              <span className="text-coral mt-1">•</span>
+                              <span>{trap}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Scripts */}
+                    {data.scripts && (
+                      <div className="space-y-4">
+                        <p className="text-sm font-bold uppercase tracking-tight text-muted-foreground">Scripts Sugeridos</p>
+                        <div className="grid gap-3">
+                          {[
+                            { label: 'Opción Suave', content: data.scripts.soft, color: 'border-turquoise/30 bg-turquoise/5' },
+                            { label: 'Opción Firme', content: data.scripts.firm, color: 'border-primary/30 bg-primary/5' },
+                            { label: 'Último Aviso', content: data.scripts.final_warning, color: 'border-destructive/30 bg-destructive/5' }
+                          ].map((script, idx) => (
+                            <div key={idx} className={cn("p-4 rounded-2xl border space-y-2", script.color)}>
+                              <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">{script.label}</p>
+                              <p className="text-sm italic leading-relaxed">"{script.content}"</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Action Plan */}
+                    {data.action_plan && data.action_plan.length > 0 && (
+                      <div className="space-y-3">
+                        <p className="text-sm font-bold uppercase tracking-tight text-muted-foreground">Plan de Acción (Pasos a seguir)</p>
+                        <div className="space-y-2">
+                          {data.action_plan.map((step: any, idx: number) => (
+                            <div key={idx} className="bg-card p-3 rounded-xl border border-border flex items-start gap-3 shadow-sm">
+                              <div className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
+                                {step.step || idx + 1}
+                              </div>
+                              <span className="text-sm text-foreground">{step.action}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {data.recommended_tools && data.recommended_tools.length > 0 && (
                       <div className="space-y-3">
-                        <p className="text-sm font-bold uppercase tracking-tight text-muted-foreground">Herramientas Sugeridas</p>
+                        <p className="text-sm font-bold uppercase tracking-tight text-muted-foreground">Herramientas Recomendadas</p>
                         <div className="grid gap-2">
                           {data.recommended_tools.map((tool: any, idx: number) => (
-                            <div key={idx} className="bg-card p-3 rounded-xl border border-border flex items-center justify-between">
+                            <div key={idx} className="bg-card p-3 rounded-xl border border-border flex items-center justify-between shadow-sm">
                               <span className="text-sm text-foreground">• {typeof tool === 'string' ? tool : tool.name}</span>
                             </div>
                           ))}
