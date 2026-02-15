@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -166,6 +167,8 @@ const AdminDashboard = () => {
 
                 {/* Detailed Charts / Sections */}
                 <div className="grid gap-4 md:grid-cols-2">
+
+
                     <Card className="col-span-1 hover:border-primary/50 transition-colors cursor-pointer" onClick={() => navigate("/admin/products")}>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
@@ -179,6 +182,23 @@ const AdminDashboard = () => {
                             </p>
                             <div className="flex items-center text-primary text-sm font-medium">
                                 Ver catálogo <ArrowRight className="w-4 h-4 ml-1" />
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="col-span-1 hover:border-primary/50 transition-colors cursor-pointer" onClick={() => navigate("/admin/audio")}>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Music className="w-5 h-5 text-turquoise" />
+                                Biblioteca de Audio
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-sm text-muted-foreground mb-4">
+                                Sube meditaciones, guías y música para la comunidad.
+                            </p>
+                            <div className="flex items-center text-primary text-sm font-medium">
+                                Gestionar audios <ArrowRight className="w-4 h-4 ml-1" />
                             </div>
                         </CardContent>
                     </Card>

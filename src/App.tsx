@@ -21,8 +21,14 @@ import Shop from "./pages/Shop";
 import DataManagement from "./pages/DataManagement";
 import Settings from "./pages/Settings";
 import AdminDashboard from "./pages/AdminDashboard";
+
+
 import AdminProducts from "./pages/AdminProducts";
+import AdminAudio from "./pages/AdminAudio";
+import Library from "./pages/Library";
 import NotFound from "./pages/NotFound";
+import { AudioProvider } from "@/contexts/AudioContext";
+import { AudioPlayer } from "@/components/audio/AudioPlayer";
 
 const queryClient = new QueryClient();
 
@@ -33,34 +39,41 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+
           <AuthProvider>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/onboarding" element={<Onboarding />} />
-              <Route path="/scanner" element={<Scanner />} />
-              <Route path="/tools" element={<Tools />} />
-              <Route path="/tools/:id" element={<ToolDetail />} />
-              <Route path="/journal" element={<Journal />} />
-              <Route path="/journal/new" element={<JournalEntry />} />
-              <Route path="/journal/:id" element={<JournalEntry />} />
-              <Route path="/community" element={<Community />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/meditations" element={<Meditations />} />
-              <Route path="/shop" element={<Shop />} />
-              <Route path="/premium" element={<Premium />} />
-              <Route path="/data" element={<DataManagement />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/settings/notifications" element={<Settings />} />
-              <Route path="/settings/privacy" element={<Settings />} />
-              <Route path="/settings/contacts" element={<Settings />} />
-              <Route path="/settings/appearance" element={<Settings />} />
-              <Route path="/settings/profile" element={<Settings />} />
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/products" element={<AdminProducts />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <AudioProvider>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/onboarding" element={<Onboarding />} />
+                <Route path="/scanner" element={<Scanner />} />
+                <Route path="/tools" element={<Tools />} />
+                <Route path="/tools/:id" element={<ToolDetail />} />
+                <Route path="/journal" element={<Journal />} />
+                <Route path="/journal/new" element={<JournalEntry />} />
+                <Route path="/journal/:id" element={<JournalEntry />} />
+                <Route path="/community" element={<Community />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/meditations" element={<Meditations />} />
+                <Route path="/library" element={<Library />} />
+                <Route path="/shop" element={<Shop />} />
+                <Route path="/premium" element={<Premium />} />
+                <Route path="/data" element={<DataManagement />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/settings/notifications" element={<Settings />} />
+                <Route path="/settings/privacy" element={<Settings />} />
+                <Route path="/settings/contacts" element={<Settings />} />
+                <Route path="/settings/appearance" element={<Settings />} />
+                <Route path="/settings/profile" element={<Settings />} />
+
+                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin/products" element={<AdminProducts />} />
+                <Route path="/admin/audio" element={<AdminAudio />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <AudioPlayer />
+            </AudioProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
