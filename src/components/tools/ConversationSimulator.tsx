@@ -56,6 +56,27 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
   const { toast } = useToast();
 
   const [step, setStep] = useState<SimulatorStep>("scenario");
+
+  // Perfiles y escenarios por defecto para asegurar variedad incluso si la DB no está actualizada
+  const defaultScenarios = [
+    { id: "jefe", label: "Jefe/a", icon: "briefcase" },
+    { id: "pareja", label: "Pareja", icon: "heart" },
+    { id: "madre_padre", label: "Padre/Madre", icon: "users" },
+    { id: "ex_pareja", label: "Ex-Pareja", icon: "user-minus" },
+    { id: "colega", label: "Colega", icon: "user-plus" }
+  ];
+
+  const defaultPersonalities = [
+    { id: "dominante", label: "Perfil Dominante", description: "Se comunica con autoridad y espera resultados." },
+    { id: "pasivo_agresivo", label: "Pasivo-Agresivo", description: "Usa el sarcasmo o el silencio para manipular." },
+    { id: "victima", label: "Perfil Víctima", description: "Culpa a los demás y evita responsabilidad." },
+    { id: "evitativo", label: "Perfil Evitativo", description: "Evita el conflicto y las conversaciones profundas." },
+    { id: "explosivo", label: "Perfil Explosivo", description: "Reacciones desproporcionadas y desborde emocional." }
+  ];
+
+  const scenarios = (content?.scenarios && content.scenarios.length > 0) ? content.scenarios : defaultScenarios;
+  const personalities = (content?.personalities && content.personalities.length > 0) ? content.personalities : defaultPersonalities;
+
   const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
   const [isCustomScenario, setIsCustomScenario] = useState(false);
   const [customScenarioText, setCustomScenarioText] = useState("");
@@ -329,7 +350,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        {content.scenarios.map((scenario) => (
+        {scenarios.map((scenario) => (
           <button
             key={scenario.id}
             onClick={() => handleScenarioSelect(scenario)}
@@ -362,7 +383,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
 
       <div className="space-y-4">
         <div className="grid grid-cols-1 gap-3">
-          {content.personalities.map((personality) => (
+          {personalities.map((personality) => (
             <button
               key={personality.id}
               onClick={() => handlePersonalitySelect(personality)}

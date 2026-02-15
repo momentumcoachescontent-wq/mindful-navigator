@@ -281,7 +281,7 @@ serve(async (req) => {
             });
         }
 
-        const { situation, mode, scenario, personality, personalityDescription, context, messages, isFirst, currentRound, maxRounds } = requestBody;
+        const { situation, mode, scenario, personality, personalityDescription, extraTrait, context, messages, isFirst, currentRound, maxRounds } = requestBody;
 
         const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
         if (!OPENAI_API_KEY) {
@@ -300,15 +300,16 @@ serve(async (req) => {
             const systemPromptRoleplay = `Actúas como una IA de simulación realista para entrenamiento de inteligencia emocional.
 MODO: ROLEPLAY DE ENTRENAMIENTO
 ROL: ${currentRole}
+RASGO ADICIONAL: ${extraTrait || 'Neutral'}
 ESCENARIO: ${currentScenario}
 CONTEXTO ADICIONAL: ${context || "Sin contexto adicional"}
 PROGRESO: Ronda ${currentRound + 1} de ${maxRounds}
 
 PRINCIPIOS DE ROLEPLAY:
-1. MANTÉN EL PERSONAJE: Responde exactamente como lo haría alguien con este perfil y en esta situación.
+1. MANTÉN EL PERSONAJE: Responde exactamente como lo haría alguien con este perfil (${currentRole}) y este rasgo específico (${extraTrait}).
 2. BREVEDAD: Respuestas de máximo 2-3 oraciones.
 3. REALISMO: No seas cooperativo de inmediato. El usuario debe "ganarse" la resolución mediante asertividad y empatía.
-4. TONO: ${currentRole.includes('Aggressive') ? 'Hostil y cortante' : currentRole.includes('Avoidant') ? 'Distante y evasivo' : 'Neutral pero firme'}.
+4. TONO: Refleja fielmente el rasgo "${extraTrait}". Si es hostil, sé hostil. Si es evitativo, evade. Si es víctima, culpa al usuario.
 
 PRINCIPIOS DE SEGURIDAD (MANDATORIOS):
 - NO insultos explícitos ni vulgaridades.
