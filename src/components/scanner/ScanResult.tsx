@@ -6,9 +6,10 @@ export interface ScanResultData {
   summary: string;
   alertLevel: "low" | "medium" | "high";
   redFlags: string[];
-  observations: string[];
+  observations: string;
   recommendedTools: { name: string; reason: string }[];
-  actionPlan: string[];
+  actionPlan: { step: number; action: string }[];
+  validationMessage: string;
 }
 
 interface ScanResultProps {
@@ -82,14 +83,9 @@ export function ScanResult({ result, onSaveToJournal, onCreatePlan }: ScanResult
           <Lightbulb className="w-5 h-5 text-warning" />
           Qué observar
         </h4>
-        <ul className="space-y-2">
-          {result.observations.map((obs, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-              <span className="w-1.5 h-1.5 rounded-full bg-warning mt-2 flex-shrink-0" />
-              {obs}
-            </li>
-          ))}
-        </ul>
+        <div className="bg-warning/5 rounded-xl p-4 text-sm text-muted-foreground leading-relaxed">
+          {result.observations}
+        </div>
       </div>
 
       {/* Recommended Tools */}
@@ -118,9 +114,9 @@ export function ScanResult({ result, onSaveToJournal, onCreatePlan }: ScanResult
           {result.actionPlan.map((step, i) => (
             <li key={i} className="flex items-start gap-3 text-sm">
               <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium flex-shrink-0">
-                {i + 1}
+                {step.step}
               </span>
-              <span className="text-foreground pt-0.5">{step}</span>
+              <span className="text-foreground pt-0.5">{step.action}</span>
             </li>
           ))}
         </ol>
