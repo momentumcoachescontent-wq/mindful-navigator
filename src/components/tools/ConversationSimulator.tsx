@@ -332,6 +332,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
         entry_type: "simulation_result",
         content: JSON.stringify({
           ...contentData,
+          tags: getPersonalityTag(selectedPersonality?.label || ''),
           title: `Simulación: ${scenarioLabel}`,
           text: `Simulación de rol: ${scenarioLabel} con ${selectedPersonality?.label}. Resultado: ${feedback?.overall}`
         })
