@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { ArrowRight, Check, RefreshCw, Save, Sparkles, MessageCircle, Loader2, Send, User, Bot, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -58,8 +56,6 @@ type SimulatorStep = "scenario" | "personality" | "context" | "chat" | "feedback
 export function ConversationSimulator({ content }: ConversationSimulatorProps) {
   const { session } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
-  const navigate = useNavigate();
   const navigate = useNavigate();
 
   const [step, setStep] = useState<SimulatorStep>("scenario");
