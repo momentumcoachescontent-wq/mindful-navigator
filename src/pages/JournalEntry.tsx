@@ -27,10 +27,6 @@ const moodOptions = [
   { value: 5, label: "😊", description: "Muy bien" },
 ];
 
-// ... imports ...
-// ... imports ...
-
-// ... interfaces ...
 interface ActionStep {
   step: number;
   action: string;
@@ -58,7 +54,9 @@ const JournalEntry = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [parentEntryId, setParentEntryId] = useState<string | null>(null);
+
   const [simulationData, setSimulationData] = useState<any>(null);
+  const [scannerData, setScannerData] = useState<any>(null);
 
   // Interactive Checklist State
   const [actionPlan, setActionPlan] = useState<ActionStep[]>([]);
@@ -126,10 +124,10 @@ const JournalEntry = () => {
           const rawData = data as any;
           const contentData = typeof rawData.content === 'string' ? JSON.parse(rawData.content) : rawData.content;
 
-          // If it's a simulation result, we store the full object in simulationData
-          // and the user's notes in the content state
+          // If it's a simulation result
           if (contentData && (contentData.type === "simulation_result" || contentData.messages)) {
             setSimulationData(contentData);
+            setScannerData(null);
             setIsScannerEntry(true);
             setContent(contentData.text || "");
             setTitle(contentData.title || "Resultado de Simulación");
@@ -137,8 +135,22 @@ const JournalEntry = () => {
             // Extract interactive lists
             if (contentData.action_plan) setActionPlan(contentData.action_plan);
             if (contentData.recommended_tools) setTools(contentData.recommended_tools);
-          } else {
+          }
+          // If it's a scanner result (using the new scan_result field or entry_type)
+          else if (contentData?.scan_result || data.entry_type === "scanner_result") {
+            const scanResult = contentData.scan_result || contentData; // fallback if valid
+            setScannerData(scanResult);
             setSimulationData(null);
+            setIsScannerEntry(true);
+            setContent(contentData.text || rawData.content || "");
+            setTitle(contentData.title || "Análisis de Situación");
+
+            if (contentData.action_plan) setActionPlan(contentData.action_plan);
+            if (contentData.recommended_tools) setTools(contentData.recommended_tools);
+          }
+          else {
+            setSimulationData(null);
+            setScannerData(null);
             setIsScannerEntry(false);
             setContent(contentData?.text || rawData.content || "");
             setTitle(contentData?.title || "");
@@ -167,6 +179,7 @@ const JournalEntry = () => {
           setTitle(rawData.title || "");
           setIsScannerEntry(false);
           setSimulationData(null);
+          setScannerData(null);
           setMood(data.mood_score || 3);
           setIsVictory(data.entry_type === "victory");
         }
@@ -220,6 +233,18 @@ const JournalEntry = () => {
       if (simulationData) {
         Object.assign(contentData, {
           ...simulationData,
+          text: content.trim(),
+          title: title.trim(),
+          tags: selectedTags,
+          action_plan: actionPlan,
+          recommended_tools: tools
+        });
+      }
+
+      // If we have scanner data, preserve it
+      if (scannerData) {
+        Object.assign(contentData, {
+          scan_result: scannerData,
           text: content.trim(),
           title: title.trim(),
           tags: selectedTags,
@@ -306,7 +331,7 @@ const JournalEntry = () => {
           </Button>
           <div className="flex-1">
             <h1 className="text-lg font-display font-bold text-foreground">
-              Nueva Entrada
+              {id === 'new' ? 'Nueva Entrada' : 'Entrada'}
             </h1>
           </div>
           <Button
@@ -329,7 +354,6 @@ const JournalEntry = () => {
       </header>
 
       <main className="container py-6 space-y-6">
-        {/* Victory toggle */}
         {/* Victory toggle */}
         <div className={cn(
           "flex items-center justify-between p-4 rounded-2xl border-2 transition-all",
@@ -553,65 +577,6 @@ const JournalEntry = () => {
               </div>
             )}
 
-            {/* Action Plan */}
-            {actionPlan && actionPlan.length > 0 && (
-              <div className="space-y-3">
-                <p className="text-sm font-bold uppercase tracking-tight text-muted-foreground">Plan de Acción (Pasos a seguir)</p>
-                <div className="space-y-2">
-                  {actionPlan.map((step, idx) => (
-                    <div
-                      key={idx}
-                      onClick={() => toggleAction(idx)}
-                      className={cn(
-                        "bg-card p-3 rounded-xl border flex items-start gap-3 shadow-sm cursor-pointer transition-all hover:bg-muted/50",
-                        step.completed ? "border-success/30 bg-success/5 opacity-80" : "border-border"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 border transition-all",
-                        step.completed ? "bg-success border-success text-white" : "border-muted-foreground/30 bg-background"
-                      )}>
-                        {step.completed && <Check className="w-3.5 h-3.5" />}
-                      </div>
-                      <span className={cn("text-sm", step.completed ? "text-muted-foreground line-through" : "text-foreground")}>
-                        {step.action}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {tools && tools.length > 0 && (
-              <div className="space-y-3">
-                <p className="text-sm font-bold uppercase tracking-tight text-muted-foreground">Herramientas Recomendadas</p>
-                <div className="grid gap-2">
-                  {tools.map((tool, idx) => (
-                    <div
-                      key={idx}
-                      onClick={() => toggleTool(idx)}
-                      className={cn(
-                        "bg-card p-3 rounded-xl border flex items-center justify-between shadow-sm cursor-pointer transition-all hover:bg-muted/50",
-                        tool.completed ? "border-turquoise/30 bg-turquoise/5 opacity-80" : "border-border"
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "w-5 h-5 rounded-md flex items-center justify-center shrink-0 border transition-all",
-                          tool.completed ? "bg-turquoise border-turquoise text-white" : "border-muted-foreground/30 bg-background"
-                        )}>
-                          {tool.completed && <Check className="w-3.5 h-3.5" />}
-                        </div>
-                        <span className={cn("text-sm", tool.completed ? "text-muted-foreground line-through" : "text-foreground")}>
-                          {tool.name}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             <Button
               onClick={async () => {
                 try {
@@ -648,6 +613,61 @@ const JournalEntry = () => {
                 </>
               )}
             </Button>
+          </div>
+        )}
+
+        {/* Scanner Results Display */}
+        {id && id !== "new" && !isLoading && scannerData && (
+          <div className="space-y-6 pt-6 border-t border-border animate-fade-in">
+            <div className="flex items-center gap-3">
+              <h3 className="text-lg font-display font-bold text-foreground">Resultados del Escáner</h3>
+              {scannerData.alert_level && (
+                <span className={cn(
+                  "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest",
+                  scannerData.alert_level === 'high' ? "bg-destructive/10 text-destructive" :
+                    scannerData.alert_level === 'medium' ? "bg-warning/10 text-warning" :
+                      "bg-success/10 text-success"
+                )}>
+                  Nivel {scannerData.alert_level === 'low' ? 'Bajo' : scannerData.alert_level === 'medium' ? 'Medio' : 'Alto'}
+                </span>
+              )}
+            </div>
+
+            {/* Red Flags & Observations */}
+            <div className="grid gap-4 md:grid-cols-2">
+              {scannerData.red_flags && scannerData.red_flags.length > 0 && (
+                <div className="bg-coral/5 border border-coral/20 rounded-2xl p-4 space-y-3">
+                  <h4 className="flex items-center gap-2 font-display font-semibold text-coral text-sm uppercase tracking-wide">
+                    Alertas Detectadas
+                  </h4>
+                  <ul className="space-y-2">
+                    {scannerData.red_flags.map((flag: string, i: number) => (
+                      <li key={i} className="text-sm flex items-start gap-2">
+                        <span className="text-coral mt-1.5 w-1.5 h-1.5 rounded-full bg-coral shrink-0"></span>
+                        <span>{flag}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {scannerData.observations && (
+                <div className="bg-warning/5 border border-warning/20 rounded-2xl p-4 space-y-3">
+                  <h4 className="flex items-center gap-2 font-display font-semibold text-warning text-sm uppercase tracking-wide">
+                    Qué Observar
+                  </h4>
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    {scannerData.observations || scannerData.what_to_observe}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {scannerData.summary && (
+              <div className="bg-muted/50 rounded-xl p-4 italic text-sm text-foreground/80 leading-relaxed border border-border/50">
+                {scannerData.summary}
+              </div>
+            )}
           </div>
         )}
 
