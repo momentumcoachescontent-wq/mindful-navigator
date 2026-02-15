@@ -141,6 +141,15 @@ export function useScanner() {
     }
 
     try {
+      // Create tags from alert level and valid red flags (cleaned)
+      const safeTags = ["escáner", scanResult.alertLevel];
+      if (scanResult.redFlags && Array.isArray(scanResult.redFlags)) {
+        // Take first 3 red flags as tags to avoid overcrowding
+        safeTags.push(...scanResult.redFlags.slice(0, 3).map(f => f.toLowerCase().replace(/[^a-z0-9áéíóúñ ]/g, '')));
+      }
+
+      const dateStr = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
       const { data, error } = await supabase.from("journal_entries").insert({
         user_id: user.id,
         content: `**Situación analizada:**
@@ -166,9 +175,9 @@ ${scanResult.actionPlan.map((p) => `${p.step}. ${p.action}`).join("\n")}
 **💚 Mensaje de Apoyo:**
 ${scanResult.validationMessage}`,
         entry_type: "scanner_result",
-        tags: ["escáner", scanResult.alertLevel],
+        tags: safeTags,
         metadata: {
-          title: `Resultado Escáner de Situaciones ${new Date().toLocaleDateString()}`,
+          title: `Análisis de la situación - ${dateStr}`,
           follow_up: true,
           alert_level: scanResult.alertLevel,
           red_flags: scanResult.redFlags,
