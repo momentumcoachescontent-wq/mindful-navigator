@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import { ArrowRight, Check, RefreshCw, Save, Sparkles, MessageCircle, Loader2, Send, User, Bot, AlertCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -55,6 +58,9 @@ type SimulatorStep = "scenario" | "personality" | "context" | "chat" | "feedback
 export function ConversationSimulator({ content }: ConversationSimulatorProps) {
   const { session } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const navigate = useNavigate();
+  const navigate = useNavigate();
 
   const [step, setStep] = useState<SimulatorStep>("scenario");
 
@@ -293,19 +299,19 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
     const lowerLabel = personalityLabel.toLowerCase();
 
     if (lowerLabel.includes('jefe') || lowerLabel.includes('colega') || lowerLabel.includes('entrevistador')) {
-      return ['Trabajo'];
+      return ['work'];
     }
     if (lowerLabel.includes('pareja') || lowerLabel.includes('ex')) {
-      return ['Relaciones'];
+      return ['relationships'];
     }
     if (lowerLabel.includes('padre') || lowerLabel.includes('madre') || lowerLabel.includes('familiar')) {
-      return ['Familia'];
+      return ['family'];
     }
     if (lowerLabel.includes('amigo') || lowerLabel.includes('vecino')) {
-      return ['Social'];
+      return ['friends'];
     }
 
-    return ['Personal']; // Default fallback
+    return ['self']; // Default fallback
   };
 
   const handleSaveAsActionPlan = async () => {
@@ -791,7 +797,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
             Reiniciar
           </Button>
           <Button
-            onClick={() => window.location.href = '/journal'}
+            onClick={() => navigate('/journal')}
             variant="ghost"
             className="flex-1 h-10"
           >
