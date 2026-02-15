@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle, Info, Lightbulb, BookOpen } from "lucide-react";
+import { AlertTriangle, CheckCircle, Info, Lightbulb, BookOpen, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
