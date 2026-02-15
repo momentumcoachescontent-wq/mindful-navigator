@@ -76,9 +76,19 @@ const Journal = () => {
     if (!entry.content) return false;
     if (typeof entry.content === 'string' && entry.content.trim().length === 0) return false;
 
-    // Always show simulation results in "entries" tab only
+    // Simulation results handling
     if (entry.entry_type === "simulation_result") {
-      return activeTab === "entries";
+      if (activeTab === "entries") return true;
+      if (activeTab === "pending") {
+        let contentData: any = null;
+        try {
+          contentData = typeof entry.content === "string" ? JSON.parse(entry.content) : entry.content;
+          return !!contentData?.follow_up;
+        } catch (e) {
+          return false;
+        }
+      }
+      return false;
     }
 
     // Filter by entry type for victories
