@@ -58,6 +58,7 @@ const JournalEntry = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [parentEntryId, setParentEntryId] = useState<string | null>(null);
+  const [simulationData, setSimulationData] = useState<any>(null);
 
   // Interactive Checklist State
   const [actionPlan, setActionPlan] = useState<ActionStep[]>([]);
@@ -118,12 +119,20 @@ const JournalEntry = () => {
           const rawData = data as any;
           const contentData = typeof rawData.content === 'string' ? JSON.parse(rawData.content) : rawData.content;
 
-          // If it's a simulation result, we KEEP the raw content for the detail renderer
-          // but we extract the user's notes/text for the Textarea if available
-          if (contentData && contentData.type === "simulation_result") {
-            setContent(typeof rawData.content === 'string' ? rawData.content : JSON.stringify(rawData.content));
+          // If it's a simulation result, we store the full object in simulationData
+          // and the user's notes in the content state
+          if (contentData && (contentData.type === "simulation_result" || contentData.messages)) {
+            setSimulationData(contentData);
+            setIsScannerEntry(true);
+            setContent(contentData.text || "");
             setTitle(contentData.title || "Resultado de Simulación");
+
+            // Extract interactive lists
+            if (contentData.action_plan) setActionPlan(contentData.action_plan);
+            if (contentData.recommended_tools) setTools(contentData.recommended_tools);
           } else {
+            setSimulationData(null);
+            setIsScannerEntry(false);
             setContent(contentData?.text || rawData.content || "");
             setTitle(contentData?.title || "");
           }
@@ -147,6 +156,8 @@ const JournalEntry = () => {
           const rawData = data as any;
           setContent(rawData.content || "");
           setTitle("");
+          setIsScannerEntry(false);
+          setSimulationData(null);
         }
 
         setMood(data.mood_score || 3);
@@ -183,12 +194,12 @@ const JournalEntry = () => {
     setIsSaving(true);
     try {
       // Store all data in content as JSON since metadata/tags columns don't exist
-      const contentData = {
+      const contentData: any = {
         text: content.trim(),
         title: title.trim(),
         follow_up: isFollowUp,
         parent_id: parentEntryId,
-        tags: selectedTags, // Store tags within the content JSON
+        tags: selectedTags,
         action_plan: actionPlan,
         recommended_tools: tools,
         progress: {
@@ -196,6 +207,18 @@ const JournalEntry = () => {
           tools: tools.map(t => !!t.completed)
         }
       };
+
+      // If we have simulation metadata, preserve it
+      if (simulationData) {
+        Object.assign(contentData, {
+          ...simulationData,
+          text: content.trim(),
+          title: title.trim(),
+          tags: selectedTags,
+          action_plan: actionPlan,
+          recommended_tools: tools
+        });
+      }
 
       const entryData = {
         user_id: user.id,
@@ -435,177 +458,194 @@ const JournalEntry = () => {
         </div>
 
         {/* Simulation Results (Special Handling) */}
-        {id && id !== "new" && !isLoading && content && (
-          (() => {
-            try {
-              const data = typeof content === 'string' ? JSON.parse(content) : content;
-              if (data && (data.type === "simulation_result" || data.messages)) {
-                return (
-                  <div className="space-y-8 pt-6 border-t border-border">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-display font-bold">Resultado de Simulación</h3>
-                      <div className={cn(
-                        "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest",
-                        data.is_completed ? "bg-success/20 text-success" : "bg-warning/20 text-warning"
-                      )}>
-                        {data.is_completed ? "Completado" : "Pendiente de Acción"}
-                      </div>
-                    </div>
+        {id && id !== "new" && !isLoading && simulationData && (
+          <div className="space-y-8 pt-6 border-t border-border">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-display font-bold">Resultado de Simulación</h3>
+              <div className={cn(
+                "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest",
+                simulationData.is_completed ? "bg-success/20 text-success" : "bg-warning/20 text-warning"
+              )}>
+                {simulationData.is_completed ? "Completado" : "Pendiente de Acción"}
+              </div>
+            </div>
 
-                    <div className="bg-muted/30 p-4 rounded-2xl border border-border/50 space-y-2">
-                      <p className="text-xs font-bold uppercase tracking-tight text-muted-foreground">Análisis General</p>
-                      <p className="text-sm leading-relaxed italic">"{data.feedback || "Sin análisis detallado"}"</p>
-                    </div>
+            <div className="bg-muted/30 p-4 rounded-2xl border border-border/50 space-y-2">
+              <p className="text-xs font-bold uppercase tracking-tight text-muted-foreground">Análisis General</p>
+              <p className="text-sm leading-relaxed italic">"{simulationData.feedback || simulationData.overall || "Sin análisis detallado"}"</p>
+            </div>
 
-                    <div className="grid grid-cols-3 gap-3">
-                      {[
-                        { label: 'Claridad', value: data.evaluation?.clarity || 0, color: 'text-primary' },
-                        { label: 'Firmeza', value: data.evaluation?.firmness || 0, color: 'text-secondary' },
-                        { label: 'Empatía', value: data.evaluation?.empathy || 0, color: 'text-turquoise' }
-                      ].map((stat) => (
-                        <div key={stat.label} className="bg-card p-3 rounded-xl text-center border border-border/50 shadow-sm">
-                          <div className={cn("text-xl font-bold", stat.color)}>{stat.value}/10</div>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mt-1">{stat.label}</p>
-                        </div>
-                      ))}
-                    </div>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: 'Claridad', value: simulationData.evaluation?.clarity || simulationData.clarity || 0, color: 'text-primary' },
+                { label: 'Firmeza', value: simulationData.evaluation?.firmness || simulationData.firmness || 0, color: 'text-secondary' },
+                { label: 'Empatía', value: simulationData.evaluation?.empathy || simulationData.empathy || 0, color: 'text-turquoise' }
+              ].map((stat) => (
+                <div key={stat.label} className="bg-card p-3 rounded-xl text-center border border-border/50 shadow-sm">
+                  <div className={cn("text-xl font-bold", stat.color)}>{stat.value}/10</div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mt-1">{stat.label}</p>
+                </div>
+              ))}
+            </div>
 
-                    {/* Conversation Transcript */}
-                    {data.messages && data.messages.length > 0 && (
-                      <div className="space-y-3">
-                        <p className="text-sm font-bold uppercase tracking-tight text-muted-foreground">Transcripción de la Práctica</p>
-                        <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar p-1">
-                          {data.messages.map((msg: any, idx: number) => (
-                            <div
-                              key={idx}
-                              className={cn(
-                                "p-3 rounded-xl text-xs leading-relaxed",
-                                msg.role === 'user'
-                                  ? "bg-primary/10 border border-primary/20 ml-6"
-                                  : "bg-muted border border-border mr-6"
-                              )}
-                            >
-                              <p className="font-bold mb-1 opacity-50 uppercase text-[9px]">
-                                {msg.role === 'user' ? 'Tú' : (data.personality || 'Simulador')}
-                              </p>
-                              {msg.content}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Traps */}
-                    {data.traps && data.traps.length > 0 && (
-                      <div className="bg-coral/5 border border-coral/20 rounded-2xl p-4 space-y-3">
-                        <div className="flex items-center gap-2 text-coral">
-                          <span className="text-lg">⚠️</span>
-                          <p className="text-xs font-bold uppercase tracking-tight">Trampas Detectadas</p>
-                        </div>
-                        <ul className="space-y-2">
-                          {data.traps.map((trap: string, i: number) => (
-                            <li key={i} className="text-xs text-foreground flex items-start gap-2">
-                              <span className="text-coral mt-1">•</span>
-                              <span>{trap}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {/* Scripts */}
-                    {data.scripts && (
-                      <div className="space-y-4">
-                        <p className="text-sm font-bold uppercase tracking-tight text-muted-foreground">Scripts Sugeridos</p>
-                        <div className="grid gap-3">
-                          {[
-                            { label: 'Opción Suave', content: data.scripts.soft, color: 'border-turquoise/30 bg-turquoise/5' },
-                            { label: 'Opción Firme', content: data.scripts.firm, color: 'border-primary/30 bg-primary/5' },
-                            { label: 'Último Aviso', content: data.scripts.final_warning, color: 'border-destructive/30 bg-destructive/5' }
-                          ].map((script, idx) => (
-                            <div key={idx} className={cn("p-4 rounded-2xl border space-y-2", script.color)}>
-                              <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">{script.label}</p>
-                              <p className="text-sm italic leading-relaxed">"{script.content}"</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Action Plan */}
-                    {data.action_plan && data.action_plan.length > 0 && (
-                      <div className="space-y-3">
-                        <p className="text-sm font-bold uppercase tracking-tight text-muted-foreground">Plan de Acción (Pasos a seguir)</p>
-                        <div className="space-y-2">
-                          {data.action_plan.map((step: any, idx: number) => (
-                            <div key={idx} className="bg-card p-3 rounded-xl border border-border flex items-start gap-3 shadow-sm">
-                              <div className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
-                                {step.step || idx + 1}
-                              </div>
-                              <span className="text-sm text-foreground">{step.action}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {data.recommended_tools && data.recommended_tools.length > 0 && (
-                      <div className="space-y-3">
-                        <p className="text-sm font-bold uppercase tracking-tight text-muted-foreground">Herramientas Recomendadas</p>
-                        <div className="grid gap-2">
-                          {data.recommended_tools.map((tool: any, idx: number) => (
-                            <div key={idx} className="bg-card p-3 rounded-xl border border-border flex items-center justify-between shadow-sm">
-                              <span className="text-sm text-foreground">• {typeof tool === 'string' ? tool : tool.name}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    <Button
-                      onClick={async () => {
-                        try {
-                          setIsSaving(true);
-                          const updatedData = { ...data, is_completed: !data.is_completed };
-                          const { error } = await supabase
-                            .from("journal_entries")
-                            .update({ content: JSON.stringify(updatedData) })
-                            .eq("id", id);
-
-                          if (error) throw error;
-                          toast.success(updatedData.is_completed ? "¡Misión cumplida!" : "Marcado como pendiente");
-                          loadEntry(id);
-                        } catch (err) {
-                          console.error("Error updating status:", err);
-                          toast.error("No se pudo actualizar el estado");
-                        } finally {
-                          setIsSaving(false);
-                        }
-                      }}
-                      variant={data.is_completed ? "outline" : "calm"}
-                      className="w-full h-12 shadow-sm"
-                      disabled={isSaving}
-                    >
-                      {data.is_completed ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 mr-2" />
-                          Marcar como pendiente
-                        </>
-                      ) : (
-                        <>
-                          <Check className="w-5 h-5 mr-2" />
-                          Marcar como aplicada/completada
-                        </>
+            {/* Conversation Transcript */}
+            {simulationData.messages && simulationData.messages.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-sm font-bold uppercase tracking-tight text-muted-foreground">Transcripción de la Práctica</p>
+                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar p-1">
+                  {simulationData.messages.map((msg: any, idx: number) => (
+                    <div
+                      key={idx}
+                      className={cn(
+                        "p-3 rounded-xl text-xs leading-relaxed",
+                        msg.role === 'user'
+                          ? "bg-primary/10 border border-primary/20 ml-6"
+                          : "bg-muted border border-border mr-6"
                       )}
-                    </Button>
-                  </div>
-                );
-              }
-            } catch (e) {
-              return null;
-            }
-            return null;
-          })()
+                    >
+                      <p className="font-bold mb-1 opacity-50 uppercase text-[9px]">
+                        {msg.role === 'user' ? 'Tú' : (simulationData.personality || 'Simulador')}
+                      </p>
+                      {msg.content}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Traps */}
+            {simulationData.traps && simulationData.traps.length > 0 && (
+              <div className="bg-coral/5 border border-coral/20 rounded-2xl p-4 space-y-3">
+                <div className="flex items-center gap-2 text-coral">
+                  <span className="text-lg">⚠️</span>
+                  <p className="text-xs font-bold uppercase tracking-tight">Trampas Detectadas</p>
+                </div>
+                <ul className="space-y-2">
+                  {simulationData.traps.map((trap: string, i: number) => (
+                    <li key={i} className="text-xs text-foreground flex items-start gap-2">
+                      <span className="text-coral mt-1">•</span>
+                      <span>{trap}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Scripts */}
+            {simulationData.scripts && (
+              <div className="space-y-4">
+                <p className="text-sm font-bold uppercase tracking-tight text-muted-foreground">Scripts Sugeridos</p>
+                <div className="grid gap-3">
+                  {[
+                    { label: 'Opción Suave', content: simulationData.scripts.soft, color: 'border-turquoise/30 bg-turquoise/5' },
+                    { label: 'Opción Firme', content: simulationData.scripts.firm, color: 'border-primary/30 bg-primary/5' },
+                    { label: 'Último Aviso', content: simulationData.scripts.final_warning, color: 'border-destructive/30 bg-destructive/5' }
+                  ].map((script, idx) => (
+                    <div key={idx} className={cn("p-4 rounded-2xl border space-y-2", script.color)}>
+                      <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">{script.label}</p>
+                      <p className="text-sm italic leading-relaxed">"{script.content}"</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Action Plan */}
+            {actionPlan && actionPlan.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-sm font-bold uppercase tracking-tight text-muted-foreground">Plan de Acción (Pasos a seguir)</p>
+                <div className="space-y-2">
+                  {actionPlan.map((step, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => toggleAction(idx)}
+                      className={cn(
+                        "bg-card p-3 rounded-xl border flex items-start gap-3 shadow-sm cursor-pointer transition-all hover:bg-muted/50",
+                        step.completed ? "border-success/30 bg-success/5 opacity-80" : "border-border"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 border transition-all",
+                        step.completed ? "bg-success border-success text-white" : "border-muted-foreground/30 bg-background"
+                      )}>
+                        {step.completed && <Check className="w-3.5 h-3.5" />}
+                      </div>
+                      <span className={cn("text-sm", step.completed ? "text-muted-foreground line-through" : "text-foreground")}>
+                        {step.action}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {tools && tools.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-sm font-bold uppercase tracking-tight text-muted-foreground">Herramientas Recomendadas</p>
+                <div className="grid gap-2">
+                  {tools.map((tool, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => toggleTool(idx)}
+                      className={cn(
+                        "bg-card p-3 rounded-xl border flex items-center justify-between shadow-sm cursor-pointer transition-all hover:bg-muted/50",
+                        tool.completed ? "border-turquoise/30 bg-turquoise/5 opacity-80" : "border-border"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "w-5 h-5 rounded-md flex items-center justify-center shrink-0 border transition-all",
+                          tool.completed ? "bg-turquoise border-turquoise text-white" : "border-muted-foreground/30 bg-background"
+                        )}>
+                          {tool.completed && <Check className="w-3.5 h-3.5" />}
+                        </div>
+                        <span className={cn("text-sm", tool.completed ? "text-muted-foreground line-through" : "text-foreground")}>
+                          {tool.name}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <Button
+              onClick={async () => {
+                try {
+                  setIsSaving(true);
+                  const updatedData = { ...simulationData, is_completed: !simulationData.is_completed };
+                  const { error } = await supabase
+                    .from("journal_entries")
+                    .update({ content: JSON.stringify(updatedData) })
+                    .eq("id", id);
+
+                  if (error) throw error;
+                  toast.success(updatedData.is_completed ? "¡Misión cumplida!" : "Marcado como pendiente");
+                  loadEntry(id);
+                } catch (err) {
+                  console.error("Error updating status:", err);
+                  toast.error("No se pudo actualizar el estado");
+                } finally {
+                  setIsSaving(false);
+                }
+              }}
+              variant={simulationData.is_completed ? "outline" : "calm"}
+              className="w-full h-12 shadow-sm"
+              disabled={isSaving}
+            >
+              {simulationData.is_completed ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Marcar como pendiente
+                </>
+              ) : (
+                <>
+                  <Check className="w-5 h-5 mr-2" />
+                  Marcar como aplicada/completada
+                </>
+              )}
+            </Button>
+          </div>
         )}
 
         {isScannerEntry && (actionPlan.length > 0 || tools.length > 0) && (
