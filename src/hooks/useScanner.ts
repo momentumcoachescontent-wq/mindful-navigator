@@ -141,18 +141,22 @@ export function useScanner() {
     }
 
     try {
-      // Create tags from alert level and valid red flags (cleaned)
+      // Create tags from alert level and cleaned red flags
       const safeTags = ["escáner", scanResult.alertLevel];
       if (scanResult.redFlags && Array.isArray(scanResult.redFlags)) {
-        // Take first 3 red flags as tags to avoid overcrowding
-        safeTags.push(...scanResult.redFlags.slice(0, 3).map(f => f.toLowerCase().replace(/[^a-z0-9áéíóúñ ]/g, '')));
+        // Take first 5 red flags as tags, sanitized
+        safeTags.push(...scanResult.redFlags.slice(0, 5).map(f =>
+          f.toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove accents
+            .replace(/[^a-z0-9 ]/g, '') // remove special chars
+            .trim()
+        ));
       }
 
       const dateStr = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-      const { data, error } = await supabase.from("journal_entries").insert({
-        user_id: user.id,
-        content: `**Situación analizada:**
+      // FORCE explicit string construction to avoid reference issues
+      const contentBody = `**Situación analizada:**
 ${situationText}
 
 **Nivel de Alerta:** ${scanResult.alertLevel.toUpperCase()}
@@ -161,19 +165,23 @@ ${situationText}
 ${scanResult.summary}
 
 **💡 Qué Observar:**
-${scanResult.observations}
+${scanResult.observations || "No especificado"}
 
 **🚩 Señales de alerta:**
-${scanResult.redFlags.map(f => `- ${f}`).join("\n")}
+${(scanResult.redFlags || []).map(f => `- ${f}`).join("\n")}
 
 **🛠️ Herramientas Recomendadas:**
-${scanResult.recommendedTools.map(t => `- **${t.name}**: ${t.reason}`).join("\n")}
+${(scanResult.recommendedTools || []).map(t => `- **${t.name}**: ${t.reason}`).join("\n")}
 
 **📋 Plan de acción:**
-${scanResult.actionPlan.map((p) => `${p.step}. ${p.action}`).join("\n")}
+${(scanResult.actionPlan || []).map((p) => `${p.step}. ${p.action}`).join("\n")}
 
 **💚 Mensaje de Apoyo:**
-${scanResult.validationMessage}`,
+${scanResult.validationMessage || "Tú puedes con esto."}`;
+
+      const { data, error } = await supabase.from("journal_entries").insert({
+        user_id: user.id,
+        content: contentBody,
         entry_type: "scanner_result",
         tags: safeTags,
         metadata: {
@@ -184,8 +192,8 @@ ${scanResult.validationMessage}`,
           recommended_tools: scanResult.recommendedTools,
           action_plan: scanResult.actionPlan,
           progress: {
-            actionPlan: scanResult.actionPlan.map(() => false),
-            tools: scanResult.recommendedTools.map(() => false)
+            actionPlan: (scanResult.actionPlan || []).map(() => false),
+            tools: (scanResult.recommendedTools || []).map(() => false)
           }
         },
       }).select().single();
@@ -194,7 +202,7 @@ ${scanResult.validationMessage}`,
 
       toast({
         title: "Guardado en Diario",
-        description: "El análisis se guardó en tu diario",
+        description: "El análisis completo ha sido registrado.",
       });
       return data.id;
     } catch (error) {
