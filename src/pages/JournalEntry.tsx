@@ -48,7 +48,7 @@ const JournalEntry = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const parentId = searchParams.get("parent_id");
-  const { user, session } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -66,12 +66,15 @@ const JournalEntry = () => {
   const [isScannerEntry, setIsScannerEntry] = useState(false);
 
   useEffect(() => {
+    // Prevent loading if auth is still initializing
+    if (authLoading) return;
+
     if (id && id !== "new" && user) {
       loadEntry(id);
     } else if (id === "new" && parentId && user) {
       loadParentEntry(parentId);
     }
-  }, [id, user, parentId]);
+  }, [id, user?.id, parentId, authLoading]);
 
   const loadParentEntry = async (pId: string) => {
     setIsLoading(true);
@@ -85,13 +88,17 @@ const JournalEntry = () => {
       if (error) throw error;
 
       if (data) {
-        const meta = data.metadata as Record<string, unknown>;
-        const parentTitle = (meta?.title as string) || "Sin título";
-        setTitle(`Seguimiento: ${parentTitle}`);
-        setContent(`Continuando desde la entrada "${parentTitle}":\n\n`);
-        setParentEntryId(pId);
-        // Optional: Pre-fill content or tags
-        // setSelectedTags(data.tags || []); 
+        try {
+          const contentData = typeof data.content === 'string' ? JSON.parse(data.content || '{}') : data.content;
+          const parentTitle = contentData?.title || "Sin título";
+          setTitle(`Seguimiento: ${parentTitle}`);
+          setContent(`Continuando desde la entrada "${parentTitle}":\n\n`);
+          setParentEntryId(pId);
+        } catch (e) {
+          setTitle(`Seguimiento: Entrada original`);
+          setContent(`Continuando desde la entrada original:\n\n`);
+          setParentEntryId(pId);
+        }
       }
     } catch (err) {
       console.error("Error loading parent entry:", err);
@@ -126,6 +133,10 @@ const JournalEntry = () => {
             setIsScannerEntry(true);
             setContent(contentData.text || "");
             setTitle(contentData.title || "Resultado de Simulación");
+
+            // Extract interactive lists
+            if (contentData.action_plan) setActionPlan(contentData.action_plan);
+            if (contentData.recommended_tools) setTools(contentData.recommended_tools);
           } else {
             setSimulationData(null);
             setIsScannerEntry(false);
@@ -135,6 +146,8 @@ const JournalEntry = () => {
 
           setSelectedTags(contentData?.tags || rawData.tags || []);
           setIsFollowUp(!!contentData?.follow_up);
+          setIsVictory(data.entry_type === "victory");
+          setMood(data.mood_score || 3);
 
           if (contentData?.parent_id) {
             setParentEntryId(contentData.parent_id);
@@ -151,13 +164,12 @@ const JournalEntry = () => {
           // Fallback for old format or non-JSON content
           const rawData = data as any;
           setContent(rawData.content || "");
-          setTitle("");
+          setTitle(rawData.title || "");
           setIsScannerEntry(false);
           setSimulationData(null);
+          setMood(data.mood_score || 3);
+          setIsVictory(data.entry_type === "victory");
         }
-
-        setMood(data.mood_score || 3);
-        setIsVictory(data.entry_type === "victory");
       }
     } catch (error) {
       console.error("Error loading entry:", error);
@@ -265,7 +277,7 @@ const JournalEntry = () => {
     return Math.round((completed / total) * 100);
   };
 
-  if (isLoading) {
+  if (isLoading || authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -432,12 +444,7 @@ const JournalEntry = () => {
           <Label htmlFor="content">
             {isVictory
               ? "Cuéntanos sobre tu victoria"
-              : isScannerEntry || (id && id !== "new" && (() => {
-                try {
-                  const d = typeof content === 'string' ? JSON.parse(content || '{}') : content;
-                  return d?.type === "simulation_result" || d?.messages;
-                } catch (e) { return false; }
-              })())
+              : isScannerEntry
                 ? "Notas y reflexiones"
                 : "¿Qué quieres escribir?"}
           </Label>
