@@ -1,7 +1,6 @@
-import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
+import { AlertTriangle, CheckCircle, Info, Lightbulb, BookOpen, ListChecks } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export interface ScanResultData {
   summary: string;
@@ -13,279 +12,129 @@ export interface ScanResultData {
   validationMessage: string;
 }
 
-interface AnalysisResponse {
-  alert_level: "low" | "medium" | "high";
-  summary: string;
-  red_flags: string[];
-  what_to_observe: string;
-  recommended_tools: string[];
-  action_plan: { step: number; action: string }[];
-  validation_message: string;
+interface ScanResultProps {
+  result: ScanResultData;
+  onSaveToJournal: () => void;
+  onCreatePlan: () => void;
 }
 
-export function useScanner() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<ScanResultData | null>(null);
-  const [situationText, setSituationText] = useState("");
-  const { toast } = useToast();
-  const { user } = useAuth();
+const alertStyles = {
+  low: {
+    bg: "bg-success/10",
+    border: "border-success/30",
+    text: "text-success",
+    icon: CheckCircle,
+    label: "Nivel bajo",
+  },
+  medium: {
+    bg: "bg-warning/10",
+    border: "border-warning/30",
+    text: "text-warning",
+    icon: Info,
+    label: "Nivel medio",
+  },
+  high: {
+    bg: "bg-destructive/10",
+    border: "border-destructive/30",
+    text: "text-destructive",
+    icon: AlertTriangle,
+    label: "Nivel alto",
+  },
+};
 
-  const analyze = async (text: string): Promise<ScanResultData | null> => {
-    setIsLoading(true);
-    setSituationText(text);
+export default function ScanResult({ result, onSaveToJournal, onCreatePlan }: ScanResultProps) {
+  const alertStyle = alertStyles[result.alertLevel];
+  const AlertIcon = alertStyle.icon;
 
-    try {
-      const { data, error } = await supabase.functions.invoke("analyze-situation", {
-        body: { situation: text },
-      });
+  return (
+    <div className="space-y-6 animate-fade-up">
+      {/* Alert Level */}
+      <div className={cn("rounded-2xl p-4 border-2", alertStyle.bg, alertStyle.border)}>
+        <div className="flex items-start gap-3">
+          <AlertIcon className={cn("w-6 h-6 flex-shrink-0 mt-0.5", alertStyle.text)} />
+          <div>
+            <p className={cn("font-semibold", alertStyle.text)}>{alertStyle.label}</p>
+            <p className="text-sm text-foreground mt-1">{result.summary}</p>
+          </div>
+        </div>
+      </div>
 
-      if (error) {
-        console.error("Scanner error:", error);
-        toast({
-          title: "Error al analizar",
-          description: error.message || "No se pudo analizar la situación",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return null;
-      }
+      {/* Red Flags */}
+      {result.redFlags.length > 0 && (
+        <div className="space-y-3">
+          <h4 className="font-display font-semibold text-foreground flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-coral" />
+            Señales de alerta detectadas
+          </h4>
+          <ul className="space-y-2">
+            {result.redFlags.map((flag, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-foreground">
+                <span className="w-1.5 h-1.5 rounded-full bg-coral mt-2 flex-shrink-0" />
+                {flag}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
-      if (data.error) {
-        toast({
-          title: "Error",
-          description: data.error,
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return null;
-      }
+      {/* Observations */}
+      <div className="space-y-3">
+        <h4 className="font-display font-semibold text-foreground flex items-center gap-2">
+          <Lightbulb className="w-5 h-5 text-warning" />
+          Qué observar
+        </h4>
+        <div className="bg-warning/5 rounded-xl p-4 text-sm text-muted-foreground leading-relaxed">
+          {result.observations}
+        </div>
+      </div>
 
-      const analysis: AnalysisResponse = data.analysis;
+      {/* Recommended Tools */}
+      <div className="space-y-3">
+        <h4 className="font-display font-semibold text-foreground flex items-center gap-2">
+          <BookOpen className="w-5 h-5 text-primary" />
+          Herramientas recomendadas
+        </h4>
+        <div className="grid gap-2">
+          {result.recommendedTools.map((tool, i) => (
+            <div key={i} className="bg-muted rounded-xl p-3">
+              <p className="font-medium text-foreground text-sm">{tool.name}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{tool.reason}</p>
+            </div>
+          ))}
+        </div>
+      </div>
 
-      // Transform the response to match our component's expected format
-      const transformedResult: ScanResultData = {
-        summary: analysis.summary,
-        alertLevel: analysis.alert_level,
-        redFlags: analysis.red_flags || [],
-        observations: analysis.what_to_observe || "",
-        recommendedTools: (analysis.recommended_tools || []).map((tool: string) => ({
-          name: tool,
-          reason: getToolReason(tool),
-        })),
-        actionPlan: (analysis.action_plan || []).map((p: any, i: number) => ({
-          step: p.step || i + 1,
-          action: typeof p === 'string' ? p : (p.action || p.description || p.text || "Paso sugerido"),
-        })),
-        validationMessage: analysis.validation_message || "",
-      };
+      {/* Action Plan */}
+      <div className="space-y-3">
+        <h4 className="font-display font-semibold text-foreground flex items-center gap-2">
+          <ListChecks className="w-5 h-5 text-success" />
+          Plan de acción (3 pasos)
+        </h4>
+        <ol className="space-y-2">
+          {result.actionPlan.map((step: any, i) => (
+            <li key={i} className="flex items-start gap-3 text-sm">
+              <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium flex-shrink-0">
+                {step.step || i + 1}
+              </span>
+              <span className="text-foreground pt-0.5">
+                {step.action || step.description || step.text || (typeof step === 'string' ? step : "Acción detectada")}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </div>
 
-      setResult(transformedResult);
-      setIsLoading(false);
-      return transformedResult;
-    } catch (error) {
-      console.error("Scanner error:", error);
-      toast({
-        title: "Error",
-        description: "No se pudo conectar con el servicio de análisis",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-      return null;
-    }
-  };
-
-  const saveToHistory = async (scanResult: ScanResultData) => {
-    if (!user) {
-      toast({
-        title: "Inicia sesión",
-        description: "Necesitas una cuenta para guardar el análisis",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    try {
-      const { error } = await supabase.from("scanner_history").insert({
-        user_id: user.id,
-        situation_text: situationText,
-        alert_level: scanResult.alertLevel,
-        red_flags: scanResult.redFlags,
-        recommended_tools: scanResult.recommendedTools.map((t) => t.name),
-        action_plan: scanResult.actionPlan,
-        ai_response: scanResult.summary,
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Guardado",
-        description: "El análisis se guardó en tu historial",
-      });
-      return true;
-    } catch (error) {
-      console.error("Error saving to history:", error);
-      toast({
-        title: "Error",
-        description: "No se pudo guardar el análisis",
-        variant: "destructive",
-      });
-      return false;
-    }
-  };
-
-  const saveToJournal = async (scanResult: ScanResultData) => {
-    if (!user) {
-      toast({
-        title: "Inicia sesión",
-        description: "Necesitas una cuenta para guardar en el diario",
-        variant: "destructive",
-      });
-      return null;
-    }
-
-    try {
-      console.log("[saveToJournal] Received scanResult:", scanResult);
-
-      // Map action plan robustly to ensure UI renders non-empty values
-      const robustActionPlan = (scanResult.actionPlan || []).map((p: any, i: number) => ({
-        step: p.step || i + 1,
-        action: p.action || p.description || p.text || "Paso sugerido",
-      }));
-
-      // Keyword matching for standard journal tags
-      const textToAnalyze = (situationText + " " + scanResult.summary).toLowerCase();
-      const standardTags: string[] = [];
-
-      const keywords = {
-        family: ["familia", "mamá", "papá", "hijo", "hija", "hermano", "hermana", "casa", "padres"],
-        work: ["trabajo", "jefe", "compañero", "oficina", "proyecto", "cliente", "negocio", "dinero"],
-        relationships: ["pareja", "novio", "novia", "esposo", "esposa", "relación", "amor", "ex"],
-        friends: ["amigo", "amiga", "grupo", "salida", "social"],
-        self: ["miedo", "yo", "mí", "siento", "ansiedad", "tristeza", "cuerpo", "salud"]
-      };
-
-      Object.entries(keywords).forEach(([tagId, words]) => {
-        if (words.some(w => textToAnalyze.includes(w))) {
-          standardTags.push(tagId);
-        }
-      });
-
-      // Default to "self" if no other tag matches
-      if (standardTags.length === 0) standardTags.push("self");
-
-      // Merge tags: Standard tags (for UI mapping) + Scanner tags (for search)
-      // Note: Scanner tags like "Nivel Alto" don't match the UI tag IDs, so they won't show as colored chips
-      // unless we add them to the JournalEntry tags list, but standardTags WILL show.
-      const finalTags = [...new Set([...standardTags, "escáner", scanResult.alertLevel])];
-
-      // Also add red flags as searchable text tags but not necessarily UI tags if they don't match known IDs
-      if (scanResult.redFlags && Array.isArray(scanResult.redFlags)) {
-        finalTags.push(...scanResult.redFlags.slice(0, 5).map(f =>
-          f.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9 ]/g, '').trim()
-        ));
-      }
-
-      const dateStr = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-
-      // FORCE explicit string construction to avoid reference issues
-      const contentBody = `**Situación analizada:**
-${situationText}
-
-**Nivel de Alerta:** ${scanResult.alertLevel.toUpperCase()}
-
-**Resumen:**
-${scanResult.summary}
-
-**💡 Qué Observar:**
-${scanResult.observations || "No especificado"}
-
-**🚩 Señales de alerta:**
-${(scanResult.redFlags && scanResult.redFlags.length > 0) ? scanResult.redFlags.map(f => `- ${f}`).join("\n") : "No se detectaron señales específicas."}
-
-**🛠️ Herramientas Recomendadas:**
-${(scanResult.recommendedTools && scanResult.recommendedTools.length > 0) ? scanResult.recommendedTools.map(t => `- **${t.name}**: ${t.reason}`).join("\n") : "No hay herramientas específicas para esta situación."}
-
-**📋 Plan de acción:**
-${robustActionPlan.length > 0 ? robustActionPlan.map((p) => `${p.step}. ${p.action}`).join("\n") : "No hay acciones sugeridas."}
-
-**💚 Mensaje de Apoyo:**
-${scanResult.validationMessage || "Tú puedes con esto."}`;
-
-      // Construct JSON content to support title, tags, etc. since columns don't exist
-      const jsonContent = {
-        title: `Análisis de la situación - ${dateStr}`,
-        text: contentBody,
-        tags: standardTags, // Use standard tags for the UI chips
-        search_tags: finalTags, // Keep all tags for search/filtering
-        follow_up: true,
-        alert_level: scanResult.alertLevel,
-        red_flags: scanResult.redFlags,
-        recommended_tools: scanResult.recommendedTools,
-        action_plan: robustActionPlan, // Use robust plan
-        scan_result: { ...scanResult, actionPlan: robustActionPlan } // Update scan result with robust data
-      };
-
-      const { data, error } = await supabase.from("journal_entries").insert({
-        user_id: user.id,
-        content: JSON.stringify(jsonContent), // Save as JSON string
-        entry_type: "scanner_result",
-        tags: finalTags, // Save ALL tags to db column for search
-        metadata: {
-          title: `Análisis de la situación - ${dateStr}`,
-          follow_up: true,
-          alert_level: scanResult.alertLevel,
-          red_flags: scanResult.redFlags,
-          recommended_tools: scanResult.recommendedTools,
-          action_plan: robustActionPlan,
-          progress: {
-            actionPlan: robustActionPlan.map(() => false),
-            tools: (scanResult.recommendedTools || []).map(() => false)
-          }
-        },
-      }).select().single();
-
-      if (error) throw error;
-
-      toast({
-        title: "Guardado en Diario",
-        description: "El análisis completo ha sido registrado correctamente.",
-      });
-      return data.id;
-    } catch (error: any) {
-      console.error("Error saving to journal:", error);
-      toast({
-        title: "Error al guardar",
-        description: error.message || "No se pudo guardar en el diario",
-        variant: "destructive",
-      });
-      return null;
-    }
-  };
-
-  const reset = () => {
-    setResult(null);
-    setSituationText("");
-  };
-
-  return {
-    isLoading,
-    result,
-    analyze,
-    saveToHistory,
-    saveToJournal,
-    reset,
-  };
-}
-
-// Helper to provide reasons for recommended tools
-function getToolReason(tool: string): string {
-  const reasons: Record<string, string> = {
-    "H.E.R.O.": "Para tomar decisiones conscientes y reconocer patrones",
-    "C.A.L.M.": "Para regular emociones y mantener la calma",
-    "Scripts de comunicación asertiva": "Para expresar límites con claridad",
-    "Técnica del disco rayado": "Para mantener límites ante insistencia",
-    "Respiración 4-7-8": "Para calmar el sistema nervioso rápidamente",
-    "Grounding 5-4-3-2-1": "Para anclarte al presente cuando sientes ansiedad",
-  };
-  return reasons[tool] || "Herramienta recomendada para esta situación";
+      {/* Actions */}
+      <div className="flex gap-4 pt-4">
+        <Button
+          onClick={onSaveToJournal}
+          className="flex-1 gap-2 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 transition-all duration-300"
+          size="lg"
+        >
+          <BookOpen className="w-4 h-4" />
+          <span>Guardar en Diario</span>
+        </Button>
+      </div>
+    </div>
+  );
 }
