@@ -154,9 +154,22 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
       });
 
       if (error) {
-        // @ts-ignore
-        const detail = error.context ? await error.context.json().catch(() => ({})) : {};
-        throw new Error(detail.error || error.message || "Error desconocido");
+        console.error("Supabase function error:", error);
+        let errorMessage = error.message;
+
+        // Attempt to extract detail from context
+        try {
+          // @ts-ignore
+          if (error.context && typeof error.context.json === 'function') {
+            // @ts-ignore
+            const detail = await error.context.json();
+            errorMessage = detail.error || detail.message || errorMessage;
+          }
+        } catch (e) {
+          console.warn("Could not parse error detail", e);
+        }
+
+        throw new Error(errorMessage || "Error de comunicación con el servidor");
       }
 
       let content = "Error: Respuesta vacía o formato inválido";
@@ -550,6 +563,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
         </div>
       ) : feedback ? (
         <>
+          {/* ... existing feedback render logic ... */}
           <div className="text-center space-y-2">
             <h3 className="text-xl font-display font-bold text-foreground">
               Análisis del Umbral
@@ -608,6 +622,32 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </>
+      ) : step === "feedback" && !isLoading ? (
+        <div className="text-center space-y-6 py-10">
+          <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
+            <AlertCircle className="w-8 h-8 text-destructive" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-lg font-bold">Error en el análisis</h3>
+            <p className="text-sm text-muted-foreground">
+              El servidor tardó demasiado o devolvió un error. No te preocupes, tu conversación está guardada.
+            </p>
+          </div>
+          <Button
+            onClick={() => generateFeedback(messages)}
+            variant="outline"
+            className="w-full"
+          >
+            Reintentar Análisis
+          </Button>
+          <Button
+            onClick={() => setStep("chat")}
+            variant="ghost"
+            className="w-full text-xs"
+          >
+            Volver al chat
+          </Button>
+        </div>
       ) : null}
     </div>
   );

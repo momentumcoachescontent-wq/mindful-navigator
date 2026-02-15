@@ -220,36 +220,55 @@ async function checkRateLimits(supabaseClient: SupabaseClient, userId: string, i
     return { allowed: true };
 }
 
+const logStep = (step: string, details?: Record<string, unknown>) => {
+    const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+    console.log(`[ANALYZE-SITUATION] ${step}${detailsStr}`);
+};
+
 serve(async (req) => {
-    // Handle CORS preflight requests
     if (req.method === "OPTIONS") {
-        return new Response("ok", { headers: corsHeaders });
+        return new Response(null, { headers: corsHeaders });
     }
 
     try {
-        // 1. Authenticate Request
+        logStep("Function started");
+
+        const supabaseClient = createClient(
+            Deno.env.get("SUPABASE_URL") ?? "",
+            Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+            { auth: { persistSession: false } }
+        );
+
         const authHeader = req.headers.get("Authorization");
         if (!authHeader) {
-            return new Response(JSON.stringify({ error: "Auth required" }), {
+            logStep("No authorization header");
+            return new Response(JSON.stringify({ error: "No authorization header provided" }), {
                 status: 401,
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
         }
 
-        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-        const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-        const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-            auth: {
-                persistSession: false,
-            }
-        });
-
         const token = authHeader.replace("Bearer ", "");
         const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
 
         if (authError || !user) {
+            logStep("Invalid token", { error: authError?.message });
             return new Response(JSON.stringify({ error: "Invalid token" }), {
                 status: 401,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+        }
+        logStep("User authenticated", { userId: user.id });
+
+        // 1. Parse Request Body safely
+        let requestBody;
+        try {
+            requestBody = await req.json();
+            logStep("Request body parsed", { mode: requestBody.mode });
+        } catch (e) {
+            logStep("Error parsing JSON body");
+            return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
+                status: 400,
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
         }
@@ -270,17 +289,7 @@ serve(async (req) => {
             });
         }
 
-        // 4. Parse Body
-        let requestBody;
-        try {
-            requestBody = await req.json();
-        } catch {
-            return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
-                status: 400,
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
-        }
-
+        // 4. (requestBody is already parsed at line 266)
         const { situation, mode, scenario, personality, personalityDescription, extraTrait, context, messages, isFirst, currentRound, maxRounds } = requestBody;
 
         const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
@@ -294,10 +303,11 @@ serve(async (req) => {
 
         // --- MODE: ROLEPLAY ---
         if (mode === "roleplay") {
-            const currentScenario = scenario || "Conversación difícil";
-            const currentRole = personalityDescription || "Alguien neutral";
+            try {
+                const currentScenario = scenario || "Conversación difícil";
+                const currentRole = personalityDescription || "Alguien neutral";
 
-            const systemPromptRoleplay = `Actúas como una IA de simulación realista para entrenamiento de inteligencia emocional.
+                const systemPromptRoleplay = `Actúas como una IA de simulación realista para entrenamiento de inteligencia emocional.
 MODO: ROLEPLAY DE ENTRENAMIENTO
 ROL: ${currentRole}
 RASGO ADICIONAL: ${extraTrait || 'Neutral'}
@@ -318,44 +328,54 @@ PRINCIPIOS DE SEGURIDAD (MANDATORIOS):
 
 Responde ÚNICAMENTE como el personaje. NO añadidas explicaciones externas.`;
 
-            const userMessage = isFirst
-                ? "Inicia la conversación tú como el personaje, planteando el conflicto del escenario."
-                : (messages && messages.length > 0 ? messages[messages.length - 1].content : "Hola");
+                const userMessage = isFirst
+                    ? "Inicia la conversación tú como el personaje, planteando el conflicto del escenario."
+                    : (messages && messages.length > 0 ? messages[messages.length - 1].content : "Hola");
 
-            const response = await fetch("https://api.openai.com/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${OPENAI_API_KEY}`,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    model: "gpt-4o-mini",
-                    messages: [
-                        { role: "system", content: systemPromptRoleplay },
-                        ...(messages?.map((m: any) => ({
-                            role: m.role === 'simulator' ? 'assistant' : 'user',
-                            content: m.content
-                        })) || []),
-                        { role: "user", content: userMessage }
-                    ],
-                    temperature: 0.8,
-                }),
-            });
+                const response = await fetch("https://api.openai.com/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${OPENAI_API_KEY}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        model: "gpt-4o-mini",
+                        messages: [
+                            { role: "system", content: systemPromptRoleplay },
+                            ...(messages?.map((m: any) => ({
+                                role: m.role === 'simulator' ? 'assistant' : 'user',
+                                content: m.content
+                            })) || []),
+                            { role: "user", content: userMessage }
+                        ],
+                        temperature: 0.8,
+                    }),
+                });
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error("OpenAI Error (Roleplay):", errorText);
-                throw new Error(`AI Service Error: ${response.status}`);
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error("[ANALYZE-SITUATION] Roleplay OpenAI Error:", errorData);
+                    return new Response(JSON.stringify({ error: "Servicio de IA temporalmente no disponible.", details: errorData }), {
+                        status: 500,
+                        headers: { ...corsHeaders, "Content-Type": "application/json" },
+                    });
+                }
+
+                const data = await response.json();
+                const aiResponse = data.choices?.[0]?.message?.content || "...";
+
+                return new Response(JSON.stringify({
+                    response: aiResponse
+                }), {
+                    headers: { ...corsHeaders, "Content-Type": "application/json" },
+                });
+            } catch (roleplayError: any) {
+                console.error("[ANALYZE-SITUATION] Roleplay Error:", roleplayError);
+                return new Response(JSON.stringify({ error: "Error en el simulador de rol.", details: roleplayError.message }), {
+                    status: 500,
+                    headers: { ...corsHeaders, "Content-Type": "application/json" },
+                });
             }
-
-            const data = await response.json();
-            const aiResponse = data.choices?.[0]?.message?.content || "...";
-
-            return new Response(JSON.stringify({
-                response: aiResponse
-            }), {
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
         }
 
         // --- MODE: FEEDBACK ---
@@ -407,8 +427,24 @@ NO incluyas texto fuera del JSON.`;
                 }),
             });
 
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error("[ANALYZE-SITUATION] OpenAI API Error:", errorData);
+                return new Response(JSON.stringify({
+                    error: "Error en la IA. Por favor intenta de nuevo.",
+                    details: errorData
+                }), {
+                    status: 500,
+                    headers: { ...corsHeaders, "Content-Type": "application/json" },
+                });
+            }
+
             const data = await response.json();
             const contentRaw = data.choices?.[0]?.message?.content;
+
+            if (!contentRaw) {
+                throw new Error("Empty response from AI");
+            }
 
             try {
                 const jsonMatch = contentRaw.match(/\{[\s\S]*\}/);
