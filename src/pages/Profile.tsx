@@ -233,31 +233,7 @@ const Profile = () => {
           ))}
         </div>
 
-        {/* External Resources */}
-        <h3 className="text-sm font-semibold text-muted-foreground ml-2">Comunidad y Recursos</h3>
-        <div className="bg-card rounded-2xl shadow-soft overflow-hidden">
-          <button
-            onClick={() => window.open("https://amazon.com/dp/B0DJPL1C4D", "_blank")} // Placeholder URL
-            className="w-full flex items-center gap-4 p-4 text-left hover:bg-muted/50 transition-colors border-b border-border"
-          >
-            <BookOpen className="w-5 h-5 text-coral" />
-            <span className="flex-1 text-foreground font-medium text-sm">
-              Libro: "Más Allá del Miedo"
-            </span>
-            <ExternalLink className="w-4 h-4 text-muted-foreground/50" />
-          </button>
 
-          <button
-            onClick={() => window.open("https://instagram.com/netoalvarez", "_blank")} // Placeholder URL
-            className="w-full flex items-center gap-4 p-4 text-left hover:bg-muted/50 transition-colors"
-          >
-            <Globe className="w-5 h-5 text-turquoise" />
-            <span className="flex-1 text-foreground font-medium text-sm">
-              Instagram / Redes Sociales
-            </span>
-            <ExternalLink className="w-4 h-4 text-muted-foreground/50" />
-          </button>
-        </div>
 
         {/* Sign Out */}
         <Button

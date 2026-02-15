@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     Users, Crown, Brain, Zap, Activity,
-    BarChart3, ArrowLeft, Shield, Music
+    BarChart3, ArrowLeft, Shield, Music, Package, ArrowRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -166,16 +166,19 @@ const AdminDashboard = () => {
 
                 {/* Detailed Charts / Sections */}
                 <div className="grid gap-4 md:grid-cols-2">
-                    <Card className="col-span-1">
+                    <Card className="col-span-1 hover:border-primary/50 transition-colors cursor-pointer" onClick={() => navigate("/admin/products")}>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <BarChart3 className="w-5 h-5" />
-                                Impacto del Escáner
+                                <Package className="w-5 h-5 text-primary" />
+                                Gestión de Productos
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="h-[200px] flex items-center justify-center text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
-                                Gráfico de tendencias (Próximamente)
+                            <p className="text-sm text-muted-foreground mb-4">
+                                Administra suscripciones, ebooks y packs de la tienda.
+                            </p>
+                            <div className="flex items-center text-primary text-sm font-medium">
+                                Ver catálogo <ArrowRight className="w-4 h-4 ml-1" />
                             </div>
                         </CardContent>
                     </Card>

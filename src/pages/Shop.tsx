@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
 import { ArrowLeft, ShoppingBag, BookOpen, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,8 +10,47 @@ import { SOSButton } from "@/components/layout/SOSButton";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { PricingTier } from "@/components/shop/PricingTier";
 
+interface Product {
+    id: string;
+    title: string;
+    description: string | null;
+    price: number;
+    category: 'subscription' | 'ebook' | 'meditation' | 'service' | 'pack';
+    cta_link: string | null;
+    is_active: boolean;
+    is_featured: boolean;
+    image_url: string | null;
+}
+
 const Shop = () => {
     const navigate = useNavigate();
+
+    const { data: products, isLoading } = useQuery({
+        queryKey: ['shop-products'],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('products')
+                .select('*')
+                .eq('is_active', true)
+                .order('price', { ascending: true }); // Free/Cheap first
+
+            if (error) throw error;
+            return data as unknown as Product[];
+        }
+    });
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+
+    const subscriptionProducts = products?.filter(p => p.category === 'subscription') || [];
+    const resourcesProducts = products?.filter(p => ['ebook', 'meditation', 'pack'].includes(p.category)) || [];
+    // Mentorship handled separately as static block with coming soon
+
 
     return (
         <div className="min-h-screen bg-background pb-24">
@@ -32,76 +74,70 @@ const Shop = () => {
 
             <main className="container py-8 space-y-12">
                 {/* Subscription Section */}
-                <section>
-                    <h2 className="text-xl font-display font-bold text-foreground mb-6 flex items-center gap-2">
-                        <User className="w-5 h-5 text-primary" />
-                        Suscripción Premium
-                    </h2>
-                    <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-                        <PricingTier
-                            title="Gratis"
-                            price="$0"
-                            period="mes"
-                            description="Para empezar tu camino de autoconocimiento."
-                            features={[
-                                "Acceso básico al Diario",
-                                "3 Escáneres de situación mensules",
-                                "Comunidad de apoyo (Lectura)",
-                                "Meditaciones básicas"
-                            ]}
-                            ctaText="Tu Plan Actual"
-                            ctaLink="#"
-                        />
-                        <PricingTier
-                            title="Mindful Pro"
-                            price="$9.99"
-                            period="mes"
-                            description="Potencia tu transformación con herramientas ilimitadas."
-                            features={[
-                                "Escáner de Situaciones ILIMITADO",
-                                "Simulador de Conversaciones (IA Avanzada)",
-                                "Audios & Meditaciones Exclusivas",
-                                "Respaldo en la Nube y Sincronización",
-                                "Acceso a Talleres Mensuales"
-                            ]}
-                            ctaText="Inicia Prueba Gratis"
-                            ctaLink="https://buy.stripe.com/test_premium_link" // Placeholder link
-                            isPopular={true}
-                        />
-                    </div>
-                </section>
+                {subscriptionProducts.length > 0 && (
+                    <section>
+                        <h2 className="text-xl font-display font-bold text-foreground mb-6 flex items-center gap-2">
+                            <User className="w-5 h-5 text-primary" />
+                            Suscripción Premium
+                        </h2>
+                        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                            {subscriptionProducts.map(product => (
+                                <PricingTier
+                                    key={product.id}
+                                    title={product.title}
+                                    price={`$${product.price}`}
+                                    period="mes"
+                                    description={product.description || ""}
+                                    features={product.description?.includes("Tools") ? [
+                                        "Escáner de Situaciones ILIMITADO",
+                                        "Simulador de Conversaciones",
+                                        "Audios & Meditaciones Exclusivas"
+                                    ] : [
+                                        "Acceso básico al Diario",
+                                        "3 Escáneres mensuales",
+                                        "Comunidad de apoyo"
+                                    ]}
+                                    ctaText={product.price === 0 ? "Tu Plan Actual" : "Inicia Prueba Gratis"}
+                                    ctaLink={product.cta_link || "#"}
+                                    isPopular={product.is_featured}
+                                />
+                            ))}
+                        </div>
+                    </section>
+                )}
 
-                {/* Resources Section */}
-                <section>
-                    <h2 className="text-xl font-display font-bold text-foreground mb-6 flex items-center gap-2">
-                        <BookOpen className="w-5 h-5 text-turquoise" />
-                        Libros y Recursos
-                    </h2>
-                    <div className="grid sm:grid-cols-2 gap-4">
-                        <ProductCard
-                            title="Más allá del Miedo"
-                            price="$19.99"
-                            description="La guía definitiva para entender y transformar tus miedos en poder personal. Best-seller digital."
-                            image="https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=800"
-                            ctaText="Comprar Ebook"
-                            ctaLink="#"
-                            tag="Best Seller"
-                        />
-                        <ProductCard
-                            title="Pack de Meditaciones: Ansiedad"
-                            price="$14.99"
-                            description="10 audios guiados específicamente diseñados para desactivar ataques de pánico y ansiedad generalizada."
-                            // Abstract/calm image 
-                            image="https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&q=80&w=800"
-                            ctaText="Obtener Acceso"
-                            ctaLink="#"
-                        />
-                    </div>
-                </section>
+                {/* Resources Section - Ebooks, Packs, Meditations */}
+                {(resourcesProducts.length > 0) && (
+                    <section>
+                        <h2 className="text-xl font-display font-bold text-foreground mb-6 flex items-center gap-2">
+                            <BookOpen className="w-5 h-5 text-turquoise" />
+                            Libros y Recursos
+                        </h2>
+                        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {resourcesProducts.map(product => (
+                                <ProductCard
+                                    key={product.id}
+                                    title={product.title}
+                                    price={`$${product.price}`}
+                                    description={product.description || ""}
+                                    image={product.image_url || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=800"} // Fallback image
+                                    ctaText="Obtener Acceso"
+                                    ctaLink={product.cta_link || "#"}
+                                    tag={product.category === 'pack' ? "Pack Ahorro" : product.is_featured ? "Destacado" : undefined}
+                                />
+                            ))}
+                        </div>
+                    </section>
+                )}
 
                 {/* Mentorship Section */}
                 <section>
-                    <div className="bg-gradient-to-br from-primary/10 to-turquoise/10 rounded-3xl p-8 text-center space-y-4 border border-primary/20">
+                    <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 to-turquoise/10 rounded-3xl p-8 text-center space-y-4 border border-primary/20">
+                        {/* Example "Coming Soon" Badge requested */}
+                        <div className="absolute top-4 right-4 bg-yellow-500/20 text-yellow-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-yellow-500/30">
+                            Próximamente
+                        </div>
+
                         <h2 className="text-2xl font-display font-bold text-foreground">
                             ¿Necesitas apoyo personalizado?
                         </h2>
@@ -110,8 +146,8 @@ const Shop = () => {
                         </p>
                         <Button
                             size="lg"
-                            className="bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20 mt-4"
-                            onClick={() => window.location.href = "mailto:soporte@mindfulnavigator.app?subject=Consulta Mentoría"}
+                            className="bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20 mt-4 opacity-75 cursor-not-allowed"
+                        // onClick={() => ...} // Disabled for now
                         >
                             Consultar Disponibilidad
                         </Button>
