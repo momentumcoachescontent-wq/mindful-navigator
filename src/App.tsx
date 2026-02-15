@@ -17,6 +17,7 @@ import Profile from "./pages/Profile";
 import Meditations from "./pages/Meditations";
 import Onboarding from "./pages/Onboarding";
 import Premium from "./pages/Premium";
+import Shop from "./pages/Shop";
 import DataManagement from "./pages/DataManagement";
 import Settings from "./pages/Settings";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="/community" element={<Community />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/meditations" element={<Meditations />} />
+              <Route path="/shop" element={<Shop />} />
               <Route path="/premium" element={<Premium />} />
               <Route path="/data" element={<DataManagement />} />
               <Route path="/settings" element={<Settings />} />
