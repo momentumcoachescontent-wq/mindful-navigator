@@ -181,12 +181,24 @@ ${(scanResult.actionPlan && scanResult.actionPlan.length > 0) ? scanResult.actio
 **💚 Mensaje de Apoyo:**
 ${scanResult.validationMessage || "Tú puedes con esto."}`;
 
+      // Construct JSON content to support title, tags, etc. since columns don't exist
+      const jsonContent = {
+        title: `Análisis de la situación - ${dateStr}`,
+        text: contentBody,
+        tags: safeTags,
+        follow_up: true,
+        alert_level: scanResult.alertLevel,
+        red_flags: scanResult.redFlags,
+        recommended_tools: scanResult.recommendedTools,
+        action_plan: scanResult.actionPlan,
+        scan_result: scanResult // Keep raw data for future proofing
+      };
+
       const { data, error } = await supabase.from("journal_entries").insert({
         user_id: user.id,
-        title: `Análisis de la situación - ${dateStr}`, // INSERTING TO TITLE COLUMN
-        content: contentBody,
+        content: JSON.stringify(jsonContent), // Save as JSON string
         entry_type: "scanner_result",
-        tags: safeTags,
+        tags: safeTags, // Keep pg array tags for searching if column exists (it likely does based on types)
         metadata: {
           title: `Análisis de la situación - ${dateStr}`,
           follow_up: true,
@@ -208,11 +220,11 @@ ${scanResult.validationMessage || "Tú puedes con esto."}`;
         description: "El análisis completo ha sido registrado correctamente.",
       });
       return data.id;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving to journal:", error);
       toast({
-        title: "Error",
-        description: "No se pudo guardar en el diario",
+        title: "Error al guardar",
+        description: error.message || "No se pudo guardar en el diario",
         variant: "destructive",
       });
       return null;
