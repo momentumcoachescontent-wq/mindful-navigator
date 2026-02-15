@@ -143,7 +143,28 @@ export function useScanner() {
     try {
       const { data, error } = await supabase.from("journal_entries").insert({
         user_id: user.id,
-        content: `**Situación analizada:**\n${situationText}\n\n**Resumen:**\n${scanResult.summary}\n\n**Señales de alerta:**\n${scanResult.redFlags.join("\n- ")}\n\n**Plan de acción:**\n${scanResult.actionPlan.map((p) => `${p.step}. ${p.action}`).join("\n")}`,
+        content: `**Situación analizada:**
+${situationText}
+
+**Nivel de Alerta:** ${scanResult.alertLevel.toUpperCase()}
+
+**Resumen:**
+${scanResult.summary}
+
+**💡 Qué Observar:**
+${scanResult.observations}
+
+**🚩 Señales de alerta:**
+${scanResult.redFlags.map(f => `- ${f}`).join("\n")}
+
+**🛠️ Herramientas Recomendadas:**
+${scanResult.recommendedTools.map(t => `- **${t.name}**: ${t.reason}`).join("\n")}
+
+**📋 Plan de acción:**
+${scanResult.actionPlan.map((p) => `${p.step}. ${p.action}`).join("\n")}
+
+**💚 Mensaje de Apoyo:**
+${scanResult.validationMessage}`,
         entry_type: "scanner_result",
         tags: ["escáner", scanResult.alertLevel],
         metadata: {
