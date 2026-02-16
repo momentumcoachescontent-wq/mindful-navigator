@@ -84,6 +84,7 @@ const Shop = () => {
             });
 
             if (error) throw error;
+            if (data?.error) throw new Error(data.error); // Handle soft errors
             if (!data?.url) throw new Error("No checkout URL returned");
 
             window.location.href = data.url;
