@@ -1,4 +1,4 @@
-import { ArrowLeft, User, Settings, Bell, Shield, Heart, LogOut, ChevronRight, Crown, Database, Camera, Loader2, LayoutDashboard, BookOpen, Globe, ExternalLink } from "lucide-react";
+import { ArrowLeft, User, Settings, Bell, Shield, Heart, LogOut, ChevronRight, Crown, Database, Camera, Loader2, LayoutDashboard, MapPin, Trophy, Flame, Activity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/layout/MobileNav";
@@ -8,6 +8,26 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { LevelBadge, XPBar } from "@/components/gamification";
+
+interface ProfileData {
+  id: string;
+  user_id: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  display_name: string | null;
+  occupation: string | null;
+  is_admin: boolean;
+  is_premium: boolean;
+  xp: number;
+  level: number;
+  streak_current: number;
+  streak_longest: number;
+}
 
 const menuItems = [
   { icon: Bell, label: "Notificaciones", path: "/settings/notifications" },
@@ -36,10 +56,21 @@ const Profile = () => {
         .single();
 
       if (error) throw error;
-      console.log("Profile Data:", data);
-      return data;
+      return data as ProfileData;
     },
     enabled: !!user,
+  });
+
+  // Mock stats
+  const { data: stats } = useQuery({
+    queryKey: ['user-stats'],
+    queryFn: async () => {
+      return {
+        checkins: 42,
+        meditations: 15, // TODO: Fetch real count
+        journal_entries: 28 // TODO: Fetch real count
+      };
+    }
   });
 
   // Upload Avatar Mutation
@@ -111,7 +142,7 @@ const Profile = () => {
       {/* Header */}
       <header className="sticky top-0 z-40 glass border-b border-border/50">
         <div className="container flex items-center gap-4 py-4">
-          <Button variant="ghost" size="icon-sm" onClick={() => navigate(-1)}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="flex-1">
@@ -125,69 +156,101 @@ const Profile = () => {
       </header>
 
       <main className="container py-6 space-y-6">
-        {/* Profile Card */}
-        <div className="bg-card rounded-2xl p-6 shadow-soft text-center">
-          <div className="relative w-24 h-24 mx-auto mb-4 group">
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              className="hidden"
-              accept="image/*"
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="w-full h-full rounded-full overflow-hidden border-4 border-background shadow-md relative"
-            >
-              {profile?.avatar_url ? (
-                <img
-                  src={profile.avatar_url}
-                  alt="Avatar"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-primary to-turquoise-light flex items-center justify-center">
-                  <User className="w-10 h-10 text-white" />
-                </div>
-              )}
+        {/* Profile Header Block */}
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-4">
+            <div className="relative group">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+                accept="image/*"
+              />
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="relative cursor-pointer"
+              >
+                <Avatar className="w-20 h-20 border-4 border-background shadow-xl">
+                  <AvatarImage src={profile?.avatar_url || ''} />
+                  <AvatarFallback className="text-2xl bg-primary/10 text-primary">
+                    {profile?.first_name?.[0] || user?.email?.[0]?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
 
-              {/* Overlay on hover/loading */}
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                {uploading ? (
-                  <Loader2 className="w-6 h-6 text-white animate-spin" />
-                ) : (
-                  <Camera className="w-6 h-6 text-white" />
+                {/* Level Badge Overlay */}
+                <div className="absolute -bottom-2 -right-2 bg-background rounded-full p-1 shadow-sm pointer-events-none">
+                  <LevelBadge level={profile?.level || 1} showLabel={false} className="scale-75" />
+                </div>
+
+                {/* Upload Overlay */}
+                <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  {uploading ? (
+                    <Loader2 className="w-6 h-6 text-white animate-spin" />
+                  ) : (
+                    <Camera className="w-6 h-6 text-white" />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-xl font-display font-bold text-foreground">
+                {profile?.display_name || profile?.first_name || "Usuario"}
+              </h2>
+              <p className="text-muted-foreground flex items-center gap-1 text-sm">
+                <MapPin className="w-3 h-3" /> Explorador Interior
+              </p>
+              <div className="flex items-center gap-2 mt-2">
+                <Badge variant="secondary" className="text-xs gap-1 px-2 py-0.5">
+                  <Trophy className="w-3 h-3 text-amber-500" />
+                  Nivel {profile?.level || 1}
+                </Badge>
+                {(profile?.streak_current || 0) > 0 && (
+                  <Badge variant="outline" className="text-xs gap-1 border-orange-500/30 bg-orange-500/5 text-orange-600 px-2 py-0.5">
+                    <Flame className="w-3 h-3" />
+                    {profile?.streak_current} días
+                  </Badge>
                 )}
               </div>
-            </button>
-          </div>
-
-          <h2 className="text-xl font-display font-bold text-foreground">
-            {profile?.display_name || user?.email?.split('@')[0] || "Usuario"}
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {profile?.occupation || "Explorador de consciencia"}
-          </p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Miembro desde {new Date(user?.created_at || Date.now()).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
-          </p>
-
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-border">
-            <div>
-              <p className="text-2xl font-display font-bold text-foreground">{profile?.streak_count || 0}</p>
-              <p className="text-xs text-muted-foreground">Días racha</p>
-            </div>
-            <div>
-              <p className="text-2xl font-display font-bold text-foreground">12</p> {/* Placeholder for Victories */}
-              <p className="text-xs text-muted-foreground">Victorias</p>
-            </div>
-            <div>
-              <p className="text-2xl font-display font-bold text-foreground">28</p> {/* Placeholder for Entries */}
-              <p className="text-xs text-muted-foreground">Entradas</p>
             </div>
           </div>
+        </div>
+
+        {/* Gamification Progress */}
+        <Card className="border-none shadow-md bg-gradient-to-br from-card to-secondary/20">
+          <CardContent className="pt-6 pb-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <LevelBadge level={profile?.level || 1} />
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Siguiente Hito</p>
+                <p className="text-sm font-semibold text-primary">
+                  {((Math.floor(Math.sqrt(profile?.xp || 0) / 10) + 1) * 10) ** 2 - (profile?.xp || 0)} XP para subir
+                </p>
+              </div>
+            </div>
+            <XPBar currentXP={profile?.xp || 0} level={profile?.level || 1} />
+          </CardContent>
+        </Card>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 gap-4">
+          <Card>
+            <CardContent className="pt-6 text-center space-y-1">
+              <Activity className="w-8 h-8 text-primary mx-auto mb-2" />
+              <div className="text-2xl font-bold">{stats?.checkins || 0}</div>
+              <div className="text-xs text-muted-foreground font-medium uppercase">Check-ins</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6 text-center space-y-1">
+              <Flame className="w-8 h-8 text-orange-500 mx-auto mb-2" />
+              <div className="text-2xl font-bold">{profile?.streak_longest || 0}</div>
+              <div className="text-xs text-muted-foreground font-medium uppercase">Mejor Racha</div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Premium CTA */}
@@ -232,8 +295,6 @@ const Profile = () => {
             </button>
           ))}
         </div>
-
-
 
         {/* Sign Out */}
         <Button
