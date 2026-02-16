@@ -44,14 +44,6 @@ const Shop = () => {
         }
     });
 
-    if (isLoading) {
-        return (
-            <div className="min-h-screen bg-background flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-        );
-    }
-
     // Metrics Tracking
     const trackProductEventMutation = useMutation({
         mutationFn: async (productId: string) => {
@@ -62,6 +54,14 @@ const Shop = () => {
             }]);
         }
     });
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+        );
+    }
 
     const handleProductClick = async (product: Product) => {
         trackProductEventMutation.mutate(product.id);
