@@ -65,6 +65,23 @@ serve(async (req) => {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
         }
+        // 5. Verify Recipient is a Trusted Contact 🛡️
+        // Report: "SOS email function lacks authentication checks" (in terms of authorization logic)
+        // We verify that the 'to' email is actually one of the user's trusted contacts.
+        const { data: contacts, error: contactError } = await supabase
+            .from("trusted_contacts")
+            .select("email")
+            .eq("user_id", user.id)
+            .eq("email", to)
+            .single();
+
+        if (contactError || !contacts) {
+            console.error("Untrusted contact attempt:", to);
+            return new Response(JSON.stringify({ error: "Recipient is not in your trusted contacts list" }), {
+                status: 403,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+        }
 
         // 5. Send User-User Email via Resend (SYSTEM SENDER)
         // We use a system "from" address to prevent spoofing, setting Reply-To as the sender if needed, 

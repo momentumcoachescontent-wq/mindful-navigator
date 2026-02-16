@@ -113,6 +113,7 @@ export function useScanner() {
         recommended_tools: scanResult.recommendedTools.map((t) => t.name),
         action_plan: scanResult.actionPlan,
         ai_response: scanResult.summary,
+        observations: scanResult.observations,
       });
 
       if (error) throw error;
