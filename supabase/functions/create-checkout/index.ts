@@ -12,6 +12,28 @@ serve(async (req) => {
     }
 
     try {
+        // 0. Auth Check 🛡️
+        const authHeader = req.headers.get("Authorization");
+        if (!authHeader) {
+            throw new Error("Missing Authorization header");
+        }
+
+        const supabaseUrl = Deno.env.get("APP_SUPABASE_URL") ?? Deno.env.get("SUPABASE_URL");
+        const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+
+        // Use anon client to verify user token
+        const supabaseAuth = createClient(
+            supabaseUrl ?? "",
+            supabaseAnonKey ?? "",
+            { global: { headers: { Authorization: authHeader } } }
+        );
+
+        const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+
+        if (authError || !user) {
+            throw new Error("Unauthorized: Invalid token");
+        }
+
         const { productId, successUrl, cancelUrl } = await req.json();
 
         if (!productId) {
@@ -19,7 +41,6 @@ serve(async (req) => {
         }
 
         // 1. Env Var Check
-        const supabaseUrl = Deno.env.get("APP_SUPABASE_URL") ?? Deno.env.get("SUPABASE_URL");
         const supabaseServiceKey = Deno.env.get("APP_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
         const supabaseAdmin = createClient(
@@ -73,7 +94,12 @@ serve(async (req) => {
             params.append("line_items[0][quantity]", "1");
         }
 
+        if (user.email) {
+            params.append("customer_email", user.email);
+        }
+
         params.append("metadata[productId]", product.id);
+        params.append("metadata[userId]", user.id); // 🔗 LINK PAYMENT TO USER
 
         const stripeResponse = await fetch("https://api.stripe.com/v1/checkout/sessions", {
             method: "POST",
