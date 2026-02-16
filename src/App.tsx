@@ -19,6 +19,7 @@ import Onboarding from "./pages/Onboarding";
 import Premium from "./pages/Premium";
 import Shop from "./pages/Shop";
 import DataManagement from "./pages/DataManagement";
+import MyOrders from "./pages/MyOrders";
 import Settings from "./pages/Settings";
 import AdminDashboard from "./pages/AdminDashboard";
 
@@ -59,6 +60,7 @@ const App = () => (
                 <Route path="/library" element={<Library />} />
                 <Route path="/shop" element={<Shop />} />
                 <Route path="/premium" element={<Premium />} />
+                <Route path="/orders" element={<MyOrders />} />
                 <Route path="/data" element={<DataManagement />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/settings/notifications" element={<Settings />} />
