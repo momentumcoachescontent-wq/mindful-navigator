@@ -64,6 +64,38 @@ const JournalEntry = () => {
   const [tools, setTools] = useState<RecommendedTool[]>([]);
   const [isScannerEntry, setIsScannerEntry] = useState(false);
 
+  // Auto-Victory and Auto-Tagging Logic
+  useEffect(() => {
+    if (isLoading) return;
+
+    const fullText = (title + " " + content).toLowerCase();
+
+    // 1. Victory Detection
+    const victoryKeywords = ["logré", "gané", "victoria", "éxito", "pude", "terminé", "conseguí", "orgullos"];
+    if (!isVictory && victoryKeywords.some(keyword => fullText.includes(keyword))) {
+      setIsVictory(true);
+      toast.success("¡Detectamos un logro!", {
+        description: "Modo Victoria activado automáticamente 🏆",
+      });
+    }
+
+    // 2. Auto-Tagging
+    const keywordMap: Record<string, string[]> = {
+      family: ["familia", "mamá", "papá", "hijo", "hija", "hermano", "hermana", "casa"],
+      work: ["trabajo", "jefe", "compañero", "oficina", "proyecto", "negocio", "reunión"],
+      relationships: ["pareja", "novio", "novia", "esposo", "esposa", "amor", "cita"],
+      friends: ["amigo", "amiga", "amigos", "salida", "fiesta", "reunión"],
+      self: ["miedo", "ansiedad", "tristeza", "feliz", "cuerpo", "salud", "yo", "mí"]
+    };
+
+    Object.entries(keywordMap).forEach(([tagId, keywords]) => {
+      if (!selectedTags.includes(tagId) && keywords.some(k => fullText.includes(k))) {
+        setSelectedTags(prev => [...prev, tagId]);
+      }
+    });
+
+  }, [title, content, isLoading]); // Dependency on text changes
+
   useEffect(() => {
     // Prevent loading if auth is still initializing
     if (authLoading) return;
