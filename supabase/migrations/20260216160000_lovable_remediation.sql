@@ -49,7 +49,9 @@ EXECUTE FUNCTION public.protect_admin_column();
 -- Fix: Add RLS policies to storage.objects for the 'avatars' bucket.
 
 -- Ensure RLS is enabled on storage.objects (usually is by default in Supabase)
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+-- Ensure RLS is enabled on storage.objects (usually is by default in Supabase)
+-- ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY; -- Commented out to prevent "must be owner" error
+
 
 -- Policy: Public Read (Avatars are usually public)
 DROP POLICY IF EXISTS "Public Access to Avatars" ON storage.objects;
