@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle, Info, Lightbulb, BookOpen, ListChecks } from "lucide-react";
+import { AlertTriangle, CheckCircle, Info, Lightbulb, BookOpen, ListChecks, Music } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -133,6 +133,15 @@ export default function ScanResult({ result, onSaveToJournal, onCreatePlan }: Sc
         >
           <BookOpen className="w-4 h-4" />
           <span>Guardar en Diario</span>
+        </Button>
+        <Button
+          onClick={() => window.location.href = '/library'}
+          variant="outline"
+          className="flex-1 gap-2 border-primary/20 hover:bg-primary/5"
+          size="lg"
+        >
+          <Music className="w-4 h-4" />
+          <span>Escuchar Audios</span>
         </Button>
       </div>
     </div>

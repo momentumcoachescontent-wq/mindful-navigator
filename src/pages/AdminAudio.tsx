@@ -32,6 +32,7 @@ const AdminAudio = () => {
     const queryClient = useQueryClient();
     const [isOpen, setIsOpen] = useState(false);
     const [editingTrack, setEditingTrack] = useState<AudioTrack | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
 
     // Fetch Tracks
     const { data: tracks, isLoading } = useQuery({
@@ -87,14 +88,54 @@ const AdminAudio = () => {
         onError: (error) => toast.error(`Error: ${error.message}`)
     });
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleFileUpload = async (file: File) => {
+        setIsUploading(true);
+        try {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Math.random()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('audio-library')
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            const { data } = supabase.storage
+                .from('audio-library')
+                .getPublicUrl(filePath);
+
+            return data.publicUrl;
+        } catch (error: any) {
+            toast.error(`Error al subir archivo: ${error.message}`);
+            return null;
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
+
+        // Handle Audio File Upload
+        const audioFile = formData.get('audio_file') as File;
+        let audioUrl = formData.get('audio_url') as string;
+
+        if (audioFile && audioFile.size > 0) {
+            const uploadedUrl = await handleFileUpload(audioFile);
+            if (uploadedUrl) {
+                audioUrl = uploadedUrl;
+            } else {
+                return; // Stop if upload failed
+            }
+        }
+
         const data = {
             title: formData.get('title') as string,
             description: formData.get('description') as string,
             category: formData.get('category') as any,
-            audio_url: formData.get('audio_url') as string,
+            audio_url: audioUrl, // Use the uploaded URL or the text input
             image_url: formData.get('image_url') as string,
             duration: parseInt(formData.get('duration') as string) || 0,
             is_premium: formData.get('is_premium') === 'on',
@@ -163,11 +204,22 @@ const AdminAudio = () => {
                                 </div>
                             </div>
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="audio_url">URL del Audio (MP3)</Label>
-                                <div className="relative">
-                                    <Input id="audio_url" name="audio_url" defaultValue={editingTrack?.audio_url || ''} required placeholder="https://..." />
-                                    {/* Future: Add file upload button here */}
+                            <div className="grid gap-2 p-4 bg-muted/50 rounded-lg border border-dashed">
+                                <Label>Archivo de Audio</Label>
+                                <div className="space-y-3">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="audio_file" className="text-xs text-muted-foreground">Subir archivo (MP3, WAV)</Label>
+                                        <Input id="audio_file" name="audio_file" type="file" accept="audio/*" />
+                                    </div>
+                                    <div className="relative">
+                                        <div className="absolute inset-0 flex items-center">
+                                            <span className="w-full border-t" />
+                                        </div>
+                                        <div className="relative flex justify-center text-xs uppercase">
+                                            <span className="bg-background px-2 text-muted-foreground">O usar URL externa</span>
+                                        </div>
+                                    </div>
+                                    <Input id="audio_url" name="audio_url" defaultValue={editingTrack?.audio_url || ''} placeholder="https://..." />
                                 </div>
                             </div>
 
@@ -185,7 +237,16 @@ const AdminAudio = () => {
 
                             <div className="flex justify-end gap-2 mt-4">
                                 <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancelar</Button>
-                                <Button type="submit">{editingTrack ? "Guardar" : "Crear"}</Button>
+                                <Button type="submit" disabled={isUploading}>
+                                    {isUploading ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Subiendo...
+                                        </>
+                                    ) : (
+                                        editingTrack ? "Guardar" : "Crear"
+                                    )}
+                                </Button>
                             </div>
                         </form>
                     </DialogContent>
