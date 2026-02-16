@@ -24,12 +24,14 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, ArrowLeft, Loader2, Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { PaymentSettingsDialog } from "@/components/admin/PaymentSettingsDialog";
 
 interface Product {
   id: string;
   title: string;
   description: string | null;
   price: number;
+  currency: string; // New field
   category: 'subscription' | 'ebook' | 'meditation' | 'service' | 'pack';
   cta_link: string | null;
   is_active: boolean;
@@ -47,6 +49,7 @@ const AdminProducts = () => {
   const { data: products, isLoading } = useQuery({
     queryKey: ['admin-products'],
     queryFn: async () => {
+      // @ts-ignore
       const { data, error } = await supabase
         .from('products')
         .select('*')
@@ -61,12 +64,14 @@ const AdminProducts = () => {
   const saveProductMutation = useMutation({
     mutationFn: async (productData: Partial<Product>) => {
       if (editingProduct) {
+        // @ts-ignore
         const { error } = await supabase
           .from('products')
           .update(productData)
           .eq('id', editingProduct.id);
         if (error) throw error;
       } else {
+        // @ts-ignore
         const { error } = await supabase
           .from('products')
           .insert([productData]);
@@ -82,6 +87,23 @@ const AdminProducts = () => {
     onError: (error) => {
       toast.error(`Error: ${error.message}`);
     }
+  });
+
+  // Quick Toggle Mutation
+  const toggleActiveMutation = useMutation({
+    mutationFn: async ({ id, isActive }: { id: string, isActive: boolean }) => {
+      // @ts-ignore
+      const { error } = await supabase
+        .from('products')
+        .update({ is_active: isActive })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      toast.success("Estado actualizado");
+    },
+    onError: (error) => toast.error(`Error: ${error.message}`)
   });
 
   // Delete Mutation
@@ -104,6 +126,7 @@ const AdminProducts = () => {
       title: formData.get('title') as string,
       description: formData.get('description') as string,
       price: parseFloat(formData.get('price') as string),
+      currency: formData.get('currency') as string, // New field
       category: formData.get('category') as any,
       cta_link: formData.get('cta_link') as string,
       image_url: formData.get('image_url') as string,
@@ -117,47 +140,67 @@ const AdminProducts = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20 p-6">
-      <div className="flex items-center gap-4 mb-8">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/admin")}>
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold font-display flex items-center gap-2">
-            <Package className="w-6 h-6 text-primary" />
-            Gestión de Productos
-          </h1>
-          <p className="text-muted-foreground">Administra el catálogo de la tienda</p>
+      <div className="flex flex-col md:flex-row items-center gap-4 mb-8 justify-between">
+        <div className="flex items-center gap-4 w-full md:w-auto">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/admin")}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold font-display flex items-center gap-2">
+              <Package className="w-6 h-6 text-primary" />
+              Gestión de Productos
+            </h1>
+            <p className="text-muted-foreground">Administra el catálogo de la tienda</p>
+          </div>
         </div>
 
-        <Dialog open={isOpen} onOpenChange={(open) => {
-          setIsOpen(open);
-          if (!open) setEditingProduct(null);
-        }}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="w-4 h-4" /> Nuevo Producto
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>{editingProduct ? "Editar Producto" : "Nuevo Producto"}</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid gap-2">
-                <Label htmlFor="title">Título</Label>
-                <Input id="title" name="title" defaultValue={editingProduct?.title} required />
-              </div>
+        <div className="flex gap-2">
+          <PaymentSettingsDialog />
 
-              <div className="grid gap-2">
-                <Label htmlFor="description">Descripción</Label>
-                <Textarea id="description" name="description" defaultValue={editingProduct?.description || ''} />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+          <Dialog open={isOpen} onOpenChange={(open) => {
+            setIsOpen(open);
+            if (!open) setEditingProduct(null);
+          }}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="w-4 h-4" /> Nuevo Producto
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>{editingProduct ? "Editar Producto" : "Nuevo Producto"}</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="price">Precio ($)</Label>
-                  <Input id="price" name="price" type="number" step="0.01" defaultValue={editingProduct?.price || 0} required />
+                  <Label htmlFor="title">Título</Label>
+                  <Input id="title" name="title" defaultValue={editingProduct?.title} required />
                 </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="description">Descripción</Label>
+                  <Textarea id="description" name="description" defaultValue={editingProduct?.description || ''} />
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="grid gap-2 col-span-1">
+                    <Label htmlFor="currency">Moneda</Label>
+                    <select
+                      id="currency"
+                      name="currency"
+                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                      defaultValue={editingProduct?.currency || 'MXN'}
+                    >
+                      <option value="MXN">MXN ($)</option>
+                      <option value="USD">USD ($)</option>
+                      <option value="EUR">EUR (€)</option>
+                    </select>
+                  </div>
+                  <div className="grid gap-2 col-span-2">
+                    <Label htmlFor="price">Precio</Label>
+                    <Input id="price" name="price" type="number" step="0.01" defaultValue={editingProduct?.price || 0} required />
+                  </div>
+                </div>
+
                 <div className="grid gap-2">
                   <Label htmlFor="category">Categoría</Label>
                   <select
@@ -173,36 +216,36 @@ const AdminProducts = () => {
                     <option value="service">Servicio / Mentoría</option>
                   </select>
                 </div>
-              </div>
 
-              <div className="grid gap-2">
-                <Label htmlFor="cta_link">Link de Venta (Stripe/Paypal/Mail)</Label>
-                <Input id="cta_link" name="cta_link" defaultValue={editingProduct?.cta_link || ''} placeholder="https://..." />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="image_url">URL Imagen (Opcional)</Label>
-                <Input id="image_url" name="image_url" defaultValue={editingProduct?.image_url || ''} placeholder="https://..." />
-              </div>
-
-              <div className="flex gap-6 pt-2">
-                <div className="flex items-center space-x-2">
-                  <Switch id="is_active" name="is_active" defaultChecked={editingProduct?.is_active ?? true} />
-                  <Label htmlFor="is_active">Activo</Label>
+                <div className="grid gap-2">
+                  <Label htmlFor="cta_link">Link de Venta (Stripe/Paypal/Mail)</Label>
+                  <Input id="cta_link" name="cta_link" defaultValue={editingProduct?.cta_link || ''} placeholder="https://..." />
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Switch id="is_featured" name="is_featured" defaultChecked={editingProduct?.is_featured ?? false} />
-                  <Label htmlFor="is_featured">Destacado</Label>
-                </div>
-              </div>
 
-              <div className="flex justify-end gap-2 mt-4">
-                <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancelar</Button>
-                <Button type="submit">{editingProduct ? "Guardar Cambios" : "Crear Producto"}</Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+                <div className="grid gap-2">
+                  <Label htmlFor="image_url">URL Imagen (Opcional)</Label>
+                  <Input id="image_url" name="image_url" defaultValue={editingProduct?.image_url || ''} placeholder="https://..." />
+                </div>
+
+                <div className="flex gap-6 pt-2">
+                  <div className="flex items-center space-x-2">
+                    <Switch id="is_active" name="is_active" defaultChecked={editingProduct?.is_active ?? true} />
+                    <Label htmlFor="is_active">Activo</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch id="is_featured" name="is_featured" defaultChecked={editingProduct?.is_featured ?? false} />
+                    <Label htmlFor="is_featured">Destacado</Label>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 mt-4">
+                  <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancelar</Button>
+                  <Button type="submit">{editingProduct ? "Guardar Cambios" : "Crear Producto"}</Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
@@ -230,14 +273,18 @@ const AdminProducts = () => {
                     {product.category}
                   </span>
                 </TableCell>
-                <TableCell>${product.price}</TableCell>
                 <TableCell>
-                  <div className="flex gap-2">
-                    {product.is_active ?
-                      <span className="w-2 h-2 rounded-full bg-green-500" title="Activo" /> :
-                      <span className="w-2 h-2 rounded-full bg-gray-300" title="Inactivo" />
-                    }
-                    {product.is_featured && <span className="text-xs text-yellow-600 font-bold">★ Destacado</span>}
+                  <span className="font-mono text-sm">
+                    {new Intl.NumberFormat('es-MX', { style: 'currency', currency: product.currency || 'MXN' }).format(product.price)}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={product.is_active}
+                      onCheckedChange={(checked) => toggleActiveMutation.mutate({ id: product.id, isActive: checked })}
+                    />
+                    {product.is_featured && <span className="text-xs text-yellow-600 font-bold">★</span>}
                   </div>
                 </TableCell>
                 <TableCell className="text-right space-x-2">

@@ -15,6 +15,7 @@ interface Product {
     title: string;
     description: string | null;
     price: number;
+    currency: string; // New field
     category: 'subscription' | 'ebook' | 'meditation' | 'service' | 'pack';
     cta_link: string | null;
     is_active: boolean;
@@ -86,7 +87,7 @@ const Shop = () => {
                                 <PricingTier
                                     key={product.id}
                                     title={product.title}
-                                    price={`$${product.price}`}
+                                    price={new Intl.NumberFormat('es-MX', { style: 'currency', currency: product.currency || 'MXN' }).format(product.price)}
                                     period="mes"
                                     description={product.description || ""}
                                     features={product.description?.includes("Tools") ? [
