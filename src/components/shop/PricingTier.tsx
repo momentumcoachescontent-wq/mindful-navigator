@@ -11,6 +11,7 @@ interface PricingTierProps {
     ctaText: string;
     ctaLink: string;
     isPopular?: boolean;
+    onSelect?: () => void;
 }
 
 export function PricingTier({
@@ -21,7 +22,8 @@ export function PricingTier({
     features,
     ctaText,
     ctaLink,
-    isPopular
+    isPopular,
+    onSelect
 }: PricingTierProps) {
     return (
         <div className={cn(
@@ -62,7 +64,7 @@ export function PricingTier({
             </ul>
 
             <Button
-                onClick={() => window.open(ctaLink, '_blank')}
+                onClick={() => onSelect ? onSelect() : window.open(ctaLink, '_blank')}
                 variant={isPopular ? "default" : "outline"}
                 className={cn(
                     "w-full h-12 text-base font-semibold",

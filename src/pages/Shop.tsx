@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { ArrowLeft, ShoppingBag, BookOpen, User } from "lucide-react";
@@ -48,6 +48,24 @@ const Shop = () => {
             </div>
         );
     }
+
+    // Metrics Tracking
+    const trackProductEventMutation = useMutation({
+        mutationFn: async (productId: string) => {
+            // @ts-ignore
+            await supabase.from('product_events').insert([{
+                product_id: productId,
+                event_type: 'click_cta'
+            }]);
+        }
+    });
+
+    const handleProductClick = (product: Product) => {
+        trackProductEventMutation.mutate(product.id);
+        if (product.cta_link) {
+            window.open(product.cta_link, '_blank');
+        }
+    };
 
     const subscriptionProducts = products?.filter(p => p.category === 'subscription') || [];
     const resourcesProducts = products?.filter(p => ['ebook', 'meditation', 'pack'].includes(p.category)) || [];
@@ -102,6 +120,7 @@ const Shop = () => {
                                     ctaText={product.price === 0 ? "Tu Plan Actual" : "Inicia Prueba Gratis"}
                                     ctaLink={product.cta_link || "#"}
                                     isPopular={product.is_featured}
+                                    onSelect={() => handleProductClick(product)}
                                 />
                             ))}
                         </div>
@@ -120,12 +139,13 @@ const Shop = () => {
                                 <ProductCard
                                     key={product.id}
                                     title={product.title}
-                                    price={`$${product.price}`}
+                                    price={new Intl.NumberFormat('es-MX', { style: 'currency', currency: product.currency || 'MXN' }).format(product.price)}
                                     description={product.description || ""}
                                     image={product.image_url || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=800"} // Fallback image
                                     ctaText="Obtener Acceso"
                                     ctaLink={product.cta_link || "#"}
                                     tag={product.category === 'pack' ? "Pack Ahorro" : product.is_featured ? "Destacado" : undefined}
+                                    onAdd={() => handleProductClick(product)}
                                 />
                             ))}
                         </div>
@@ -164,11 +184,11 @@ const Shop = () => {
                                                     {product.description}
                                                 </p>
                                                 <div className="flex flex-col sm:flex-row gap-4 items-center pt-2">
-                                                    <span className="text-2xl font-bold text-primary">${product.price}</span>
-                                                    <Button asChild size="lg" className="w-full sm:w-auto">
-                                                        <a href={product.cta_link || "#"} target="_blank" rel="noopener noreferrer">
-                                                            Reservar Ahora
-                                                        </a>
+                                                    <span className="text-2xl font-bold text-primary">
+                                                        {new Intl.NumberFormat('es-MX', { style: 'currency', currency: product.currency || 'MXN' }).format(product.price)}
+                                                    </span>
+                                                    <Button size="lg" className="w-full sm:w-auto" onClick={() => handleProductClick(product)}>
+                                                        Reservar Ahora
                                                     </Button>
                                                 </div>
                                             </div>

@@ -45,18 +45,23 @@ const AdminProducts = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
-  // Fetch Products
+  // Fetch Products with click counts
   const { data: products, isLoading } = useQuery({
     queryKey: ['admin-products'],
     queryFn: async () => {
       // @ts-ignore
       const { data, error } = await supabase
         .from('products')
-        .select('*')
+        .select('*, product_events(count)')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as Product[];
+
+      // Transform data to include a flat 'clicks' property
+      return data.map((p: any) => ({
+        ...p,
+        clicks: p.product_events?.[0]?.count || 0
+      })) as (Product & { clicks: number })[];
     }
   });
 
@@ -255,6 +260,7 @@ const AdminProducts = () => {
               <TableHead>Producto</TableHead>
               <TableHead>Categoría</TableHead>
               <TableHead>Precio</TableHead>
+              <TableHead>Interés (Clicks)</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
@@ -277,6 +283,12 @@ const AdminProducts = () => {
                   <span className="font-mono text-sm">
                     {new Intl.NumberFormat('es-MX', { style: 'currency', currency: product.currency || 'MXN' }).format(product.price)}
                   </span>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1 font-medium">
+                    <span className="text-primary">{product.clicks}</span>
+                    <span className="text-xs text-muted-foreground">clicks</span>
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">

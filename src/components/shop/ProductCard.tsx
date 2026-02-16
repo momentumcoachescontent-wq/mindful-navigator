@@ -9,6 +9,7 @@ interface ProductCardProps {
     ctaText: string;
     ctaLink: string;
     tag?: string;
+    onAdd?: () => void;
 }
 
 export function ProductCard({
@@ -18,7 +19,8 @@ export function ProductCard({
     image,
     ctaText,
     ctaLink,
-    tag
+    tag,
+    onAdd
 }: ProductCardProps) {
     return (
         <div className="bg-card rounded-2xl border border-border/50 overflow-hidden shadow-soft hover:shadow-elevated transition-all duration-300 flex flex-col h-full group">
@@ -52,7 +54,7 @@ export function ProductCard({
                 </p>
 
                 <Button
-                    onClick={() => window.open(ctaLink, '_blank')}
+                    onClick={() => onAdd ? onAdd() : window.open(ctaLink, '_blank')}
                     className="w-full gap-2 group/btn"
                     variant="outline"
                 >
