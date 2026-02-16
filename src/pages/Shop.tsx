@@ -93,7 +93,7 @@ const Shop = () => {
             setIsCheckingOut(false);
             toast({
                 title: "Error al iniciar pago",
-                description: "Por favor intenta más tarde o contacta soporte.",
+                description: error instanceof Error ? error.message : "Error desconocido. Revisa la consola.",
                 variant: "destructive"
             });
         }
