@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { ArrowLeft, Save, Trophy, Loader2, Check, RefreshCw } from "lucide-react";
+import { MicrophoneButton } from "@/components/ui/MicrophoneButton";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -411,13 +412,19 @@ const JournalEntry = () => {
         {/* Title */}
         <div className="space-y-2">
           <Label htmlFor="title">Título</Label>
-          <Input
-            id="title"
-            placeholder={isVictory ? "¿Qué lograste hoy?" : "¿Cómo fue tu día?"}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="text-lg font-display"
-          />
+          <div className="flex gap-2">
+            <Input
+              id="title"
+              placeholder={isVictory ? "¿Qué lograste hoy?" : "¿Cómo fue tu día?"}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="text-lg font-display flex-1"
+            />
+            <MicrophoneButton
+              onTextReceived={(text) => setTitle(prev => (prev ? prev + " " + text : text))}
+              className="shrink-0"
+            />
+          </div>
         </div>
 
         {/* Mood */}
@@ -465,13 +472,20 @@ const JournalEntry = () => {
 
         {/* Content / Notes */}
         <div className="space-y-2">
-          <Label htmlFor="content">
-            {isVictory
-              ? "Cuéntanos sobre tu victoria"
-              : isScannerEntry
-                ? "Notas y reflexiones"
-                : "¿Qué quieres escribir?"}
-          </Label>
+          <div className="flex justify-between items-center">
+            <Label htmlFor="content">
+              {isVictory
+                ? "Cuéntanos sobre tu victoria"
+                : isScannerEntry
+                  ? "Notas y reflexiones"
+                  : "¿Qué quieres escribir?"}
+            </Label>
+            <MicrophoneButton
+              onTextReceived={(text) => setContent(prev => (prev ? prev + " " + text : text))}
+              size="icon-sm"
+              variant="ghost"
+            />
+          </div>
           <Textarea
             id="content"
             placeholder={isVictory

@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Mic, Send, Sparkles } from "lucide-react";
+import { Send, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MicrophoneButton } from "@/components/ui/MicrophoneButton";
 
 interface ScannerInputProps {
   onSubmit: (text: string) => void;
@@ -32,14 +33,13 @@ export function ScannerInput({ onSubmit, isLoading }: ScannerInputProps) {
           className="w-full min-h-[140px] p-4 pr-12 bg-card rounded-2xl border-2 border-border focus:border-primary focus:ring-0 resize-none text-foreground placeholder:text-muted-foreground transition-colors"
           disabled={isLoading}
         />
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute bottom-3 right-3 text-muted-foreground hover:text-foreground"
-          disabled={isLoading}
-        >
-          <Mic className="w-5 h-5" />
-        </Button>
+        <div className="absolute bottom-3 right-3">
+          <MicrophoneButton
+            onTextReceived={(newText) => setText(prev => prev + " " + newText)}
+            className="text-muted-foreground hover:text-foreground"
+            variant="ghost"
+          />
+        </div>
       </div>
 
       {/* Example prompts */}

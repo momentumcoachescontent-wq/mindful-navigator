@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { ArrowRight, Check, RefreshCw, Save, Sparkles, MessageCircle, Loader2, Send, User, Bot, AlertCircle } from "lucide-react";
+import { MicrophoneButton } from "@/components/ui/MicrophoneButton";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -505,15 +506,24 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
         </p>
       </div>
 
-      <Textarea
-        value={isCustomScenario ? customScenarioText : context}
-        onChange={(e) => isCustomScenario ? setCustomScenarioText(e.target.value) : setContext(e.target.value)}
-        placeholder={isCustomScenario
-          ? "Ej: Mi suegra siempre hace comentarios sobre mi cocina delante de mi esposo y no sé cómo pararla sin sonar grosera..."
-          : "Ej: Esto pasó ayer en la oficina después de la reunión de las 5..."
-        }
-        className="min-h-[150px] bg-card border-border resize-none"
-      />
+      <div className="relative">
+        <Textarea
+          value={isCustomScenario ? customScenarioText : context}
+          onChange={(e) => isCustomScenario ? setCustomScenarioText(e.target.value) : setContext(e.target.value)}
+          placeholder={isCustomScenario
+            ? "Ej: Mi suegra siempre hace comentarios sobre mi cocina delante de mi esposo y no sé cómo pararla sin sonar grosera..."
+            : "Ej: Esto pasó ayer en la oficina después de la reunión de las 5..."
+          }
+          className="min-h-[150px] bg-card border-border resize-none pr-12"
+        />
+        <div className="absolute bottom-3 right-3">
+          <MicrophoneButton
+            onTextReceived={(text) => isCustomScenario ? setCustomScenarioText(prev => prev + " " + text) : setContext(prev => prev + " " + text)}
+            size="icon-sm"
+            variant="ghost"
+          />
+        </div>
+      </div>
 
       <Button
         onClick={handleContextSubmit}
@@ -560,18 +570,27 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
 
       {currentRound < maxRounds && !isLoading && (
         <div className="flex gap-2 items-end pt-2">
-          <Textarea
-            value={currentInput}
-            onChange={(e) => setCurrentInput(e.target.value)}
-            placeholder="Escribe tu respuesta..."
-            className="min-h-[80px] bg-card border-border resize-none flex-1 rounded-xl shadow-soft"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleUserMessage();
-              }
-            }}
-          />
+          <div className="flex-1 relative">
+            <Textarea
+              value={currentInput}
+              onChange={(e) => setCurrentInput(e.target.value)}
+              placeholder="Escribe tu respuesta..."
+              className="min-h-[80px] bg-card border-border resize-none w-full rounded-xl shadow-soft pr-10"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleUserMessage();
+                }
+              }}
+            />
+            <div className="absolute bottom-2 right-2">
+              <MicrophoneButton
+                onTextReceived={(text) => setCurrentInput(prev => prev + " " + text)}
+                size="icon-sm"
+                variant="ghost"
+              />
+            </div>
+          </div>
           <Button
             onClick={handleUserMessage}
             disabled={!currentInput.trim()}
