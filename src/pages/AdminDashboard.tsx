@@ -168,6 +168,23 @@ const AdminDashboard = () => {
                 {/* Detailed Charts / Sections */}
                 <div className="grid gap-4 md:grid-cols-2">
 
+                    <Card className="col-span-1 hover:border-primary/50 transition-colors cursor-pointer" onClick={() => navigate("/admin/users")}>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Users className="w-5 h-5 text-blue-500" />
+                                Gestión de Usuarios
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-sm text-muted-foreground mb-4">
+                                Ver usuarios, niveles, XP y rachas.
+                            </p>
+                            <div className="flex items-center text-primary text-sm font-medium">
+                                Ver tabla <ArrowRight className="w-4 h-4 ml-1" />
+                            </div>
+                        </CardContent>
+                    </Card>
+
 
                     <Card className="col-span-1 hover:border-primary/50 transition-colors cursor-pointer" onClick={() => navigate("/admin/products")}>
                         <CardHeader>

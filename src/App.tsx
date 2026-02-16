@@ -23,6 +23,7 @@ import Settings from "./pages/Settings";
 import AdminDashboard from "./pages/AdminDashboard";
 
 
+import AdminUsers from "./pages/AdminUsers";
 import AdminProducts from "./pages/AdminProducts";
 import AdminAudio from "./pages/AdminAudio";
 import Library from "./pages/Library";
@@ -67,6 +68,7 @@ const App = () => (
                 <Route path="/settings/profile" element={<Settings />} />
 
                 <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin/users" element={<AdminUsers />} />
                 <Route path="/admin/products" element={<AdminProducts />} />
                 <Route path="/admin/audio" element={<AdminAudio />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
