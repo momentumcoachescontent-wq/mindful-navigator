@@ -9,6 +9,7 @@ import { MobileNav } from "@/components/layout/MobileNav";
 import { SOSButton } from "@/components/layout/SOSButton";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { PricingTier } from "@/components/shop/PricingTier";
+import { useToast } from "@/hooks/use-toast";
 
 interface Product {
     id: string;
@@ -25,6 +26,8 @@ interface Product {
 
 const Shop = () => {
     const navigate = useNavigate();
+    const { toast } = useToast();
+    const [isCheckingOut, setIsCheckingOut] = useState(false);
 
     const { data: products, isLoading } = useQuery({
         queryKey: ['shop-products'],
@@ -60,10 +63,39 @@ const Shop = () => {
         }
     });
 
-    const handleProductClick = (product: Product) => {
+    const handleProductClick = async (product: Product) => {
         trackProductEventMutation.mutate(product.id);
+
         if (product.cta_link) {
             window.open(product.cta_link, '_blank');
+            return;
+        }
+
+        // Automatic Stripe Checkout
+        try {
+            setIsCheckingOut(true);
+            toast({
+                title: "Iniciando pago...",
+                description: "Te estamos redirigiendo a la pasarela segura.",
+            });
+
+            const { data, error } = await supabase.functions.invoke('create-checkout', {
+                body: { productId: product.id }
+            });
+
+            if (error) throw error;
+            if (!data?.url) throw new Error("No checkout URL returned");
+
+            window.location.href = data.url;
+
+        } catch (error) {
+            console.error('Checkout error:', error);
+            setIsCheckingOut(false);
+            toast({
+                title: "Error al iniciar pago",
+                description: "Por favor intenta más tarde o contacta soporte.",
+                variant: "destructive"
+            });
         }
     };
 
@@ -227,6 +259,13 @@ const Shop = () => {
 
             <MobileNav />
             <SOSButton />
+
+            {isCheckingOut && (
+                <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
+                    <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
+                    <p className="text-lg font-medium text-foreground">Preparando tu compra segura...</p>
+                </div>
+            )}
         </div>
     );
 };
