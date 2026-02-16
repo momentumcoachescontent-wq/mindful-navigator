@@ -28,6 +28,7 @@ const Shop = () => {
     const { data: products, isLoading } = useQuery({
         queryKey: ['shop-products'],
         queryFn: async () => {
+            // @ts-ignore
             const { data, error } = await supabase
                 .from('products')
                 .select('*')
@@ -130,29 +131,77 @@ const Shop = () => {
                     </section>
                 )}
 
-                {/* Mentorship Section */}
-                <section>
-                    <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 to-turquoise/10 rounded-3xl p-8 text-center space-y-4 border border-primary/20">
-                        {/* Example "Coming Soon" Badge requested */}
-                        <div className="absolute top-4 right-4 bg-yellow-500/20 text-yellow-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-yellow-500/30">
-                            Próximamente
-                        </div>
+                {/* Services / Mentorship Section - Dynamic */}
+                {(() => {
+                    const serviceProducts = products?.filter(p => p.category === 'service') || [];
 
-                        <h2 className="text-2xl font-display font-bold text-foreground">
-                            ¿Necesitas apoyo personalizado?
-                        </h2>
-                        <p className="text-muted-foreground max-w-md mx-auto">
-                            Agenda una sesión 1:1 con nuestros coaches certificados para trabajar en profundidad tus bloqueos.
-                        </p>
-                        <Button
-                            size="lg"
-                            className="bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20 mt-4 opacity-75 cursor-not-allowed"
-                        // onClick={() => ...} // Disabled for now
-                        >
-                            Consultar Disponibilidad
-                        </Button>
-                    </div>
-                </section>
+                    if (serviceProducts.length > 0) {
+                        return (
+                            <section>
+                                <h2 className="text-xl font-display font-bold text-foreground mb-6 flex items-center gap-2">
+                                    <User className="w-5 h-5 text-primary" />
+                                    Mentoría y Servicios
+                                </h2>
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    {serviceProducts.map(product => (
+                                        <div key={product.id} className="relative overflow-hidden bg-gradient-to-br from-primary/5 to-turquoise/5 rounded-3xl p-6 border border-primary/10 flex flex-col md:flex-row gap-6 items-center">
+                                            {product.image_url && (
+                                                <div className="w-full md:w-1/3 aspect-square rounded-2xl overflow-hidden shrink-0">
+                                                    <img src={product.image_url} alt={product.title} className="w-full h-full object-cover" />
+                                                </div>
+                                            )}
+                                            <div className="flex-1 text-center md:text-left space-y-4">
+                                                {product.is_featured && (
+                                                    <span className="inline-block px-3 py-1 bg-yellow-500/20 text-yellow-600 text-xs font-bold rounded-full mb-2">
+                                                        Recomendado
+                                                    </span>
+                                                )}
+                                                <h3 className="text-2xl font-display font-bold text-foreground">
+                                                    {product.title}
+                                                </h3>
+                                                <p className="text-muted-foreground">
+                                                    {product.description}
+                                                </p>
+                                                <div className="flex flex-col sm:flex-row gap-4 items-center pt-2">
+                                                    <span className="text-2xl font-bold text-primary">${product.price}</span>
+                                                    <Button asChild size="lg" className="w-full sm:w-auto">
+                                                        <a href={product.cta_link || "#"} target="_blank" rel="noopener noreferrer">
+                                                            Reservar Ahora
+                                                        </a>
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        );
+                    }
+
+                    // Fallback to "Coming Soon" if no services are defined
+                    return (
+                        <section>
+                            <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 to-turquoise/10 rounded-3xl p-8 text-center space-y-4 border border-primary/20">
+                                <div className="absolute top-4 right-4 bg-yellow-500/20 text-yellow-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-yellow-500/30">
+                                    Próximamente
+                                </div>
+
+                                <h2 className="text-2xl font-display font-bold text-foreground">
+                                    ¿Necesitas apoyo personalizado?
+                                </h2>
+                                <p className="text-muted-foreground max-w-md mx-auto">
+                                    Agenda una sesión 1:1 con nuestros coaches certificados para trabajar en profundidad tus bloqueos.
+                                </p>
+                                <Button
+                                    size="lg"
+                                    className="bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20 mt-4 opacity-75 cursor-not-allowed"
+                                >
+                                    Consultar Disponibilidad
+                                </Button>
+                            </div>
+                        </section>
+                    );
+                })()}
             </main>
 
             <MobileNav />
