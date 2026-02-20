@@ -3,9 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { 
-  Flame, Clock, ChevronRight, Crown, Lock, 
-  Trophy, Target, Sparkles 
+import {
+  Flame, Clock, ChevronRight, Crown, Lock,
+  Trophy, Target, Sparkles
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,6 +21,7 @@ import { SelfcareMissionModal } from './SelfcareMissionModal';
 import { SupportMissionModal } from './SupportMissionModal';
 import { SOSCardMissionModal } from './SOSCardMissionModal';
 import { useNavigate } from 'react-router-dom';
+import confetti from 'canvas-confetti';
 
 type ActiveModal = 'hero' | 'calm' | 'scripts' | 'selfcare' | 'support' | 'sos_card' | 'roleplay' | 'risk_map' | 'audio' | null;
 
@@ -64,8 +65,20 @@ export function DailyChallenge() {
 
   const handleCompleteMission = async (metadata: Record<string, unknown>) => {
     if (!currentMission) return { success: false };
-    
+
     const result = await completeMission(currentMission, metadata);
+    if (result.success) {
+      // Brutalist Celebration (Dark confetti)
+      const colors = ['#000000', '#2B2B2B', '#FF3B30', '#00F5D4'];
+      confetti({
+        particleCount: 150,
+        spread: 90,
+        origin: { y: 0.6 },
+        colors: colors,
+        shapes: ['square'],
+        disableForReducedMotion: true
+      });
+    }
     return result;
   };
 
@@ -149,7 +162,7 @@ export function DailyChallenge() {
           <CardTitle className="text-base flex items-center justify-between">
             <span className="flex items-center gap-2">
               <Flame className="w-5 h-5 text-coral" />
-              Misiones de hoy
+              CONTRATOS DE SOMBRA
             </span>
             <span className="text-sm font-normal text-muted-foreground">
               {freeMissionsCompleted}/{todaysMissions.freeMissions.length} completadas
@@ -208,8 +221,8 @@ export function DailyChallenge() {
           ))}
 
           {!isPremium && (
-            <Button 
-              variant="warmth" 
+            <Button
+              variant="warmth"
               className="w-full"
               onClick={() => navigate('/premium')}
             >

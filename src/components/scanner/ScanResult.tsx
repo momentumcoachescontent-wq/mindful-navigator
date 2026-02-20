@@ -49,12 +49,12 @@ export default function ScanResult({ result, onSaveToJournal, onCreatePlan }: Sc
   return (
     <div className="space-y-6 animate-fade-up">
       {/* Alert Level */}
-      <div className={cn("rounded-2xl p-4 border-2", alertStyle.bg, alertStyle.border)}>
+      <div className={cn("brutal-card p-4", alertStyle.bg, alertStyle.border)}>
         <div className="flex items-start gap-3">
           <AlertIcon className={cn("w-6 h-6 flex-shrink-0 mt-0.5", alertStyle.text)} />
           <div>
-            <p className={cn("font-semibold", alertStyle.text)}>{alertStyle.label}</p>
-            <p className="text-sm text-foreground mt-1">{result.summary}</p>
+            <p className={cn("font-bold uppercase tracking-widest", alertStyle.text)}>{alertStyle.label}</p>
+            <p className="text-sm font-medium text-foreground mt-1">{result.summary}</p>
           </div>
         </div>
       </div>
@@ -128,20 +128,20 @@ export default function ScanResult({ result, onSaveToJournal, onCreatePlan }: Sc
       <div className="flex gap-4 pt-4">
         <Button
           onClick={onSaveToJournal}
-          className="flex-1 gap-2 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 transition-all duration-300"
+          className="flex-1 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground brutal-btn"
           size="lg"
         >
           <BookOpen className="w-4 h-4" />
-          <span>Guardar en Diario</span>
+          <span>Fijar en Diario</span>
         </Button>
         <Button
           onClick={() => window.location.href = '/library'}
           variant="outline"
-          className="flex-1 gap-2 border-primary/20 hover:bg-primary/5"
+          className="flex-1 gap-2 brutal-btn"
           size="lg"
         >
           <Music className="w-4 h-4" />
-          <span>Escuchar Audios</span>
+          <span>Frecuencia Sónica</span>
         </Button>
       </div>
     </div>

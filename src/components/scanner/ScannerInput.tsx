@@ -29,8 +29,8 @@ export function ScannerInput({ onSubmit, isLoading }: ScannerInputProps) {
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Describe la situación que te preocupa..."
-          className="w-full min-h-[140px] p-4 pr-12 bg-card rounded-2xl border-2 border-border focus:border-primary focus:ring-0 resize-none text-foreground placeholder:text-muted-foreground transition-colors"
+          placeholder="Habla con el Oráculo. Describe tu sombra..."
+          className="w-full min-h-[140px] p-4 pr-12 bg-card brutal-card focus:border-primary focus:ring-0 resize-none text-foreground placeholder:text-muted-foreground transition-colors"
           disabled={isLoading}
         />
         <div className="absolute bottom-3 right-3">
@@ -45,13 +45,13 @@ export function ScannerInput({ onSubmit, isLoading }: ScannerInputProps) {
       {/* Example prompts */}
       {!text && (
         <div className="space-y-2">
-          <p className="text-xs text-muted-foreground">Ejemplos de situaciones:</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Ecos comunes:</p>
           <div className="flex flex-wrap gap-2">
             {prompts.map((prompt, i) => (
               <button
                 key={i}
                 onClick={() => setText(prompt)}
-                className="text-xs px-3 py-1.5 bg-muted rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
+                className="text-xs px-3 py-1.5 brutal-btn bg-muted text-muted-foreground hover:bg-primary hover:text-primary-foreground focus:outline-none"
               >
                 {prompt.slice(0, 35)}...
               </button>
@@ -63,19 +63,19 @@ export function ScannerInput({ onSubmit, isLoading }: ScannerInputProps) {
       <Button
         variant="calm"
         size="lg"
-        className="w-full"
+        className="w-full brutal-btn"
         onClick={handleSubmit}
         disabled={!text.trim() || isLoading}
       >
         {isLoading ? (
           <>
             <Sparkles className="w-5 h-5 animate-spin" />
-            <span>Analizando...</span>
+            <span>Consultando al Oráculo...</span>
           </>
         ) : (
           <>
             <Sparkles className="w-5 h-5" />
-            <span>Analizar situación</span>
+            <span>Revelar la Sombra</span>
           </>
         )}
       </Button>

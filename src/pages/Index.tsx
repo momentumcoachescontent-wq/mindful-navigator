@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
   const [hasCheckedIn, setHasCheckedIn] = useState(false);
+  const [currentMood, setCurrentMood] = useState<number | null>(null);
   const [streakData, setStreakData] = useState({
     currentStreak: 0,
     longestStreak: 0,
@@ -164,6 +165,7 @@ const Index = () => {
   };
 
   const handleCheckIn = async (data: { mood: number; energy: number; stress: number }) => {
+    setCurrentMood(data.mood);
     if (!user) {
       toast({
         title: "Inicia sesión",
@@ -248,8 +250,16 @@ const Index = () => {
     return "Buenas noches";
   };
 
+  // Dynamic background based on reported mood
+  const getDynamicBgClass = () => {
+    if (currentMood === null) return "bg-background";
+    if (currentMood <= 3) return "bg-zinc-950 border-x-4 border-destructive/40 transition-colors duration-1000"; // Critical/Low mood = dark with subtle red threat
+    if (currentMood >= 7) return "bg-zinc-900 border-x-4 border-turquoise/20 transition-colors duration-1000"; // High mood = cool/calm border
+    return "bg-background transition-colors duration-1000";
+  };
+
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className={`min-h-screen pb-24 ${getDynamicBgClass()}`}>
       {/* Header */}
       <header className="sticky top-0 z-40 glass border-b border-border/50">
         <div className="container flex items-center justify-between py-4">
