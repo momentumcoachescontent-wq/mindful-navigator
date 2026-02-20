@@ -12,57 +12,59 @@
 @layer base {
   :root {
     /* Core brand colors - HSL format */
-    --deep-blue: 220 65% 18%;
-    --deep-blue-light: 220 55% 25%;
-    --turquoise: 175 65% 45%;
-    --turquoise-light: 175 55% 55%;
-    --turquoise-soft: 175 40% 85%;
-    --coral: 12 85% 62%;
-    --coral-light: 12 75% 72%;
-    --coral-soft: 12 60% 92%;
-    
+    --deep-blue: 220 65% 10%;
+    --deep-blue-light: 220 55% 15%;
+    --turquoise: 175 100% 45%;
+    --turquoise-light: 175 100% 65%;
+    --turquoise-soft: 175 80% 85%;
+    --coral: 12 100% 62%;
+    --coral-light: 12 90% 72%;
+    --coral-soft: 12 80% 92%;
+
     /* Neutral tones */
     --cream: 40 30% 97%;
     --sand: 35 20% 92%;
-    --stone: 220 15% 60%;
-    --charcoal: 220 30% 20%;
-    
-    /* Semantic tokens */
-    --background: 40 30% 97%;
-    --foreground: 220 30% 20%;
+    --stone: 220 15% 40%;
+    --charcoal: 220 30% 12%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 220 30% 20%;
+    /* Semantic tokens (Neo-Brutalist Dark) */
+    --background: 220 30% 8%;
+    --foreground: 40 30% 95%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 30% 20%;
+    --card: 220 30% 12%;
+    --card-foreground: 40 30% 95%;
 
-    --primary: 175 65% 45%;
-    --primary-foreground: 0 0% 100%;
+    --popover: 220 30% 12%;
+    --popover-foreground: 40 30% 95%;
 
-    --secondary: 220 65% 18%;
-    --secondary-foreground: 0 0% 100%;
+    --primary: 175 100% 45%;
+    --primary-foreground: 220 65% 10%;
 
-    --muted: 35 20% 92%;
-    --muted-foreground: 220 15% 50%;
+    --secondary: 40 30% 95%;
+    --secondary-foreground: 220 65% 10%;
 
-    --accent: 12 85% 62%;
-    --accent-foreground: 0 0% 100%;
+    --muted: 220 25% 18%;
+    --muted-foreground: 220 15% 60%;
 
-    --destructive: 0 84% 60%;
+    --accent: 12 100% 62%;
+    --accent-foreground: 220 65% 10%;
+
+    --destructive: 0 100% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 160 60% 45%;
-    --success-foreground: 0 0% 100%;
+    --success: 160 100% 45%;
+    --success-foreground: 220 65% 10%;
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
+    --warning: 38 100% 50%;
+    --warning-foreground: 220 65% 10%;
 
-    --border: 220 20% 88%;
-    --input: 220 20% 88%;
-    --ring: 175 65% 45%;
+    --border: 40 30% 95%;
+    /* High contrast borders */
+    --input: 220 25% 20%;
+    --ring: 175 100% 45%;
 
-    --radius: 1rem;
+    --radius: 0.25rem;
+    /* Sharp corners for Brutalism */
 
     /* Alert levels */
     --alert-low: 160 60% 45%;
@@ -75,12 +77,12 @@
     --gradient-warmth: linear-gradient(135deg, hsl(12 85% 62%) 0%, hsl(12 75% 72%) 100%);
     --gradient-soft: linear-gradient(180deg, hsl(40 30% 97%) 0%, hsl(35 20% 92%) 100%);
 
-    /* Shadows */
-    --shadow-soft: 0 4px 20px -4px hsl(220 30% 20% / 0.08);
-    --shadow-medium: 0 8px 30px -8px hsl(220 30% 20% / 0.12);
-    --shadow-elevated: 0 16px 50px -12px hsl(220 30% 20% / 0.18);
-    --shadow-glow-turquoise: 0 8px 30px -8px hsl(175 65% 45% / 0.35);
-    --shadow-glow-coral: 0 8px 30px -8px hsl(12 85% 62% / 0.35);
+    /* Brutalist Shadows */
+    --shadow-soft: 2px 2px 0px 0px hsl(40 30% 95% / 1);
+    --shadow-medium: 4px 4px 0px 0px hsl(40 30% 95% / 1);
+    --shadow-elevated: 8px 8px 0px 0px hsl(40 30% 95% / 1);
+    --shadow-glow-turquoise: 4px 4px 0px 0px hsl(175 100% 45% / 1);
+    --shadow-glow-coral: 4px 4px 0px 0px hsl(12 100% 62% / 1);
 
     /* Typography */
     --font-display: 'Outfit', sans-serif;
@@ -129,6 +131,15 @@
     @apply border-border;
   }
 
+  /* Brutalist Utilities */
+  .brutal-card {
+    @apply border-2 border-border bg-card rounded-md shadow-medium transition-transform duration-200 hover:-translate-y-1 hover:shadow-elevated;
+  }
+
+  .brutal-btn {
+    @apply border-2 border-border font-bold uppercase tracking-wider rounded-sm shadow-soft active:translate-y-1 active:shadow-none transition-all;
+  }
+
   html {
     font-family: var(--font-body);
   }
@@ -138,38 +149,84 @@
     font-family: var(--font-body);
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-display);
-    @apply font-semibold tracking-tight;
+    @apply font-bold tracking-tight uppercase;
+    /* More aggressive typography */
   }
 }
 
 @layer components {
+
   /* Breathing animation for exercises */
   @keyframes breathe-in {
-    0% { transform: scale(1); opacity: 0.6; }
-    50% { transform: scale(1.15); opacity: 1; }
-    100% { transform: scale(1); opacity: 0.6; }
+    0% {
+      transform: scale(1);
+      opacity: 0.6;
+    }
+
+    50% {
+      transform: scale(1.15);
+      opacity: 1;
+    }
+
+    100% {
+      transform: scale(1);
+      opacity: 0.6;
+    }
   }
 
   @keyframes pulse-soft {
-    0%, 100% { opacity: 0.4; }
-    50% { opacity: 0.7; }
+
+    0%,
+    100% {
+      opacity: 0.4;
+    }
+
+    50% {
+      opacity: 0.7;
+    }
   }
 
   @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
+
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-8px);
+    }
   }
 
   @keyframes fade-up {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   @keyframes slide-in-right {
-    from { opacity: 0; transform: translateX(30px); }
-    to { opacity: 1; transform: translateX(0); }
+    from {
+      opacity: 0;
+      transform: translateX(30px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
   }
 
   .animate-breathe {

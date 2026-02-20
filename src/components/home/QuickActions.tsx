@@ -41,13 +41,13 @@ export function QuickActions() {
         <button
           key={action.path}
           onClick={() => navigate(action.path)}
-          className="group relative overflow-hidden rounded-2xl p-5 text-left transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+          className="group relative overflow-hidden brutal-card p-5 text-left"
         >
           {/* Gradient background */}
-          <div 
+          <div
             className={`absolute inset-0 bg-gradient-to-br ${action.gradient} opacity-90 group-hover:opacity-100 transition-opacity`}
           />
-          
+
           {/* Content */}
           <div className="relative z-10 space-y-3">
             <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
