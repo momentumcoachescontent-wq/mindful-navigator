@@ -2,6 +2,8 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { xpEventBus } from "@/lib/xpEventBus";
+import confetti from "canvas-confetti";
 
 export interface ScanResultData {
   summary: string;
@@ -247,8 +249,48 @@ ${scanResult.validationMessage || "Tú puedes con esto."}`;
 
       if (error) throw error;
 
+      // --- XP REWARD LOGIC ---
+      const XP_REWARD = 25;
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+      const uniqueMissionId = `scanner_${Date.now()}`;
+      await supabase.from('daily_missions').insert([{
+        user_id: user.id,
+        mission_type: 'tool_protocol',
+        mission_id: uniqueMissionId,
+        xp_earned: XP_REWARD,
+        mission_date: today,
+        metadata: { tool_tag: 'scanner', alert_level: scanResult.alertLevel }
+      } as never]).then(({ error: mErr }) => {
+        if (mErr) console.error('Error inserting daily mission:', mErr);
+      });
+
+      const { data: progressData } = await supabase
+        .from('user_progress')
+        .select('total_xp')
+        .eq('user_id', user.id)
+        .single();
+
+      if (progressData) {
+        const newXP = (progressData.total_xp || 0) + XP_REWARD;
+        await supabase
+          .from('user_progress')
+          .update({ total_xp: newXP } as never)
+          .eq('user_id', user.id);
+      }
+
+      confetti({
+        particleCount: 80,
+        spread: 60,
+        origin: { y: 0.6 },
+        colors: ['#4ade80', '#2dd4bf', '#0f172a']
+      });
+
+      xpEventBus.emit(XP_REWARD);
+
       toast({
-        title: "Guardado en Diario",
+        title: "Guardado en Diario +25 XP",
         description: "El análisis completo ha sido registrado correctamente.",
       });
       return data.id;
