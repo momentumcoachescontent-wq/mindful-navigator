@@ -38,7 +38,7 @@ export function ProgressHeader({
           <p className="text-lg font-bold text-primary">{totalXP.toLocaleString()}</p>
         </div>
       </div>
-      
+
       {/* Progress bar */}
       <div className="space-y-1">
         <Progress value={progressToNextLevel} className="h-2" />
@@ -46,22 +46,22 @@ export function ProgressHeader({
           {progressToNextLevel}% hacia el siguiente nivel
         </p>
       </div>
-      
+
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-3">
         {/* Today's XP */}
-        <div className="bg-primary/10 rounded-xl p-3 text-center">
+        <div className="bg-primary/10 border-2 border-primary/30 shadow-[var(--shadow-soft)] rounded-none p-3 text-center">
           <div className="flex items-center justify-center gap-1 text-primary mb-1">
             <TrendingUp className="w-4 h-4" />
           </div>
           <p className="text-lg font-bold text-primary">+{todaysXP}</p>
           <p className="text-[10px] text-muted-foreground uppercase">XP Hoy</p>
         </div>
-        
+
         {/* Streak */}
         <div className={cn(
-          "rounded-xl p-3 text-center",
-          streak >= 7 ? "bg-gradient-to-br from-amber-500/20 to-orange-500/20" : "bg-coral/10"
+          "border-2 shadow-[var(--shadow-soft)] p-3 text-center rounded-none",
+          streak >= 7 ? "bg-gradient-to-br from-amber-500/20 to-orange-500/20 border-amber-500/30" : "bg-coral/10 border-coral/30"
         )}>
           <div className="flex items-center justify-center gap-1 text-coral mb-1">
             <Flame className={cn("w-4 h-4", streak >= 7 && "text-amber-500")} />
@@ -71,9 +71,9 @@ export function ProgressHeader({
           </p>
           <p className="text-[10px] text-muted-foreground uppercase">Racha</p>
         </div>
-        
+
         {/* Tokens */}
-        <div className="bg-secondary/10 rounded-xl p-3 text-center">
+        <div className="bg-secondary/10 border-2 border-secondary/30 shadow-[var(--shadow-soft)] rounded-none p-3 text-center">
           <div className="flex items-center justify-center gap-1 text-secondary mb-1">
             <Coins className="w-4 h-4" />
           </div>
@@ -81,7 +81,7 @@ export function ProgressHeader({
           <p className="text-[10px] text-muted-foreground uppercase">Tokens</p>
         </div>
       </div>
-      
+
       {/* Streak multiplier badge */}
       {streak >= 3 && (
         <div className="text-center">

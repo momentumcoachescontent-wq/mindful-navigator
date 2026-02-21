@@ -64,7 +64,7 @@ const Tools = () => {
   const filteredTools = tools.filter((tool) => {
     const matchesCategory = activeCategory === "all" || tool.category === activeCategory;
     const matchesSearch = tool.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         tool.description.toLowerCase().includes(searchQuery.toLowerCase());
+      tool.description.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
@@ -91,10 +91,10 @@ const Tools = () => {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Buscar herramientas..."
+            placeholder="Buscar artillería mental..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-12 pl-12 pr-4 bg-card rounded-xl border border-border focus:border-primary focus:ring-0 text-foreground placeholder:text-muted-foreground transition-colors"
+            className="w-full h-14 pl-12 pr-4 bg-card brutal-card focus:border-primary focus:ring-0 text-foreground placeholder:text-muted-foreground transition-all focus:translate-x-1"
           />
         </div>
 
@@ -104,11 +104,10 @@ const Tools = () => {
             <button
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                activeCategory === cat.id
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:text-foreground"
-              }`}
+              className={`px-5 py-2.5 rounded-none font-display font-bold uppercase tracking-wider text-xs whitespace-nowrap transition-transform active:scale-90 hover:scale-105 border-2 ${activeCategory === cat.id
+                  ? "bg-primary text-primary-foreground border-primary shadow-[2px_2px_0px_0px_currentColor]"
+                  : "bg-muted text-muted-foreground border-transparent hover:border-muted-foreground hover:text-foreground"
+                }`}
             >
               {cat.label}
             </button>

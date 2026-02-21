@@ -48,15 +48,15 @@ export function FeedTab() {
       </div>
 
       {/* Posts */}
-      <div className="space-y-4">
+      <div className="space-y-6">
         {mockPosts.map((post) => (
           <article
             key={post.id}
-            className="bg-card rounded-2xl p-5 shadow-soft space-y-4"
+            className="bg-card brutal-card border-l-4 border-l-primary p-5 space-y-4 transition-transform hover:translate-x-1"
           >
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-turquoise-light flex items-center justify-center">
+                <div className="w-10 h-10 rounded-sm bg-primary flex items-center justify-center border-2 border-primary-foreground shadow-[2px_2px_0px_0px_currentColor]">
                   <span className="text-sm font-medium text-white">
                     {post.author[0]}
                   </span>
@@ -79,17 +79,17 @@ export function FeedTab() {
               {post.content}
             </p>
 
-            <div className="flex items-center gap-4 pt-2 border-t border-border">
-              <button className="flex items-center gap-1.5 text-muted-foreground hover:text-coral transition-colors">
-                <Heart className="w-4 h-4" />
-                <span className="text-xs">{post.likes}</span>
+            <div className="flex items-center gap-4 pt-4 border-t-2 border-border/50">
+              <button className="flex items-center gap-1.5 text-muted-foreground hover:text-coral transition-transform active:scale-90 hover:scale-110">
+                <Heart className="w-5 h-5" />
+                <span className="text-xs font-bold">{post.likes}</span>
               </button>
-              <button className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors">
-                <MessageCircle className="w-4 h-4" />
-                <span className="text-xs">{post.comments}</span>
+              <button className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-transform active:scale-90 hover:scale-110">
+                <MessageCircle className="w-5 h-5" />
+                <span className="text-xs font-bold">{post.comments}</span>
               </button>
-              <button className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors ml-auto">
-                <Share2 className="w-4 h-4" />
+              <button className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-transform active:scale-90 hover:scale-110 ml-auto">
+                <Share2 className="w-5 h-5" />
               </button>
             </div>
           </article>

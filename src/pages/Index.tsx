@@ -136,6 +136,21 @@ const Index = () => {
           currentStreak: profile.streak_count || 0,
         }));
         if (profile.display_name) setUserName(profile.display_name);
+
+        // Fetch latest mood for dynamic environment
+        const { data: latestEntry } = await supabase
+          .from("journal_entries")
+          .select("mood_score")
+          .eq("user_id", user.id)
+          .eq("entry_type", "daily")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (latestEntry && latestEntry.mood_score !== undefined) {
+          setCurrentMood(latestEntry.mood_score);
+        }
+
       } else {
         // Profile doesn't exist - create it automatically
         console.log("Profile not found, creating new profile...");
@@ -253,8 +268,8 @@ const Index = () => {
   // Dynamic background based on reported mood
   const getDynamicBgClass = () => {
     if (currentMood === null) return "bg-background";
-    if (currentMood <= 3) return "bg-zinc-950 border-x-4 border-destructive/40 transition-colors duration-1000"; // Critical/Low mood = dark with subtle red threat
-    if (currentMood >= 7) return "bg-zinc-900 border-x-4 border-turquoise/20 transition-colors duration-1000"; // High mood = cool/calm border
+    if (currentMood <= 3) return "bg-charcoal border-x-4 border-coral/50 transition-colors duration-1000 drop-shadow-[0_0_15px_rgba(255,69,58,0.1)]"; // Low mood = dark charcoal with coral threat
+    if (currentMood >= 7) return "bg-background border-x-4 border-primary/50 transition-colors duration-1000"; // High mood = turquoise border
     return "bg-background transition-colors duration-1000";
   };
 

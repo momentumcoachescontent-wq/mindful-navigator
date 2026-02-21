@@ -52,10 +52,10 @@ const Scanner = () => {
           </Button>
           <div className="flex-1">
             <h1 className="text-lg font-display font-bold text-foreground">
-              Escáner de Situaciones
+              El Oráculo
             </h1>
             <p className="text-xs text-muted-foreground">
-              Analiza y entiende dinámicas difíciles
+              Revela la sombra que nubla tu camino
             </p>
           </div>
           <Shield className="w-8 h-8 text-primary" />
@@ -66,11 +66,9 @@ const Scanner = () => {
         {!result ? (
           <>
             {/* Info Card */}
-            <div className="bg-turquoise-soft rounded-2xl p-4">
-              <p className="text-sm text-secondary leading-relaxed">
-                <strong>¿Cómo funciona?</strong> Describe una situación que te preocupa
-                y recibirás un análisis con señales de alerta, observaciones y
-                herramientas recomendadas.
+            <div className="bg-charcoal border-2 border-[hsl(var(--turquoise)_/_0.3)] brutal-card rounded-none p-4">
+              <p className="text-sm text-foreground leading-relaxed">
+                <strong>La ceremonia inicia:</strong> Alimenta al Oráculo con una situación que drena tu energía. La niebla se disipará para revelar el patrón oculto y forjar tu arma de defensa.
               </p>
             </div>
 
@@ -120,8 +118,8 @@ const Scanner = () => {
               </div>
             )}
 
-            <Button variant="ghost" className="w-full" onClick={reset}>
-              Analizar otra situación
+            <Button variant="ghost" className="w-full brutal-btn text-muted-foreground hover:text-foreground mt-4" onClick={reset}>
+              Consultar un nuevo ecos
             </Button>
           </>
         )}

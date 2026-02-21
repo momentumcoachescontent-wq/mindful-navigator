@@ -132,7 +132,7 @@ export function DailyChallenge() {
   return (
     <div className="space-y-4">
       {/* Progress Header Card */}
-      <Card className="bg-gradient-to-br from-background to-muted/50">
+      <Card className="brutal-card border-[hsl(var(--turquoise)_/_0.5)]">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center justify-between">
             <span className="flex items-center gap-2">
@@ -157,7 +157,7 @@ export function DailyChallenge() {
       </Card>
 
       {/* Missions */}
-      <Card>
+      <Card className="brutal-card">
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center justify-between">
             <span className="flex items-center gap-2">
@@ -196,7 +196,7 @@ export function DailyChallenge() {
       </Card>
 
       {/* Premium Bonuses */}
-      <Card className="border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-orange-500/5">
+      <Card className="brutal-card border-amber-500/50">
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <Crown className="w-5 h-5 text-amber-500" />

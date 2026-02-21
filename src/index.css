@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -27,7 +27,7 @@
     --stone: 220 15% 40%;
     --charcoal: 220 30% 12%;
 
-    /* Semantic tokens (Neo-Brutalist Dark) */
+    /* Semantic tokens (Neo-Brutalist Dark Defaults) */
     --background: 220 30% 8%;
     --foreground: 40 30% 95%;
 
@@ -58,12 +58,11 @@
     --warning: 38 100% 50%;
     --warning-foreground: 220 65% 10%;
 
-    --border: 40 30% 95%;
-    /* High contrast borders */
+    --border: 220 25% 20%;
     --input: 220 25% 20%;
     --ring: 175 100% 45%;
 
-    --radius: 0.25rem;
+    --radius: 0rem;
     /* Sharp corners for Brutalism */
 
     /* Alert levels */
@@ -75,17 +74,17 @@
     --gradient-calm: linear-gradient(135deg, hsl(220 65% 18%) 0%, hsl(175 65% 45%) 100%);
     --gradient-hope: linear-gradient(135deg, hsl(175 65% 45%) 0%, hsl(175 55% 55%) 100%);
     --gradient-warmth: linear-gradient(135deg, hsl(12 85% 62%) 0%, hsl(12 75% 72%) 100%);
-    --gradient-soft: linear-gradient(180deg, hsl(40 30% 97%) 0%, hsl(35 20% 92%) 100%);
+    --gradient-soft: linear-gradient(180deg, hsl(220 30% 12%) 0%, hsl(220 30% 8%) 100%);
 
-    /* Brutalist Shadows */
-    --shadow-soft: 2px 2px 0px 0px hsl(40 30% 95% / 1);
-    --shadow-medium: 4px 4px 0px 0px hsl(40 30% 95% / 1);
-    --shadow-elevated: 8px 8px 0px 0px hsl(40 30% 95% / 1);
+    /* Brutalist Shadows (Hard solid blocks) */
+    --shadow-soft: 4px 4px 0px 0px hsl(0 0% 0% / 1);
+    --shadow-medium: 6px 6px 0px 0px hsl(0 0% 0% / 1);
+    --shadow-elevated: 10px 10px 0px 0px hsl(0 0% 0% / 1);
     --shadow-glow-turquoise: 4px 4px 0px 0px hsl(175 100% 45% / 1);
     --shadow-glow-coral: 4px 4px 0px 0px hsl(12 100% 62% / 1);
 
     /* Typography */
-    --font-display: 'Outfit', sans-serif;
+    --font-display: 'Space Grotesk', sans-serif;
     --font-body: 'Plus Jakarta Sans', sans-serif;
 
     --sidebar-background: 0 0% 98%;
@@ -133,11 +132,11 @@
 
   /* Brutalist Utilities */
   .brutal-card {
-    @apply border-2 border-border bg-card rounded-md shadow-medium transition-transform duration-200 hover:-translate-y-1 hover:shadow-elevated;
+    @apply border-2 border-[hsl(var(--turquoise)_/_0.3)] bg-card rounded-none shadow-[var(--shadow-medium)] transition-transform duration-200 hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[var(--shadow-elevated)];
   }
 
   .brutal-btn {
-    @apply border-2 border-border font-bold uppercase tracking-wider rounded-sm shadow-soft active:translate-y-1 active:shadow-none transition-all;
+    @apply border-2 border-primary font-bold uppercase tracking-wider rounded-none shadow-[var(--shadow-soft)] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all;
   }
 
   html {

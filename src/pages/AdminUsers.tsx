@@ -10,6 +10,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LevelBadge } from "@/components/gamification/LevelBadge";
+import { MoreHorizontal, Trash2, Star, ShieldAlert } from "lucide-react";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface UserProfile {
     id: string; // The row UUID
@@ -22,6 +31,7 @@ interface UserProfile {
     streak_current: number;
     last_interaction: string;
     is_admin: boolean;
+    is_premium: boolean;
 }
 
 const AdminUsers = () => {
@@ -65,6 +75,61 @@ const AdminUsers = () => {
         if (!isAuthLoading) fetchUsers();
     }, [user, isAuthLoading, toast]);
 
+
+    const handleTogglePremium = async (profile: UserProfile) => {
+        try {
+            const newValue = !profile.is_premium;
+            const { error } = await supabase
+                .from('profiles')
+                .update({ is_premium: newValue })
+                .eq('id', profile.id);
+
+            if (error) throw error;
+
+            setUsers(users.map(u => u.id === profile.id ? { ...u, is_premium: newValue } : u));
+            toast({ title: "Éxito", description: `Estado Premium ${newValue ? 'activado' : 'desactivado'} para ${profile.display_name}.` });
+        } catch (error) {
+            console.error(error);
+            toast({ title: "Error", description: "No se pudo actualizar el estado Premium.", variant: "destructive" });
+        }
+    };
+
+    const handleToggleAdmin = async (profile: UserProfile) => {
+        try {
+            const newValue = !profile.is_admin;
+            const { error } = await supabase
+                .from('profiles')
+                .update({ is_admin: newValue })
+                .eq('id', profile.id);
+
+            if (error) throw error;
+
+            setUsers(users.map(u => u.id === profile.id ? { ...u, is_admin: newValue } : u));
+            toast({ title: newValue ? "Nuevo Administrador Forjado" : "Poder Revocado", description: `${profile.display_name} ha cambiado su rol.`, variant: "default" });
+        } catch (error) {
+            console.error(error);
+            toast({ title: "Error", description: "No se pudo actualizar el rol de admin.", variant: "destructive" });
+        }
+    };
+
+    const handleDeleteProfile = async (profile: UserProfile) => {
+        if (!confirm(`¿Estás seguro de que quieres erradicar a ${profile.display_name}? Esto no se puede deshacer.`)) return;
+
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .delete()
+                .eq('id', profile.id);
+
+            if (error) throw error;
+
+            setUsers(users.filter(u => u.id !== profile.id));
+            toast({ title: "Aniquilación", description: `El perfil de ${profile.display_name} ha sido borrado (Guillotina).`, variant: "destructive" });
+        } catch (error) {
+            console.error(error);
+            toast({ title: "Error", description: "No se pudo borrar el perfil.", variant: "destructive" });
+        }
+    };
 
     const filteredUsers = users.filter(u =>
         (u.display_name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
@@ -120,6 +185,7 @@ const AdminUsers = () => {
                                         <TableHead className="text-center">XP</TableHead>
                                         <TableHead className="text-center">Racha</TableHead>
                                         <TableHead className="text-right">Última Actividad</TableHead>
+                                        <TableHead className="text-right">Acciones</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -154,6 +220,33 @@ const AdminUsers = () => {
                                             </TableCell>
                                             <TableCell className="text-right text-muted-foreground text-xs">
                                                 {profile.last_interaction ? new Date(profile.last_interaction).toLocaleDateString() : "Nunca"}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" className="h-8 w-8 p-0">
+                                                            <span className="sr-only">Abrir menú</span>
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuLabel>Poderes de Origen</DropdownMenuLabel>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem onClick={() => handleTogglePremium(profile)}>
+                                                            <Star className={`mr-2 h-4 w-4 ${profile.is_premium ? 'text-coral' : ''}`} />
+                                                            {profile.is_premium ? "Revocar Premium" : "Otorgar Premium"}
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleToggleAdmin(profile)}>
+                                                            <ShieldAlert className={`mr-2 h-4 w-4 ${profile.is_admin ? 'text-primary' : ''}`} />
+                                                            {profile.is_admin ? "Degradar de Admin" : "Ascender a Admin"}
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem onClick={() => handleDeleteProfile(profile)} className="text-destructive font-bold focus:bg-destructive focus:text-destructive-foreground">
+                                                            <Trash2 className="mr-2 h-4 w-4" />
+                                                            La Guillotina (Borrar)
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
                                             </TableCell>
                                         </TableRow>
                                     ))}
