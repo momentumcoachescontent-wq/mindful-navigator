@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Check, ShieldAlert, Sparkles, Loader2 } from "lucide-react";
 import confetti from "canvas-confetti";
+import { xpEventBus } from "@/lib/xpEventBus";
 
 interface Challenge {
     id: string;
@@ -104,6 +105,9 @@ export const ToolChallenge = ({ challenge }: ToolChallengeProps) => {
                 origin: { y: 0.6 },
                 colors: ['#4ade80', '#2dd4bf', '#0f172a']
             });
+
+            // Notify Dashboard to refresh XP
+            xpEventBus.emit(challenge.xp_reward);
 
             setIsCompleted(true);
             toast({

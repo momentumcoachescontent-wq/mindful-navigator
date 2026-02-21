@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { xpEventBus } from '@/lib/xpEventBus';
 import {
   getTodaysMissions,
   getLevelFromXP,
@@ -137,6 +138,15 @@ export function useDailyChallenge() {
 
   useEffect(() => {
     loadData();
+  }, [loadData]);
+
+  // Subscribe to external XP events (e.g. from ToolChallenge)
+  // so the Dashboard updates in real-time without a page reload.
+  useEffect(() => {
+    const unsubscribe = xpEventBus.subscribe(() => {
+      loadData();
+    });
+    return unsubscribe;
   }, [loadData]);
 
   // Complete a mission
