@@ -22,7 +22,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, ArrowLeft, Loader2, Package } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowLeft, Loader2, Package, ArrowUp, ArrowDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PaymentSettingsDialog } from "@/components/admin/PaymentSettingsDialog";
 
@@ -31,12 +31,13 @@ interface Product {
   title: string;
   description: string | null;
   price: number;
-  currency: string; // New field
+  currency: string;
   category: 'subscription' | 'ebook' | 'meditation' | 'service' | 'pack';
   cta_link: string | null;
   is_active: boolean;
   is_featured: boolean;
   image_url: string | null;
+  order_index: number;
 }
 
 const AdminProducts = () => {
@@ -52,7 +53,7 @@ const AdminProducts = () => {
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('order_index', { ascending: true });
 
       if (error) throw error;
 
@@ -123,12 +124,13 @@ const AdminProducts = () => {
       title: formData.get('title') as string,
       description: formData.get('description') as string,
       price: parseFloat(formData.get('price') as string),
-      currency: formData.get('currency') as string, // New field
+      currency: formData.get('currency') as string,
       category: formData.get('category') as any,
       cta_link: formData.get('cta_link') as string,
       image_url: formData.get('image_url') as string,
       is_active: formData.get('is_active') === 'on',
       is_featured: formData.get('is_featured') === 'on',
+      order_index: parseInt(formData.get('order_index') as string) || 0,
     };
     saveProductMutation.mutate(data);
   };
@@ -233,6 +235,10 @@ const AdminProducts = () => {
                     <Switch id="is_featured" name="is_featured" defaultChecked={editingProduct?.is_featured ?? false} />
                     <Label htmlFor="is_featured">Destacado</Label>
                   </div>
+                  <div className="grid gap-1">
+                    <Label htmlFor="order_index">Orden</Label>
+                    <Input id="order_index" name="order_index" type="number" className="w-20 h-8" defaultValue={editingProduct?.order_index || 0} />
+                  </div>
                 </div>
 
                 <div className="flex justify-end gap-2 mt-4">
@@ -249,10 +255,10 @@ const AdminProducts = () => {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">#</TableHead>
               <TableHead>Producto</TableHead>
               <TableHead>Categoría</TableHead>
               <TableHead>Precio</TableHead>
-              <TableHead>Interés (Clicks)</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
@@ -260,6 +266,9 @@ const AdminProducts = () => {
           <TableBody>
             {products?.map((product) => (
               <TableRow key={product.id}>
+                <TableCell className="text-center font-mono text-xs text-muted-foreground">
+                  {product.order_index || '-'}
+                </TableCell>
                 <TableCell className="font-medium">
                   <div className="flex flex-col">
                     <span>{product.title}</span>
@@ -277,12 +286,6 @@ const AdminProducts = () => {
                   </span>
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-1 font-medium">
-                    <span className="text-primary">{product.clicks}</span>
-                    <span className="text-xs text-muted-foreground">clicks</span>
-                  </div>
-                </TableCell>
-                <TableCell>
                   <div className="flex items-center gap-2">
                     <Switch
                       checked={product.is_active}
@@ -291,7 +294,7 @@ const AdminProducts = () => {
                     {product.is_featured && <span className="text-xs text-yellow-600 font-bold">★</span>}
                   </div>
                 </TableCell>
-                <TableCell className="text-right space-x-2">
+                <TableCell className="text-right space-x-1">
                   <Button variant="ghost" size="icon" onClick={() => {
                     setEditingProduct(product);
                     setIsOpen(true);

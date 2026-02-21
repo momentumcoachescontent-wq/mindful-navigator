@@ -37,7 +37,7 @@ const Shop = () => {
                 .from('products')
                 .select('*')
                 .eq('is_active', true)
-                .order('price', { ascending: true }); // Free/Cheap first
+                .order('order_index', { ascending: true });
 
             if (error) throw error;
             return data as unknown as Product[];
