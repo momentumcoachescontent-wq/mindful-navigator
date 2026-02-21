@@ -11,7 +11,7 @@ import confetti from "canvas-confetti";
 
 interface Section {
     title: string;
-    description: string;
+    description?: string;
     steps: string[];
 }
 
