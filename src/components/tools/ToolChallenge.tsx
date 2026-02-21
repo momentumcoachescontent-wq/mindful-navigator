@@ -65,7 +65,21 @@ export const ToolChallenge = ({ challenge }: ToolChallengeProps) => {
 
             if (journalError) throw journalError;
 
-            // 2. Add XP bonus
+            // 2. Register in daily_missions for the Dashboard to show "+XP HOY"
+            const { error: dailyMissionError } = await supabase.from('daily_missions').insert([{
+                user_id: user.id,
+                mission_type: 'tool_protocol',
+                mission_id: challenge.id,
+                xp_earned: challenge.xp_reward,
+                mission_date: today,
+                metadata: { tool_tag: challenge.tag }
+            } as never]);
+
+            if (dailyMissionError && dailyMissionError.code !== '23505') {
+                console.error('Error inserting daily mission:', dailyMissionError);
+            }
+
+            // 3. Add XP bonus to total progress
             // First get current XP
             const { data: progressData } = await supabase
                 .from('user_progress')
