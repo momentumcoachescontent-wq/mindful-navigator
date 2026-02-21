@@ -78,8 +78,8 @@ const Library = () => {
 
                 {/* Header */}
                 <div className="space-y-4">
-                    <h1 className="text-3xl font-bold font-display">Biblioteca de Bienestar</h1>
-                    <p className="text-muted-foreground">Meditaciones, guías y sonidos para tu equilibrio.</p>
+                    <h1 className="text-3xl font-bold font-display">Audioteca de Poder</h1>
+                    <p className="text-muted-foreground">Meditaciones, guías y sonidos para tu transformación.</p>
 
                     <div className="relative">
                         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
