@@ -67,16 +67,19 @@ export const ToolChallenge = ({ challenge }: ToolChallengeProps) => {
             if (journalError) throw journalError;
 
             // 2. Register in daily_missions for the Dashboard to show "+XP HOY"
+            // Use a timestamp suffix to ensure the mission_id is unique per submission,
+            // bypassing the UNIQUE(user_id, mission_id, mission_date) constraint.
+            const uniqueMissionId = `${challenge.id}_${Date.now()}`;
             const { error: dailyMissionError } = await supabase.from('daily_missions').insert([{
                 user_id: user.id,
                 mission_type: 'tool_protocol',
-                mission_id: challenge.id,
+                mission_id: uniqueMissionId,
                 xp_earned: challenge.xp_reward,
                 mission_date: today,
-                metadata: { tool_tag: challenge.tag }
+                metadata: { tool_tag: challenge.tag, original_challenge_id: challenge.id }
             } as never]);
 
-            if (dailyMissionError && dailyMissionError.code !== '23505') {
+            if (dailyMissionError) {
                 console.error('Error inserting daily mission:', dailyMissionError);
             }
 
