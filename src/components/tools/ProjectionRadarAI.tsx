@@ -71,8 +71,6 @@ export const ProjectionRadarAI = () => {
     const callProjectionAI = async (userMsg: string, currentPhase: Phase, hist: Message[]) => {
         setIsThinking(true);
         try {
-            // Uses the `roleplay` mode already deployed in production.
-            // We set the persona to a Jungian shadow-work guide.
             const phaseLabel =
                 currentPhase === "discovery" ? "Descubrimiento — haz UNA sola pregunta socrática que invite al usuario a verse en el otro" :
                     currentPhase === "reflection" ? "Reflexión — conecta lo compartido con la sombra interna del usuario" :
@@ -82,21 +80,30 @@ export const ProjectionRadarAI = () => {
                 body: {
                     mode: "roleplay",
                     personality: "shadow_guide",
-                    personalityDescription: `Guía de psicología junguiana. Tu única función es hacer preguntas socráticas que lleven al usuario a ver en otros lo que reprime en sí mismo. Fase actual: ${phaseLabel}. Persona en cuestión: ${person}. Emoción disparadora: ${emotion}.`,
-                    extraTrait: "Socrático y directo — hace UNA sola pregunta por turno. NUNCA da consejos ni diagnósticos.",
-                    scenario: `Trabajo de sombra: ${emotion} hacia "${person}"`,
-                    context: `El usuario siente ${emotion} intensamente hacia ${person}. Puedes usar preguntas como: "¿Podrías ser tú también...?", "¿En qué momento de tu vida...?", "¿Qué parte de ti desearía...?"`,
-                    messages: hist.length > 0 ? hist : [],
+                    personalityDescription: `Guía de psicología junguiana. Haz preguntas socráticas para que el usuario descubra qué proyecta en otros. Fase: ${phaseLabel}. Persona: ${person}. Emoción: ${emotion}.`,
+                    extraTrait: "Socrático — UNA sola pregunta corta por respuesta. Sin consejos, sin diagnósticos.",
+                    scenario: `Sombra junguiana: ${emotion} hacia "${person}"`,
+                    context: `El usuario siente ${emotion} hacia ${person}. Usa preguntas como: ¿Podrías ser tú también así? ¿Cuándo actuaste de esa manera? ¿Qué parte de ti envidia o rechaza eso?`,
+                    messages: hist.length > 0 ? hist.map(m => ({ role: m.role, content: m.content })) : [],
                     isFirst: hist.length === 0,
                     currentRound: roundCount,
                     maxRounds: 7,
                 },
             });
 
-            if (resp.error) throw new Error(resp.error.message);
-            return resp.data?.response as string;
+            if (resp.error) {
+                console.error("[ProjectionRadarAI] Edge fn error:", resp.error);
+                const errMsg = (resp.error as any)?.message || JSON.stringify(resp.error);
+                // Rate limit gives 429
+                if (errMsg.includes("429") || errMsg.toLowerCase().includes("límite") || errMsg.toLowerCase().includes("limit")) {
+                    throw new Error("Límite de uso alcanzado. Espera un momento e intenta de nuevo.");
+                }
+                throw new Error(errMsg);
+            }
+            if (!resp.data?.response) throw new Error("La IA no retornó respuesta.");
+            return resp.data.response as string;
         } catch (e: any) {
-            console.error("Projection AI error:", e);
+            console.error("[ProjectionRadarAI] Error:", e);
             throw e;
         } finally {
             setIsThinking(false);
@@ -108,20 +115,19 @@ export const ProjectionRadarAI = () => {
             toast({ title: "Información incompleta", description: "Indica la persona y la emoción.", variant: "destructive" });
             return;
         }
-        setIsThinking(true);
+        // Note: callProjectionAI handles setIsThinking internally
         const firstUserMsg = `Siento ${emotion} hacia ${person}.`;
-
         try {
             const aiReply = await callProjectionAI(firstUserMsg, "discovery", []);
-            const initialMessages: Message[] = [
+            setMessages([
                 { role: "user", content: firstUserMsg, phase: "discovery" },
                 { role: "assistant", content: aiReply, phase: "discovery" },
-            ];
-            setMessages(initialMessages);
+            ]);
             setPhase("discovery");
             setRoundCount(1);
-        } catch {
-            toast({ title: "Error de conexión AI", description: "Intenta de nuevo.", variant: "destructive" });
+        } catch (e: any) {
+            const msg = e?.message || "Error desconocido";
+            toast({ title: "Error de conexión AI", description: msg, variant: "destructive" });
         }
     };
 
