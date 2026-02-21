@@ -48,7 +48,9 @@ export const ToolChallenge = ({ challenge }: ToolChallengeProps) => {
         setIsSubmitting(true);
 
         try {
-            const today = new Date().toISOString().split('T')[0];
+            // Use LOCAL date (not UTC) to match the filter in useDailyChallenge's loadData()
+            const now = new Date();
+            const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
             // 1. Save directly to journal_entries
             const journalContent = {
