@@ -15,6 +15,7 @@ import { BoundaryScriptForge } from "@/components/tools/BoundaryScriptForge";
 import { SOSWarRoom } from "@/components/tools/SOSWarRoom";
 import { SelfCareBlueprint } from "@/components/tools/SelfCareBlueprint";
 import { SupportNetworkTracker } from "@/components/tools/SupportNetworkTracker";
+import { BreakLoopStory } from "@/components/tools/BreakLoopStory";
 
 interface ToolContent {
   type?: "roleplay" | "assessment" | "audio_library";
@@ -369,6 +370,12 @@ const ToolDetail = () => {
             ))}
           </div>
         )}
+
+        {/* Break Loop Story — narrative protocol for sections without 'letter' (protocolo-ruptura) */}
+        {content.sections && !(content.sections[0] as { letter?: string })?.letter && (
+          <BreakLoopStory sections={content.sections} closing={content.closing} />
+        )}
+
 
         {/* Categories (Scripts style) */}
         {content.categories && (
