@@ -71,22 +71,47 @@ export const ProjectionRadarAI = () => {
     const callProjectionAI = async (userMsg: string, currentPhase: Phase, hist: Message[]) => {
         setIsThinking(true);
         try {
-            const resp = await supabase.functions.invoke("shadow-guide", {
+            // Mirror the exact payload format of ConversationSimulator (which works in production)
+            const phaseDesc =
+                currentPhase === "discovery" ? "Descubrimiento: haz UNA pregunta socrática invitando al usuario a ver su propia sombra en el otro" :
+                    currentPhase === "reflection" ? "Reflexión: conecta lo que compartió con su historia personal" :
+                        "Integración: ofrece una revelación de sombra compasiva y poderosa";
+
+            const resp = await supabase.functions.invoke("analyze-situation", {
                 body: {
-                    person,
-                    emotion,
-                    phase: currentPhase,
-                    messages: hist.map(m => ({ role: m.role, content: m.content })),
+                    situation: `Trabajo de sombra junguiana: ${emotion} hacia "${person}"`,
+                    mode: "roleplay",
+                    scenario: `Radar de Proyecciones — ${emotion}`,
+                    personality: "shadow_guide",
+                    personalityDescription: `Guía de psicología junguiana. Fase: ${phaseDesc}. Persona en cuestión: "${person}". Emoción: ${emotion}. SOLO haz UNA pregunta corta por turno. Sin consejos, sin diagnósticos.`,
+                    extraTrait: "socrático",
+                    context: `El usuario siente ${emotion} hacia ${person}. Usa reflexiones como: ¿En qué momento tú también actuaste así? ¿Qué parte de ti envidia o rechaza eso?`,
+                    messages: hist.map(m => ({
+                        role: m.role === "user" ? "user" : "simulator",
+                        content: m.content
+                    })),
+                    isFirst: hist.length === 0,
+                    currentRound: roundCount,
+                    maxRounds: 7,
                 },
             });
 
             if (resp.error) {
-                console.error("[Radar] shadow-guide error:", resp.error);
-                const msg = (resp.error as any)?.message || JSON.stringify(resp.error);
-                throw new Error(msg);
+                console.error("[Radar] analyze-situation error:", resp.error);
+                let errMsg = (resp.error as any)?.message || JSON.stringify(resp.error);
+                try {
+                    // @ts-ignore
+                    if (resp.error.context && typeof resp.error.context.json === 'function') {
+                        // @ts-ignore
+                        const detail = await resp.error.context.json();
+                        errMsg = detail.error || detail.message || errMsg;
+                    }
+                } catch { /* ignore */ }
+                throw new Error(errMsg);
             }
-            if (!resp.data?.response) throw new Error("La IA no retornó respuesta.");
-            return resp.data.response as string;
+            const response = resp.data?.response;
+            if (!response) throw new Error("La IA no retornó respuesta.");
+            return response as string;
         } catch (e: any) {
             console.error("[Radar] Error:", e);
             throw e;
