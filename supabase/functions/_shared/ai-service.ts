@@ -1,5 +1,5 @@
 
-import { GoogleGenerativeAI } from "npm:@google/generative-ai";
+// GoogleGenerativeAI SDK removed - using REST API directly
 
 export interface AIConfig {
     provider?: 'gemini' | 'openai';

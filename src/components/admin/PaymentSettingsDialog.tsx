@@ -33,10 +33,9 @@ export function PaymentSettingsDialog() {
     const { data: configs, isLoading } = useQuery({
         queryKey: ['payment-configs'],
         queryFn: async () => {
-            // @ts-ignore
             const { data, error } = await supabase.from('payment_configs').select('*');
             if (error) throw error;
-            return data as PaymentConfig[];
+            return data as unknown as PaymentConfig[];
         },
         enabled: isOpen,
     });
@@ -44,21 +43,18 @@ export function PaymentSettingsDialog() {
     // Save mutation
     const saveMutation = useMutation({
         mutationFn: async (config: Partial<PaymentConfig>) => {
-            // Check if exists
             const existing = configs?.find(c => c.provider === config.provider);
 
             if (existing) {
-                // @ts-ignore
                 const { error } = await supabase
                     .from('payment_configs')
-                    .update(config)
+                    .update(config as any)
                     .eq('id', existing.id);
                 if (error) throw error;
             } else {
-                // @ts-ignore
                 const { error } = await supabase
                     .from('payment_configs')
-                    .insert([config]);
+                    .insert([config as any]);
                 if (error) throw error;
             }
         },

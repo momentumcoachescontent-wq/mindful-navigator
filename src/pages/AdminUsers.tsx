@@ -137,7 +137,7 @@ const AdminUsers = () => {
                                             </TableCell>
                                             <TableCell className="text-center">
                                                 <div className="flex justify-center">
-                                                    <LevelBadge level={profile.level} size="sm" showLabel={false} />
+                                                    <LevelBadge level={profile.level} showLabel={false} />
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-center">

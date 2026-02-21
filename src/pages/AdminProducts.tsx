@@ -49,19 +49,14 @@ const AdminProducts = () => {
   const { data: products, isLoading } = useQuery({
     queryKey: ['admin-products'],
     queryFn: async () => {
-      // @ts-ignore
       const { data, error } = await supabase
         .from('products')
-        .select('*, product_events(count)')
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Transform data to include a flat 'clicks' property
-      return data.map((p: any) => ({
-        ...p,
-        clicks: p.product_events?.[0]?.count || 0
-      })) as (Product & { clicks: number })[];
+      return (data || []) as unknown as (Product & { clicks: number })[];
     }
   });
 
@@ -69,17 +64,15 @@ const AdminProducts = () => {
   const saveProductMutation = useMutation({
     mutationFn: async (productData: Partial<Product>) => {
       if (editingProduct) {
-        // @ts-ignore
         const { error } = await supabase
           .from('products')
-          .update(productData)
+          .update(productData as any)
           .eq('id', editingProduct.id);
         if (error) throw error;
       } else {
-        // @ts-ignore
         const { error } = await supabase
           .from('products')
-          .insert([productData]);
+          .insert([productData as any]);
         if (error) throw error;
       }
     },
@@ -97,7 +90,6 @@ const AdminProducts = () => {
   // Quick Toggle Mutation
   const toggleActiveMutation = useMutation({
     mutationFn: async ({ id, isActive }: { id: string, isActive: boolean }) => {
-      // @ts-ignore
       const { error } = await supabase
         .from('products')
         .update({ is_active: isActive })
@@ -114,7 +106,7 @@ const AdminProducts = () => {
   // Delete Mutation
   const deleteProductMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('products').delete().eq('id', id);
+      const { error } = await (supabase.from('products') as any).delete().eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {

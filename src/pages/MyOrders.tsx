@@ -56,31 +56,25 @@ const MyOrders = () => {
             setLoading(true);
 
             // Fetch Orders
-            const { data: ordersData, error: ordersError } = await supabase
-                .from("orders")
-                .select(`
-          *,
-          product:products(title)
-        `)
+            const { data: ordersData, error: ordersError } = await (supabase
+                .from("orders") as any)
+                .select(`*, product:products(title)`)
                 .eq("user_id", user?.id)
                 .order("created_at", { ascending: false });
 
             if (ordersError) throw ordersError;
-            setOrders(ordersData || []);
+            setOrders((ordersData || []) as Order[]);
 
             // Fetch Subscriptions
-            const { data: subData, error: subError } = await supabase
-                .from("user_subscriptions")
-                .select(`
-          *,
-          product:products(title, description)
-        `)
+            const { data: subData, error: subError } = await (supabase
+                .from("user_subscriptions") as any)
+                .select(`*, product:products(title, description)`)
                 .eq("user_id", user?.id)
-                .neq("status", "canceled") // Optional: Show canceled if you want history
+                .neq("status", "canceled")
                 .order("created_at", { ascending: false });
 
             if (subError) throw subError;
-            setSubscriptions(subData || []);
+            setSubscriptions((subData || []) as Subscription[]);
 
         } catch (error) {
             console.error("Error fetching data:", error);

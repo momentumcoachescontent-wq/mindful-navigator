@@ -4,7 +4,6 @@
     "start": "deno run --allow-net --allow-env index.ts"
   },
   "imports": {
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.3",
-    "@google/generative-ai": "npm:@google/generative-ai"
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.3"
   }
 }
