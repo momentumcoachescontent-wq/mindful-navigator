@@ -14,6 +14,7 @@ import { ToolChallenge } from "@/components/tools/ToolChallenge";
 import { BoundaryScriptForge } from "@/components/tools/BoundaryScriptForge";
 import { SOSWarRoom } from "@/components/tools/SOSWarRoom";
 import { SelfCareBlueprint } from "@/components/tools/SelfCareBlueprint";
+import { SupportNetworkTracker } from "@/components/tools/SupportNetworkTracker";
 
 interface ToolContent {
   type?: "roleplay" | "assessment" | "audio_library";
@@ -517,22 +518,14 @@ const ToolDetail = () => {
           </div>
         )}
 
-        {/* Action Plan */}
-        {content.action_plan && (
-          <div className="bg-turquoise/10 border-2 border-turquoise/30 rounded-2xl p-5 space-y-3">
-            <h3 className="font-display font-bold text-turquoise">{content.action_plan.title}</h3>
-            <ul className="space-y-2">
-              {content.action_plan.items.map((item, i) => (
-                <li key={i} className="flex items-start gap-3">
-                  <span className="w-5 h-5 rounded bg-turquoise text-white text-xs font-medium flex items-center justify-center flex-shrink-0">
-                    {i + 1}
-                  </span>
-                  <span className="text-foreground text-sm">{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+        {/* Support Network Tracker — 3-phase interactive system: map contacts → commit tasks → track completion */}
+        {content.circles && (
+          <SupportNetworkTracker
+            circles={content.circles}
+            action_plan={content.action_plan}
+          />
         )}
+
 
         {/* Closing */}
         {content.closing && (
