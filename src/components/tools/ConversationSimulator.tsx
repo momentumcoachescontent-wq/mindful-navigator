@@ -356,7 +356,7 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
 
       const { data, error } = await supabase.from("journal_entries").insert({
         user_id: session.user.id,
-        entry_type: "simulation_result",
+        entry_type: "reflection",  // DB CHECK constraint only allows: daily, victory, reflection, scanner_result
         content: JSON.stringify({
           ...contentData,
           tags: getPersonalityTag(selectedPersonality?.label || ''),
