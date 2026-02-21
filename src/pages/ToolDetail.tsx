@@ -16,6 +16,7 @@ import { SOSWarRoom } from "@/components/tools/SOSWarRoom";
 import { SelfCareBlueprint } from "@/components/tools/SelfCareBlueprint";
 import { SupportNetworkTracker } from "@/components/tools/SupportNetworkTracker";
 import { BreakLoopStory } from "@/components/tools/BreakLoopStory";
+import { ProjectionRadarAI } from "@/components/tools/ProjectionRadarAI";
 
 interface ToolContent {
   type?: "roleplay" | "assessment" | "audio_library";
@@ -371,11 +372,15 @@ const ToolDetail = () => {
           </div>
         )}
 
-        {/* Break Loop Story — narrative protocol for sections without 'letter' (protocolo-ruptura) */}
-        {content.sections && !(content.sections[0] as { letter?: string })?.letter && (
+        {/* Break Loop Story — narrative protocol for sections WITH steps but WITHOUT letter (protocolo-ruptura) */}
+        {content.sections && !(content.sections[0] as { letter?: string })?.letter && (content.sections[0] as { steps?: string[] })?.steps && (
           <BreakLoopStory sections={content.sections} closing={content.closing} />
         )}
 
+        {/* Projection Radar AI — Socratic shadow work dialog for sections WITH questions (radar-proyecciones) */}
+        {content.sections && !(content.sections[0] as { letter?: string })?.letter && (content.sections[1] as { questions?: string[] })?.questions && (
+          <ProjectionRadarAI />
+        )}
 
         {/* Categories (Scripts style) */}
         {content.categories && (

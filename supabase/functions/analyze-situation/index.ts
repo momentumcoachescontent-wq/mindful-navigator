@@ -348,6 +348,60 @@ Responde ÚNICAMENTE como el personaje. NO añadidas explicaciones externas.`;
             }
         }
 
+        // --- MODE: PROJECTION (Radar de Proyecciones — Shadow Work AI) ---
+        if (mode === "projection") {
+            try {
+                const { person, emotion, messages: chatHistory, phase } = requestBody;
+
+                const systemPromptProjection = `Eres un guía de psicología junguiana especializado en trabajo de sombra y proyección psicológica.
+Tu rol es ayudar al usuario a descubrir qué parte de sí mismo está proyectando en otra persona cuando siente una reacción emocional intensa (juicio, irritación, envidia, asco).
+
+FILOSOFÍA CENTRAL:
+- Lo que más te irrita de otro, vive en algún rincón de ti mismo que no has integrado.
+- La proyección es un mecanismo de defensa del ego que externaliza lo que rechazamos internamente.
+- Al integrar la sombra, esa persona deja de tener poder sobre ti.
+
+ROL ACTUAL: ${phase === "discovery" ? "Fase de Descubrimiento — haz 1 pregunta socrática profunda" : phase === "reflection" ? "Fase de Reflexión — conecta lo que compartió con su propia sombra" : "Fase de Integración — guía al cierre con compasión"}
+
+PERSONA EN CUESTIÓN: ${person || "alguien"}
+EMOCIÓN INICIAL: ${emotion || "irritación/juicio"}
+
+HISTORIAL DE CONVERSACIÓN:
+${chatHistory ? JSON.stringify(chatHistory) : "Inicio de diálogo"}
+
+DIRECTRICES:
+1. Haz UNA sola pregunta socrática a la vez — no des respuestas, solo preguntas que abran.
+2. Usa el lenguaje de "¿Podrías ser tú también...?" y "¿En qué parte de tu historia...?"
+3. No diagnostiques al otro — solo espeja al usuario hacia sí mismo.
+4. Después de 3-4 intercambios, ofrece una "Revelación de Sombra" poderosa y compasiva.
+5. Máximo 2-3 oraciones por respuesta. Directo y profundo.
+6. TONO: Provocativo y seguro, nunca suave o condescendiente.
+
+Responde SOLO el mensaje de la IA, sin explicaciones ni metadatos.`;
+
+                const userMessage = chatHistory && chatHistory.length > 0
+                    ? chatHistory[chatHistory.length - 1].content
+                    : `Siento ${emotion || "irritación intensa"} hacia ${person || "esta persona"}.`;
+
+                const aiResult = await aiService.generateText(userMessage, systemPromptProjection, {
+                    temperature: 0.75
+                });
+
+                return new Response(JSON.stringify({
+                    response: aiResult.text,
+                    provider: aiResult.provider
+                }), {
+                    headers: { ...corsHeaders, "Content-Type": "application/json" },
+                });
+            } catch (projectionError: any) {
+                console.error("[ANALYZE-SITUATION] Projection Error:", projectionError);
+                return new Response(JSON.stringify({ error: "Error en el radar de proyecciones.", details: projectionError.message }), {
+                    status: 500,
+                    headers: { ...corsHeaders, "Content-Type": "application/json" },
+                });
+            }
+        }
+
         // --- MODE: FEEDBACK ---
         if (mode === "feedback") {
             const systemPromptFeedback = `Eres un psicólogo experto en comunicación asertiva y crecimiento post-traumático.
