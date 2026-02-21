@@ -84,17 +84,17 @@ VALUES
       {
         "type": "El Agresivo",
         "tactic": "Intimida, alza la voz, exige obediencia.",
-        "defense": "Habla más lento y más bajo. No justifiques. Di: ''Entiendo tu frustración, pero necesitas bajar el tono para que yo te escuche.''."
+        "defense": "Habla más lento y más bajo. No justifiques. Di: Entiendo tu frustración, pero necesitas bajar el tono para que yo te escuche."
       },
       {
         "type": "La Víctima",
         "tactic": "Llora, culpa a sus traumas, te hace sentir mala persona por poner límites.",
-        "defense": "Valida la emoción pero mantén el límite. Di: ''Siento mucho que estés pasando por esto, pero mi decisión respecto a [situación] se mantiene.''."
+        "defense": "Valida la emoción pero mantén el límite. Di: Siento mucho que estés pasando por esto, pero mi decisión respecto a [situación] se mantiene."
       },
       {
         "type": "El Pasivo-Agresivo",
-        "tactic": "Sarcasmo, olvidos 'accidentales', castigo del silencio.",
-        "defense": "Pon la agresión sobre la mesa. Di: ''Noto que estás actuando distante. Cuando estés listo para hablarlo de frente, aquí estaré.'' Y retírate."
+        "tactic": "Sarcasmo, olvidos accidentales, castigo del silencio.",
+        "defense": "Pon la agresión sobre la mesa. Di: Noto que estás actuando distante. Cuando estés listo para hablarlo de frente, aquí estaré. Y retírate."
       }
     ],
     "closing": "El poder en una discusión no lo tiene quien grita más, lo tiene quien no pierde el centro."
@@ -118,13 +118,13 @@ VALUES
       },
       {
         "color": "Amarillo (Precaución)",
-        "signals": ["Insultos disfrazados de 'bromas'", "Inconsistencia extrema (te aman un día, te odian otro)", "Culpa constante hacia ti"],
+        "signals": ["Insultos disfrazados de bromas", "Inconsistencia extrema (te aman un día, te odian otro)", "Culpa constante hacia ti"],
         "action": "Mantén distancia emocional. Aplica límites de hierro. Documenta interacciones. No escales la confrontación."
       },
       {
         "color": "Verde (Fricción Normal)",
         "signals": ["Desacuerdos comunicados con respeto", "Sentimientos heridos sin malicia intencional", "Frustración temporal"],
-        "action": "Aplica técnicas de asertividad. Comunica cómo te sentiste usando 'Yo siento' en lugar de 'Tú eres'."
+        "action": "Aplica técnicas de asertividad. Comunica cómo te sentiste usando Yo siento en lugar de Tú eres."
       }
     ]
   }'::jsonb
@@ -142,15 +142,15 @@ VALUES
     "categories": [
       {
         "name": "Para el Ataque de Pánico",
-        "action": "Busca la pista 'Reseteo Autonómico'. 2 minutos de respiración guiada para bajar el pulso."
+        "action": "Busca la pista Reseteo Autonómico. 2 minutos de respiración guiada para bajar el pulso."
       },
       {
         "name": "Para recuperar el poder",
-        "action": "Pista 'El Edicto'. 3 minutos de verbalización de límites. Repite en voz alta."
+        "action": "Pista El Edicto. 3 minutos de verbalización de límites. Repite en voz alta."
       },
       {
         "name": "Para el insomnio ansioso",
-        "action": "Pista 'Apagado del Núcleo'. 5 minutos de relajación progresiva para forzar al cerebro a abandonar la alerta."
+        "action": "Pista Apagado del Núcleo. 5 minutos de relajación progresiva para forzar al cerebro a abandonar la alerta."
       }
     ]
   }'::jsonb
