@@ -53,7 +53,7 @@ export class AIService {
             return this.generateWithOpenAI(prompt, systemPrompt, config);
         }
 
-        const modelName = config.model || 'gemini-2.5-flash';
+        const modelName = config.model || 'gemini-2.0-flash';
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${this.geminiKey}`;
 
         // Construct contents
@@ -111,6 +111,11 @@ export class AIService {
             };
         } catch (error) {
             console.error("Gemini Error:", error);
+            // Fallback to OpenAI if Gemini fails and OpenAI key is available
+            if (this.openAIKey) {
+                console.warn("Gemini failed, falling back to OpenAI:", (error as Error).message);
+                return this.generateWithOpenAI(prompt, systemPrompt, config);
+            }
             throw error;
         }
     }
