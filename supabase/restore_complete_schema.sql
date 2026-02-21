@@ -226,7 +226,7 @@ USING (bucket_id = 'meditations');
 
 -- Insert initial tools data
 INSERT INTO public.tools (id, title, description, icon, color, category, is_premium, content) VALUES
-('hero', 'H.E.R.O. Framework', 'Reconoce patrones de manipulación: Humillación, Exigencias, Rechazo, Órdenes', 'Shield', 'turquoise', 'protection', false, '{
+('hero', 'Protocolo H.E.R.O.', 'Reconoce patrones de manipulación: Humillación, Exigencias, Rechazo, Órdenes', 'Shield', 'turquoise', 'protection', false, '{
   "intro": "El framework H.E.R.O. te ayuda a identificar las 4 señales principales de manipulación emocional.",
   "sections": [
     {
@@ -256,6 +256,15 @@ INSERT INTO public.tools (id, title, description, icon, color, category, is_prem
       "description": "Intentos de controlar tu comportamiento, decisiones o aspecto",
       "examples": ["\"No quiero que hables con esa persona\"", "\"Tienes que avisarme dónde estás siempre\"", "\"Cámbiate esa ropa, no me gusta\""],
       "action": "Eres una persona adulta con derecho a tomar tus propias decisiones."
+    }
+  ],
+  "challenges": [
+    {
+      "id": "hero_challenge_1",
+      "title": "Registro de la Sombra",
+      "description": "El miedo se alimenta del silencio. Abre tu diario ahora mismo y escribe detalladamente la última vez que alguien usó uno de estos 4 patrones (H.E.R.O.) contra ti. Nombra al perpetrador, describe la táctica y documenta cómo te hizo sentir. Sacarlo a la luz es el primer paso para desarmarlo.",
+      "xp_reward": 50,
+      "tag": "hero-protocol"
     }
   ],
   "closing": "Si identificas estos patrones de forma frecuente, es momento de buscar apoyo. No estás solo/a."

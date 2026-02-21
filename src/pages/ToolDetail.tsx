@@ -10,6 +10,7 @@ import { SOSButton } from "@/components/layout/SOSButton";
 import { ConversationSimulator } from "@/components/tools/ConversationSimulator";
 import { RiskMap } from "@/components/tools/RiskMap";
 import { AudioLibrary } from "@/components/tools/AudioLibrary";
+import { ToolChallenge } from "@/components/tools/ToolChallenge";
 
 interface ToolContent {
   type?: "roleplay" | "assessment" | "audio_library";
@@ -59,6 +60,13 @@ interface ToolContent {
     title: string;
     items: string[];
   };
+  challenges?: Array<{
+    id: string;
+    title: string;
+    description: string;
+    xp_reward: number;
+    tag: string;
+  }>;
   // Roleplay specific
   personalities?: Array<{
     id: string;
@@ -125,7 +133,7 @@ const ToolDetail = () => {
   useEffect(() => {
     const fetchTool = async () => {
       if (!id) return;
-      
+
       const { data, error } = await supabase
         .from("tools")
         .select("*")
@@ -224,36 +232,36 @@ const ToolDetail = () => {
 
         <main className="container py-6">
           {isRoleplay && (
-            <ConversationSimulator 
+            <ConversationSimulator
               content={{
-                scenarios: content.scenarios as Array<{id: string; label: string; icon: string}>,
+                scenarios: content.scenarios as Array<{ id: string; label: string; icon: string }>,
                 personalities: content.personalities!,
                 rounds: content.rounds || 3,
                 feedback_categories: content.feedback_categories || [],
                 script_versions: content.script_versions || [],
-              }} 
+              }}
             />
           )}
-          
+
           {isAssessment && (
-            <RiskMap 
+            <RiskMap
               content={{
                 questions: content.questions!,
                 risk_levels: content.risk_levels!,
                 has_discrete_mode: content.has_discrete_mode || false,
                 has_exit_plan: content.has_exit_plan || false,
-              }} 
+              }}
             />
           )}
-          
+
           {isAudioLibrary && (
-            <AudioLibrary 
+            <AudioLibrary
               content={{
                 emotions: content.emotions!,
                 situations: content.situations!,
                 has_offline: content.has_offline || false,
                 has_playlists: content.has_playlists || false,
-              }} 
+              }}
             />
           )}
         </main>
@@ -311,11 +319,11 @@ const ToolDetail = () => {
                   )}
                   <h3 className="text-lg font-display font-bold text-foreground">{section.title}</h3>
                 </div>
-                
+
                 {section.description && (
                   <p className="text-muted-foreground">{section.description}</p>
                 )}
-                
+
                 {section.examples && (
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-foreground">Ejemplos:</p>
@@ -397,7 +405,7 @@ const ToolDetail = () => {
             {content.scenarios.map((scenario, index) => (
               <div key={index} className="bg-card rounded-2xl p-5 shadow-soft space-y-4">
                 <h3 className="font-display font-bold text-coral">{scenario.situation}</h3>
-                
+
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <p className="text-xs font-medium text-success">✓ Qué decir</p>
@@ -512,6 +520,15 @@ const ToolDetail = () => {
         {content.closing && (
           <div className="bg-card rounded-2xl p-5 shadow-soft">
             <p className="text-foreground leading-relaxed font-medium">{content.closing}</p>
+          </div>
+        )}
+
+        {/* Dynamic Challenges */}
+        {content.challenges && content.challenges.length > 0 && (
+          <div className="pt-8 mb-8 space-y-6 border-t border-border/50">
+            {content.challenges.map((challenge) => (
+              <ToolChallenge key={challenge.id} challenge={challenge} />
+            ))}
           </div>
         )}
       </main>
