@@ -372,13 +372,13 @@ const ToolDetail = () => {
           </div>
         )}
 
-        {/* Break Loop Story — narrative protocol for sections WITH steps but WITHOUT letter (protocolo-ruptura) */}
-        {content.sections && !(content.sections[0] as { letter?: string })?.letter && (content.sections[0] as { steps?: string[] })?.steps && (
+        {/* Break Loop Story — narrative protocol only for protocolo-ruptura */}
+        {id === 'protocolo-ruptura' && content.sections && (
           <BreakLoopStory sections={content.sections} closing={content.closing} />
         )}
 
-        {/* Projection Radar AI — Socratic shadow work dialog for sections WITH questions (radar-proyecciones) */}
-        {content.sections && !(content.sections[0] as { letter?: string })?.letter && (content.sections[1] as { questions?: string[] })?.questions && (
+        {/* Projection Radar AI — Socratic shadow-work chat only for radar-proyecciones */}
+        {id === 'radar-proyecciones' && (
           <ProjectionRadarAI />
         )}
 

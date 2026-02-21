@@ -12,7 +12,7 @@ import confetti from "canvas-confetti";
 interface Section {
     title: string;
     description?: string;
-    steps: string[];
+    steps?: string[];
 }
 
 interface BreakLoopStoryProps {
