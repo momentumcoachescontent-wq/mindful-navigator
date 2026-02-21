@@ -98,15 +98,16 @@ export const ProjectionRadarAI = () => {
 
             if (resp.error) {
                 console.error("[Radar] analyze-situation error:", resp.error);
-                let errMsg = (resp.error as any)?.message || JSON.stringify(resp.error);
+                let errMsg = (resp.error as any)?.message || "Error desconocido";
                 try {
                     // @ts-ignore
                     if (resp.error.context && typeof resp.error.context.json === 'function') {
                         // @ts-ignore
                         const detail = await resp.error.context.json();
-                        errMsg = detail.error || detail.message || errMsg;
+                        // `details` holds the REAL underlying error (e.g. "Missing OPENAI_API_KEY")
+                        errMsg = detail.details || detail.error || detail.message || errMsg;
                     }
-                } catch { /* ignore */ }
+                } catch { /* ignore parse errors */ }
                 throw new Error(errMsg);
             }
             const response = resp.data?.response;
