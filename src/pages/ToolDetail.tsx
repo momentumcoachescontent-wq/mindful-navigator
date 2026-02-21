@@ -13,6 +13,7 @@ import { AudioLibrary } from "@/components/tools/AudioLibrary";
 import { ToolChallenge } from "@/components/tools/ToolChallenge";
 import { BoundaryScriptForge } from "@/components/tools/BoundaryScriptForge";
 import { SOSWarRoom } from "@/components/tools/SOSWarRoom";
+import { SelfCareBlueprint } from "@/components/tools/SelfCareBlueprint";
 
 interface ToolContent {
   type?: "roleplay" | "assessment" | "audio_library";
@@ -482,6 +483,11 @@ const ToolDetail = () => {
               </div>
             ))}
           </div>
+        )}
+
+        {/* SelfCare Blueprint Builder — weekly commitment system with XP tiers */}
+        {content.pillars && (
+          <SelfCareBlueprint pillars={content.pillars} />
         )}
 
         {/* Circles (Support network style) */}
