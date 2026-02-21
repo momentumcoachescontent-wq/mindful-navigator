@@ -11,6 +11,7 @@ import { ConversationSimulator } from "@/components/tools/ConversationSimulator"
 import { RiskMap } from "@/components/tools/RiskMap";
 import { AudioLibrary } from "@/components/tools/AudioLibrary";
 import { ToolChallenge } from "@/components/tools/ToolChallenge";
+import { BoundaryScriptForge } from "@/components/tools/BoundaryScriptForge";
 
 interface ToolContent {
   type?: "roleplay" | "assessment" | "audio_library";
@@ -382,6 +383,11 @@ const ToolDetail = () => {
               </div>
             ))}
           </div>
+        )}
+
+        {/* Boundary Script Forge — injected below categories for tools that have them */}
+        {content.categories && !content.challenges && (
+          <BoundaryScriptForge categories={content.categories} />
         )}
 
         {/* Tips */}
