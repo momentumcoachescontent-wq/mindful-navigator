@@ -47,15 +47,15 @@ export function DailyChallenge() {
   const handleStartMission = (mission: Mission) => {
     // Handle premium tools that redirect to their pages
     if (mission.type === 'roleplay') {
-      navigate('/tools/conversation-simulator');
+      navigate('/tools/simulador-conversaciones');
       return;
     }
     if (mission.type === 'risk_map') {
-      navigate('/tools/risk-map');
+      navigate('/tools/mapa-riesgo');
       return;
     }
     if (mission.id === 'audio_state') {
-      navigate('/tools/audio-library');
+      navigate('/tools/biblioteca-audios');
       return;
     }
 
