@@ -71,44 +71,30 @@ export const ProjectionRadarAI = () => {
     const callProjectionAI = async (userMsg: string, currentPhase: Phase, hist: Message[]) => {
         setIsThinking(true);
         try {
-            const phaseLabel =
-                currentPhase === "discovery" ? "Descubrimiento — haz UNA sola pregunta socrática que invite al usuario a verse en el otro" :
-                    currentPhase === "reflection" ? "Reflexión — conecta lo compartido con la sombra interna del usuario" :
-                        "Integración — guía al cierre con compasión y una revelación poderosa";
-
-            const resp = await supabase.functions.invoke("analyze-situation", {
+            const resp = await supabase.functions.invoke("shadow-guide", {
                 body: {
-                    mode: "roleplay",
-                    personality: "shadow_guide",
-                    personalityDescription: `Guía de psicología junguiana. Haz preguntas socráticas para que el usuario descubra qué proyecta en otros. Fase: ${phaseLabel}. Persona: ${person}. Emoción: ${emotion}.`,
-                    extraTrait: "Socrático — UNA sola pregunta corta por respuesta. Sin consejos, sin diagnósticos.",
-                    scenario: `Sombra junguiana: ${emotion} hacia "${person}"`,
-                    context: `El usuario siente ${emotion} hacia ${person}. Usa preguntas como: ¿Podrías ser tú también así? ¿Cuándo actuaste de esa manera? ¿Qué parte de ti envidia o rechaza eso?`,
-                    messages: hist.length > 0 ? hist.map(m => ({ role: m.role, content: m.content })) : [],
-                    isFirst: hist.length === 0,
-                    currentRound: roundCount,
-                    maxRounds: 7,
+                    person,
+                    emotion,
+                    phase: currentPhase,
+                    messages: hist.map(m => ({ role: m.role, content: m.content })),
                 },
             });
 
             if (resp.error) {
-                console.error("[ProjectionRadarAI] Edge fn error:", resp.error);
-                const errMsg = (resp.error as any)?.message || JSON.stringify(resp.error);
-                // Rate limit gives 429
-                if (errMsg.includes("429") || errMsg.toLowerCase().includes("límite") || errMsg.toLowerCase().includes("limit")) {
-                    throw new Error("Límite de uso alcanzado. Espera un momento e intenta de nuevo.");
-                }
-                throw new Error(errMsg);
+                console.error("[Radar] shadow-guide error:", resp.error);
+                const msg = (resp.error as any)?.message || JSON.stringify(resp.error);
+                throw new Error(msg);
             }
             if (!resp.data?.response) throw new Error("La IA no retornó respuesta.");
             return resp.data.response as string;
         } catch (e: any) {
-            console.error("[ProjectionRadarAI] Error:", e);
+            console.error("[Radar] Error:", e);
             throw e;
         } finally {
             setIsThinking(false);
         }
     };
+
 
     const startSocraticDialog = async () => {
         if (!person.trim() || !emotion) {

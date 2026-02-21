@@ -1,9 +1,6 @@
 -- Sincronización del Arsenal: Inyección de Herramientas de Producción
 -- Script diseñado para el SQL Editor de Lovable / Supabase
--- Ejecuta este script para asegurar que las 5 herramientas premium/avanzadas existan
--- y cuenten con la estructura JSON (content) necesaria para la interfaz gráfica.
-
--- Upsert para evitar duplicados. Utilizaremos el ID en texto plano como identificador.
+-- Idempotente: se puede ejecutar varias veces sin generar duplicados.
 
 INSERT INTO public.tools (id, title, description, icon, color, category, is_premium, content) 
 VALUES 
