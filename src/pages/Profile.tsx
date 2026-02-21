@@ -16,18 +16,23 @@ import { LevelBadge, XPBar } from "@/components/gamification";
 interface ProfileData {
   id: string;
   user_id: string;
-  first_name: string | null;
-  last_name: string | null;
   avatar_url: string | null;
   display_name: string | null;
   occupation: string | null;
-  is_admin: boolean;
-  is_premium: boolean;
-  xp: number;
-  level: number;
-  streak_current: number;
-  streak_longest: number;
+  is_admin: boolean | null;
+  is_premium: boolean | null;
+  streak_count: number | null;
+  age_range: string | null;
+  gender: string | null;
+  goals: string[] | null;
+  onboarding_completed: boolean | null;
+  created_at: string;
+  updated_at: string;
 }
+
+// Derived fields from user_progress
+const DEFAULT_LEVEL = 1;
+const DEFAULT_XP = 0;
 
 const menuItems = [
   { icon: Bell, label: "Notificaciones", path: "/settings/notifications" },
@@ -62,14 +67,31 @@ const Profile = () => {
     enabled: !!user,
   });
 
+  // Fetch user progress for XP/level
+  const { data: progress } = useQuery({
+    queryKey: ['user-progress'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('user_progress')
+        .select('total_xp, current_level')
+        .eq('user_id', user?.id)
+        .single();
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const userLevel = progress ? Math.floor(Math.sqrt(progress.total_xp) / 10) + 1 : DEFAULT_LEVEL;
+  const userXP = progress?.total_xp || DEFAULT_XP;
+
   // Mock stats
   const { data: stats } = useQuery({
     queryKey: ['user-stats'],
     queryFn: async () => {
       return {
         checkins: 42,
-        meditations: 15, // TODO: Fetch real count
-        journal_entries: 28 // TODO: Fetch real count
+        meditations: 15,
+        journal_entries: 28
       };
     }
   });
@@ -174,14 +196,14 @@ const Profile = () => {
               >
                 <Avatar className="w-20 h-20 border-4 border-background shadow-xl">
                   <AvatarImage src={profile?.avatar_url || ''} />
-                  <AvatarFallback className="text-2xl bg-primary/10 text-primary">
-                    {profile?.first_name?.[0] || user?.email?.[0]?.toUpperCase()}
+              <AvatarFallback className="text-2xl bg-primary/10 text-primary">
+                    {profile?.display_name?.[0] || user?.email?.[0]?.toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
 
                 {/* Level Badge Overlay */}
                 <div className="absolute -bottom-2 -right-2 bg-background rounded-full p-1 shadow-sm pointer-events-none">
-                  <LevelBadge level={profile?.level || 1} showLabel={false} className="scale-75" />
+                  <LevelBadge level={userLevel} showLabel={false} className="scale-75" />
                 </div>
 
                 {/* Upload Overlay */}
@@ -197,7 +219,7 @@ const Profile = () => {
 
             <div>
               <h2 className="text-xl font-display font-bold text-foreground">
-                {profile?.display_name || profile?.first_name || "Usuario"}
+                {profile?.display_name || "Usuario"}
               </h2>
               <p className="text-muted-foreground flex items-center gap-1 text-sm">
                 <MapPin className="w-3 h-3" /> Explorador Interior
@@ -205,12 +227,12 @@ const Profile = () => {
               <div className="flex items-center gap-2 mt-2">
                 <Badge variant="secondary" className="text-xs gap-1 px-2 py-0.5">
                   <Trophy className="w-3 h-3 text-amber-500" />
-                  Nivel {profile?.level || 1}
+                  Nivel {userLevel}
                 </Badge>
-                {(profile?.streak_current || 0) > 0 && (
+                {(profile?.streak_count || 0) > 0 && (
                   <Badge variant="outline" className="text-xs gap-1 border-orange-500/30 bg-orange-500/5 text-orange-600 px-2 py-0.5">
                     <Flame className="w-3 h-3" />
-                    {profile?.streak_current} días
+                    {profile?.streak_count} días
                   </Badge>
                 )}
               </div>
@@ -223,16 +245,16 @@ const Profile = () => {
           <CardContent className="pt-6 pb-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <LevelBadge level={profile?.level || 1} />
+                <LevelBadge level={userLevel} />
               </div>
               <div className="text-right">
                 <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Siguiente Hito</p>
                 <p className="text-sm font-semibold text-primary">
-                  {((Math.floor(Math.sqrt(profile?.xp || 0) / 10) + 1) * 10) ** 2 - (profile?.xp || 0)} XP para subir
+                  {((Math.floor(Math.sqrt(userXP) / 10) + 1) * 10) ** 2 - userXP} XP para subir
                 </p>
               </div>
             </div>
-            <XPBar currentXP={profile?.xp || 0} level={profile?.level || 1} />
+            <XPBar currentXP={userXP} level={userLevel} />
           </CardContent>
         </Card>
 
@@ -248,7 +270,7 @@ const Profile = () => {
           <Card>
             <CardContent className="pt-6 text-center space-y-1">
               <Flame className="w-8 h-8 text-orange-500 mx-auto mb-2" />
-              <div className="text-2xl font-bold">{profile?.streak_longest || 0}</div>
+              <div className="text-2xl font-bold">{profile?.streak_count || 0}</div>
               <div className="text-xs text-muted-foreground font-medium uppercase">Mejor Racha</div>
             </CardContent>
           </Card>
