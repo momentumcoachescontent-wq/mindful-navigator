@@ -140,6 +140,18 @@ export function useDailyChallenge() {
     loadData();
   }, [loadData]);
 
+  // Reload data whenever the user returns to this tab/page (from a tool detail, etc.)
+  // This ensures "+XP HOY" reflects any contracts completed in other routes.
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadData();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [loadData]);
+
   // Subscribe to external XP events (e.g. from ToolChallenge)
   // so the Dashboard updates in real-time without a page reload.
   useEffect(() => {
