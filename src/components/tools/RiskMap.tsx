@@ -1,8 +1,14 @@
 import { useState } from "react";
-import { ArrowRight, ArrowLeft, Shield, AlertTriangle, AlertCircle, Check, Eye, EyeOff, FileText, Phone, Users } from "lucide-react";
+import { ArrowRight, ArrowLeft, Shield, AlertTriangle, AlertCircle, Check, Eye, EyeOff, FileText, Phone, Users, Save, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { xpEventBus } from "@/lib/xpEventBus";
+import confetti from "canvas-confetti";
+import { useNavigate } from "react-router-dom";
 
 interface Question {
   id: number;
@@ -105,11 +111,17 @@ const exitPlanChecklist = [
 ];
 
 export function RiskMap({ content }: RiskMapProps) {
+  const { session } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
   const [step, setStep] = useState<RiskStep>("intro");
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<number, boolean>>({});
   const [isDiscreteMode, setIsDiscreteMode] = useState(false);
   const [completedChecklist, setCompletedChecklist] = useState<number[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedEntryId, setSavedEntryId] = useState<string | null>(null);
 
   const questions = content.questions;
   const totalQuestions = questions.length;
@@ -152,6 +164,121 @@ export function RiskMap({ content }: RiskMapProps) {
     setCompletedChecklist(prev =>
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     );
+  };
+
+  const handleSaveToJournal = async () => {
+    if (!session?.user?.id) {
+      toast({ title: "Inicia sesión", description: "Necesitas una cuenta para guardar.", variant: "destructive" });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const riskLevel = getRiskLevel();
+      const score = calculateRiskScore();
+      const description = riskDescriptions[riskLevel];
+      const levelInfo = content.risk_levels[riskLevel];
+
+      const answeredYes = content.questions
+        .filter(q => answers[q.id])
+        .map(q => q.text);
+
+      const dateStr = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+      const contentBody = `**🛡️ Mapa de Riesgo — ${dateStr}**\n\n` +
+        `**Clasificación:** ${levelInfo.title}\n` +
+        `**Puntuación:** ${score} puntos\n\n` +
+        `**¿Qué significa?**\n${description.meaning}\n\n` +
+        `**🚩 Señales detectadas (${answeredYes.length}/${content.questions.length}):**\n` +
+        (answeredYes.length > 0 ? answeredYes.map(q => `- ${q}`).join('\n') : '- Ninguna señal marcada') + '\n\n' +
+        `**💪 Microacciones recomendadas:**\n` +
+        description.actions.map((a, i) => `${i + 1}. ${a}`).join('\n') + '\n\n' +
+        `**🔒 Límites sugeridos:**\n${description.limits}\n\n` +
+        (description.evidence ? `**📝 Evidencia:**\n${description.evidence}\n\n` : '') +
+        `**✅ Plan de Salida — Checklist:**\n` +
+        exitPlanChecklist.map(item => {
+          const done = completedChecklist.includes(item.id);
+          return `${done ? '☑️' : '⬜'} ${item.text}`;
+        }).join('\n') + '\n\n' +
+        `**📞 Contactos de Emergencia:**\n` +
+        `- Línea de emergencia: 911\n` +
+        `- Línea de la Mujer: 800-911-2000\n` +
+        `- SAPTEL: 55 5259-8121`;
+
+      const jsonContent = {
+        title: `Mapa de Riesgo — ${levelInfo.title}`,
+        text: contentBody,
+        tags: ['mapa-riesgo', riskLevel],
+        risk_level: riskLevel,
+        score,
+        answered_yes: answeredYes,
+        checklist: exitPlanChecklist.map(item => ({
+          text: item.text,
+          completed: completedChecklist.includes(item.id)
+        })),
+        emergency_contacts: [
+          { name: 'Línea de emergencia', number: '911' },
+          { name: 'Línea de la Mujer', number: '800-911-2000' },
+          { name: 'SAPTEL', number: '55 5259-8121' }
+        ],
+        follow_up: true
+      };
+
+      const { data, error } = await supabase.from('journal_entries').insert({
+        user_id: session.user.id,
+        content: JSON.stringify(jsonContent),
+        entry_type: 'reflection',
+        tags: ['mapa-riesgo', riskLevel, 'seguimiento'],
+        metadata: {
+          title: `Mapa de Riesgo — ${levelInfo.title}`,
+          risk_level: riskLevel,
+          score,
+          follow_up: true
+        }
+      }).select().single();
+
+      if (error) throw error;
+
+      if (data) {
+        setSavedEntryId(data.id);
+
+        const XP_REWARD = 25;
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+        await supabase.from('daily_missions').insert([{
+          user_id: session.user.id,
+          mission_type: 'tool_protocol',
+          mission_id: `riskmap_${Date.now()}`,
+          xp_earned: XP_REWARD,
+          mission_date: today,
+          metadata: { tool_tag: 'mapa-riesgo', risk_level: riskLevel }
+        } as never]);
+
+        const { data: progressData } = await supabase
+          .from('user_progress')
+          .select('total_xp')
+          .eq('user_id', session.user.id)
+          .single();
+
+        if (progressData) {
+          await supabase
+            .from('user_progress')
+            .update({ total_xp: (progressData.total_xp || 0) + XP_REWARD } as never)
+            .eq('user_id', session.user.id);
+        }
+
+        confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 }, colors: ['#4ade80', '#2dd4bf', '#0f172a'] });
+        xpEventBus.emit(XP_REWARD);
+
+        toast({ title: '¡Guardado en Diario! +25 XP', description: 'Tu evaluación de riesgo ha sido registrada para seguimiento.' });
+      }
+    } catch (error) {
+      console.error('Error saving risk map:', error);
+      toast({ title: 'Error', description: 'No se pudo guardar. Intenta de nuevo.', variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const renderIntro = () => (
@@ -343,6 +470,18 @@ export function RiskMap({ content }: RiskMapProps) {
             </Button>
           )}
 
+          {savedEntryId ? (
+            <Button onClick={() => navigate('/journal')} variant="calm" className="w-full">
+              <FileText className="w-4 h-4" />
+              Ir al Diario
+            </Button>
+          ) : (
+            <Button onClick={handleSaveToJournal} variant="calm" className="w-full" disabled={isSaving}>
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {isSaving ? 'Guardando...' : 'Guardar en mi Diario'}
+            </Button>
+          )}
+
           <Button onClick={() => setStep("intro")} variant="outline" className="w-full">
             Hacer otra evaluación
           </Button>
@@ -410,11 +549,24 @@ export function RiskMap({ content }: RiskMapProps) {
         </ul>
       </div>
 
-      <div className="text-center">
-        <p className="text-xs text-muted-foreground mb-4">
+      <div className="space-y-3 text-center">
+        <p className="text-xs text-muted-foreground">
           {completedChecklist.length} de {exitPlanChecklist.length} completados
         </p>
-        <Button onClick={() => setStep("result")} variant="outline">
+
+        {savedEntryId ? (
+          <Button onClick={() => navigate('/journal')} variant="calm" className="w-full">
+            <FileText className="w-4 h-4" />
+            Ir al Diario
+          </Button>
+        ) : (
+          <Button onClick={handleSaveToJournal} variant="calm" className="w-full" disabled={isSaving}>
+            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {isSaving ? 'Guardando...' : 'Guardar todo en mi Diario'}
+          </Button>
+        )}
+
+        <Button onClick={() => setStep("result")} variant="outline" className="w-full">
           <ArrowLeft className="w-4 h-4" />
           Volver a resultados
         </Button>
