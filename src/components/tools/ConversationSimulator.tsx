@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { xpEventBus } from "@/lib/xpEventBus";
+import confetti from "canvas-confetti";
 
 interface Scenario {
   id: string;
@@ -369,9 +371,54 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
 
       if (data) {
         setSavedEntryId(data.id);
+
+        // --- XP REWARD LOGIC ---
+        const XP_REWARD = 30;
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+        // Register in daily_missions
+        const uniqueMissionId = `simulation_${Date.now()}`;
+        await supabase.from('daily_missions').insert([{
+          user_id: session.user.id,
+          mission_type: 'tool_protocol',
+          mission_id: uniqueMissionId,
+          xp_earned: XP_REWARD,
+          mission_date: today,
+          metadata: { tool_tag: 'simulation', scenario: scenarioLabel }
+        } as never]).then(({ error: mErr }) => {
+          if (mErr) console.error('Error inserting daily mission:', mErr);
+        });
+
+        // Update total XP in user_progress
+        const { data: progressData } = await supabase
+          .from('user_progress')
+          .select('total_xp')
+          .eq('user_id', session.user.id)
+          .single();
+
+        if (progressData) {
+          const newXP = (progressData.total_xp || 0) + XP_REWARD;
+          await supabase
+            .from('user_progress')
+            .update({ total_xp: newXP } as never)
+            .eq('user_id', session.user.id);
+        }
+
+        // Visual reward
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#4ade80', '#2dd4bf', '#0f172a']
+        });
+
+        // Notify dashboard to refresh XP
+        xpEventBus.emit(XP_REWARD);
+
         toast({
-          title: "¡Guardado con éxito!",
-          description: "Tu simulación ha sido guardada. Puedes ver los detalles en tu diario.",
+          title: "¡Simulación guardada! +30 XP",
+          description: "Tu simulación y recompensa han sido registradas en tu diario.",
         });
       }
     } catch (error) {
