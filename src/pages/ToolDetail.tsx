@@ -12,6 +12,7 @@ import { RiskMap } from "@/components/tools/RiskMap";
 import { AudioLibrary } from "@/components/tools/AudioLibrary";
 import { ToolChallenge } from "@/components/tools/ToolChallenge";
 import { BoundaryScriptForge } from "@/components/tools/BoundaryScriptForge";
+import { SOSWarRoom } from "@/components/tools/SOSWarRoom";
 
 interface ToolContent {
   type?: "roleplay" | "assessment" | "audio_library";
@@ -440,6 +441,11 @@ const ToolDetail = () => {
               </div>
             ))}
           </div>
+        )}
+
+        {/* SOS War Room — gamified crisis simulator for scenarios with do_say/dont_say */}
+        {content.scenarios && (content.scenarios[0] as { do_say?: string[] })?.do_say && (
+          <SOSWarRoom scenarios={content.scenarios} />
         )}
 
         {/* Emergency (SOS) */}
