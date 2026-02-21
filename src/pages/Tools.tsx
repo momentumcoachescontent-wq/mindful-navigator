@@ -105,8 +105,8 @@ const Tools = () => {
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
               className={`px-5 py-2.5 rounded-none font-display font-bold uppercase tracking-wider text-xs whitespace-nowrap transition-transform active:scale-90 hover:scale-105 border-2 ${activeCategory === cat.id
-                  ? "bg-primary text-primary-foreground border-primary shadow-[2px_2px_0px_0px_currentColor]"
-                  : "bg-muted text-muted-foreground border-transparent hover:border-muted-foreground hover:text-foreground"
+                ? "bg-primary text-primary-foreground border-primary shadow-[2px_2px_0px_0px_currentColor]"
+                : "bg-muted text-muted-foreground border-transparent hover:border-muted-foreground hover:text-foreground"
                 }`}
             >
               {cat.label}
@@ -131,7 +131,8 @@ const Tools = () => {
                 description={tool.description}
                 icon={iconMap[tool.icon] || Shield}
                 color={tool.color as "turquoise" | "coral" | "secondary"}
-                isPremium={tool.is_premium && !isPremium}
+                isPremium={tool.is_premium}
+                isLocked={tool.is_premium && !isPremium}
                 onClick={() => navigate(`/tools/${tool.id}`)}
               />
             ))}
