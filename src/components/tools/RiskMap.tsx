@@ -134,7 +134,7 @@ export function RiskMap({ content }: RiskMapProps) {
 
   const handleAnswer = (answer: boolean) => {
     setAnswers(prev => ({ ...prev, [questions[currentQuestion].id]: answer }));
-    
+
     if (currentQuestion < totalQuestions - 1) {
       setCurrentQuestion(prev => prev + 1);
     } else {
@@ -149,7 +149,7 @@ export function RiskMap({ content }: RiskMapProps) {
   };
 
   const toggleChecklistItem = (id: number) => {
-    setCompletedChecklist(prev => 
+    setCompletedChecklist(prev =>
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     );
   };
@@ -159,7 +159,7 @@ export function RiskMap({ content }: RiskMapProps) {
       <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-secondary to-primary flex items-center justify-center">
         <Shield className="w-10 h-10 text-white" />
       </div>
-      
+
       <div className="space-y-2">
         <h3 className="text-xl font-display font-bold text-foreground">
           Mapa de Riesgo
@@ -168,7 +168,7 @@ export function RiskMap({ content }: RiskMapProps) {
           Este cuestionario te ayudará a entender mejor tu situación y obtener recomendaciones personalizadas.
         </p>
       </div>
-      
+
       <div className="bg-card rounded-xl p-4 text-left space-y-2 shadow-soft">
         <p className="text-sm font-medium text-foreground">Lo que obtendrás:</p>
         <ul className="text-sm text-muted-foreground space-y-1">
@@ -190,7 +190,7 @@ export function RiskMap({ content }: RiskMapProps) {
           </li>
         </ul>
       </div>
-      
+
       {content.has_discrete_mode && (
         <button
           onClick={() => setIsDiscreteMode(!isDiscreteMode)}
@@ -200,7 +200,7 @@ export function RiskMap({ content }: RiskMapProps) {
           {isDiscreteMode ? "Modo discreto activado" : "Activar modo discreto"}
         </button>
       )}
-      
+
       <Button onClick={() => setStep("questions")} variant="calm" className="w-full">
         Comenzar evaluación
         <ArrowRight className="w-4 h-4" />
@@ -210,26 +210,39 @@ export function RiskMap({ content }: RiskMapProps) {
 
   const renderQuestions = () => {
     const question = questions[currentQuestion];
-    
+
     if (isDiscreteMode) {
       return (
         <div className="space-y-6">
-          <div className="bg-card rounded-xl p-6 text-center shadow-soft">
-            <p className="text-lg text-foreground">Pregunta {currentQuestion + 1} de {totalQuestions}</p>
-            <Progress value={progress} className="mt-4" />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <span>Pregunta {currentQuestion + 1} de {totalQuestions}</span>
+              {currentQuestion > 0 && (
+                <button onClick={handleBack} className="flex items-center gap-1 hover:text-foreground">
+                  <ArrowLeft className="w-3 h-3" /> Anterior
+                </button>
+              )}
+            </div>
+            <Progress value={progress} />
           </div>
+
+          <div className="bg-card rounded-xl p-5 shadow-soft">
+            <p className="text-muted-foreground/60 text-xs leading-relaxed">{question.text}</p>
+            <p className="text-[10px] text-muted-foreground/30 mt-2 italic">Modo discreto: texto reducido por tu seguridad</p>
+          </div>
+
           <div className="flex gap-3">
-            <Button onClick={() => handleAnswer(true)} variant="outline" className="flex-1 h-16">
+            <Button onClick={() => handleAnswer(true)} variant="outline" className="flex-1 h-14">
               Sí
             </Button>
-            <Button onClick={() => handleAnswer(false)} variant="outline" className="flex-1 h-16">
+            <Button onClick={() => handleAnswer(false)} variant="outline" className="flex-1 h-14">
               No
             </Button>
           </div>
         </div>
       );
     }
-    
+
     return (
       <div className="space-y-6">
         <div className="space-y-2">
@@ -243,11 +256,11 @@ export function RiskMap({ content }: RiskMapProps) {
           </div>
           <Progress value={progress} />
         </div>
-        
+
         <div className="bg-card rounded-xl p-5 shadow-soft">
           <p className="text-foreground font-medium leading-relaxed">{question.text}</p>
         </div>
-        
+
         <div className="flex gap-3">
           <Button onClick={() => handleAnswer(true)} variant="outline" className="flex-1 h-14">
             Sí
@@ -265,7 +278,7 @@ export function RiskMap({ content }: RiskMapProps) {
     const colors = riskColors[riskLevel];
     const description = riskDescriptions[riskLevel];
     const levelInfo = content.risk_levels[riskLevel];
-    
+
     return (
       <div className="space-y-6">
         {/* Semáforo visual */}
@@ -278,20 +291,20 @@ export function RiskMap({ content }: RiskMapProps) {
             {riskLevel === "yellow" && <AlertTriangle className="w-12 h-12 text-white" />}
             {riskLevel === "red" && <AlertCircle className="w-12 h-12 text-white" />}
           </div>
-          
+
           <div>
             <h3 className={cn("text-xl font-display font-bold", colors.text)}>
               {levelInfo.title}
             </h3>
           </div>
         </div>
-        
+
         {/* Qué significa */}
         <div className={cn("rounded-xl p-4 border", colors.bgLight, colors.border)}>
           <p className="text-sm font-medium text-foreground mb-2">¿Qué significa esto?</p>
           <p className="text-sm text-muted-foreground">{description.meaning}</p>
         </div>
-        
+
         {/* Microacciones */}
         <div className="bg-card rounded-xl p-4 shadow-soft space-y-3">
           <p className="text-sm font-medium text-foreground">3 microacciones para hoy:</p>
@@ -306,13 +319,13 @@ export function RiskMap({ content }: RiskMapProps) {
             ))}
           </ol>
         </div>
-        
+
         {/* Límites */}
         <div className="bg-secondary/10 rounded-xl p-4 border border-secondary/20">
           <p className="text-sm font-medium text-foreground mb-2">💪 Qué límites poner:</p>
           <p className="text-sm text-muted-foreground">{description.limits}</p>
         </div>
-        
+
         {/* Evidencia (solo amarillo y rojo) */}
         {description.evidence && (
           <div className="bg-muted/50 rounded-xl p-4">
@@ -320,7 +333,7 @@ export function RiskMap({ content }: RiskMapProps) {
             <p className="text-sm text-muted-foreground">{description.evidence}</p>
           </div>
         )}
-        
+
         {/* Botones de acción */}
         <div className="space-y-3">
           {riskLevel === "red" && content.has_exit_plan && (
@@ -329,7 +342,7 @@ export function RiskMap({ content }: RiskMapProps) {
               Ver Plan de Salida
             </Button>
           )}
-          
+
           <Button onClick={() => setStep("intro")} variant="outline" className="w-full">
             Hacer otra evaluación
           </Button>
@@ -351,7 +364,7 @@ export function RiskMap({ content }: RiskMapProps) {
           Prepárate para cuando necesites actuar. No tienes que hacer todo hoy.
         </p>
       </div>
-      
+
       {/* Líneas de ayuda */}
       <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-4 space-y-2">
         <p className="text-sm font-medium text-destructive">📞 Líneas de ayuda 24/7:</p>
@@ -361,7 +374,7 @@ export function RiskMap({ content }: RiskMapProps) {
           <li className="text-foreground">• SAPTEL: 55 5259-8121</li>
         </ul>
       </div>
-      
+
       {/* Checklist */}
       <div className="bg-card rounded-xl p-4 shadow-soft space-y-3">
         <p className="text-sm font-medium text-foreground">Tu checklist de preparación:</p>
@@ -396,7 +409,7 @@ export function RiskMap({ content }: RiskMapProps) {
           })}
         </ul>
       </div>
-      
+
       <div className="text-center">
         <p className="text-xs text-muted-foreground mb-4">
           {completedChecklist.length} de {exitPlanChecklist.length} completados
