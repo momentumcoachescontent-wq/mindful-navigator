@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { streakEventBus } from "@/lib/streakEventBus";
 
 const Index = () => {
   const [hasCheckedIn, setHasCheckedIn] = useState(false);
@@ -240,6 +241,7 @@ const Index = () => {
       if (updateError) throw updateError;
 
       setStreakData((prev) => ({ ...prev, currentStreak: newStreak }));
+      streakEventBus.emit(newStreak); // sync DailyChallenge widget
       setHasCheckedIn(true);
 
       console.log("Check-in successful, streak updated to:", newStreak);

@@ -3,6 +3,7 @@ import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { xpEventBus } from '@/lib/xpEventBus';
+import { streakEventBus } from '@/lib/streakEventBus';
 import {
   getTodaysMissions,
   getLevelFromXP,
@@ -160,6 +161,15 @@ export function useDailyChallenge() {
     });
     return unsubscribe;
   }, [loadData]);
+
+  // Subscribe to streak updates from Index.tsx check-in
+  // so the RACHA card reflects the new count immediately without a full reload.
+  useEffect(() => {
+    const unsubscribe = streakEventBus.subscribe((newStreak: number) => {
+      setStreak(newStreak);
+    });
+    return unsubscribe;
+  }, []);
 
   // Complete a mission
   const completeMission = useCallback(async (mission: Mission, metadata?: Record<string, unknown>) => {

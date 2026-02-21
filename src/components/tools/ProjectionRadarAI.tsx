@@ -71,16 +71,25 @@ export const ProjectionRadarAI = () => {
     const callProjectionAI = async (userMsg: string, currentPhase: Phase, hist: Message[]) => {
         setIsThinking(true);
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) throw new Error("No session");
+            // Uses the `roleplay` mode already deployed in production.
+            // We set the persona to a Jungian shadow-work guide.
+            const phaseLabel =
+                currentPhase === "discovery" ? "Descubrimiento — haz UNA sola pregunta socrática que invite al usuario a verse en el otro" :
+                    currentPhase === "reflection" ? "Reflexión — conecta lo compartido con la sombra interna del usuario" :
+                        "Integración — guía al cierre con compasión y una revelación poderosa";
 
             const resp = await supabase.functions.invoke("analyze-situation", {
                 body: {
-                    mode: "projection",
-                    person,
-                    emotion,
-                    phase: currentPhase,
-                    messages: [...hist, { role: "user", content: userMsg }],
+                    mode: "roleplay",
+                    personality: "shadow_guide",
+                    personalityDescription: `Guía de psicología junguiana. Tu única función es hacer preguntas socráticas que lleven al usuario a ver en otros lo que reprime en sí mismo. Fase actual: ${phaseLabel}. Persona en cuestión: ${person}. Emoción disparadora: ${emotion}.`,
+                    extraTrait: "Socrático y directo — hace UNA sola pregunta por turno. NUNCA da consejos ni diagnósticos.",
+                    scenario: `Trabajo de sombra: ${emotion} hacia "${person}"`,
+                    context: `El usuario siente ${emotion} intensamente hacia ${person}. Puedes usar preguntas como: "¿Podrías ser tú también...?", "¿En qué momento de tu vida...?", "¿Qué parte de ti desearía...?"`,
+                    messages: hist.length > 0 ? hist : [],
+                    isFirst: hist.length === 0,
+                    currentRound: roundCount,
+                    maxRounds: 7,
                 },
             });
 
