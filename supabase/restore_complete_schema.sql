@@ -270,7 +270,7 @@ INSERT INTO public.tools (id, title, description, icon, color, category, is_prem
   "closing": "Si identificas estos patrones de forma frecuente, es momento de buscar apoyo. No estás solo/a."
 }'::jsonb),
 
-('calm', 'C.A.L.M. Technique', 'Regula tus emociones: Calma, Analiza, Libera, Muévete', 'Brain', 'coral', 'emotions', false, '{
+('calm', 'Protocolo C.A.L.M.', 'Regula tus emociones: Calma, Analiza, Libera, Muévete', 'Brain', 'coral', 'emotions', false, '{
   "intro": "La técnica C.A.L.M. es tu herramienta de primeros auxilios emocionales para momentos de crisis.",
   "sections": [
     {
@@ -300,6 +300,15 @@ INSERT INTO public.tools (id, title, description, icon, color, category, is_prem
       "description": "Cambia tu estado físico para cambiar tu estado mental",
       "steps": ["Camina aunque sea unos pasos", "Cambia de postura o de lugar", "Toma agua fresca", "Sal al aire libre si es posible"],
       "tip": "El movimiento rompe el ciclo de pensamientos negativos"
+    }
+  ],
+  "challenges": [
+    {
+      "id": "calm_challenge_1",
+      "title": "Contrato de Anclaje (Reporte de Daños)",
+      "description": "Tu cuerpo te está mintiendo, no estás en peligro de muerte. Antes de comenzar a regular tu respiración, escribe exactamente dónde sientes el pánico ahora (pecho, garganta, estómago) y qué pensamiento lo está alimentando. Míralo a los ojos y séllalo aquí.",
+      "xp_reward": 40,
+      "tag": "calm-protocol"
     }
   ],
   "closing": "Practica C.A.L.M. regularmente, no solo en crisis. Así estará lista cuando más la necesites."
