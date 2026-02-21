@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { Play, Pause, Lock, Search, Music, Mic, BookOpen, Sparkles, Loader2 } from "lucide-react";
+import { Play, Pause, Lock, Search, Music, Mic, BookOpen, Sparkles, Loader2, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -75,6 +75,15 @@ const Library = () => {
     return (
         <div className="min-h-screen bg-background pb-32 pt-6 px-4 md:px-6">
             <div className="max-w-4xl mx-auto space-y-8">
+
+                {/* Back Header */}
+                <button
+                    onClick={() => navigate(-1)}
+                    className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                    <ArrowLeft className="w-5 h-5" />
+                    <span className="text-sm font-medium uppercase tracking-wider">Audioteca de Poder</span>
+                </button>
 
                 {/* Header */}
                 <div className="space-y-4">
