@@ -121,11 +121,13 @@ const Index = () => {
     if (!user) return;
 
     try {
-      const { data: profile } = await supabase
+      const { data: profileData } = await supabase
         .from("profiles")
-        .select("streak_count, last_check_in_date, display_name")
+        .select("streak_count, longest_streak, last_check_in_date, display_name")
         .eq("user_id", user.id)
         .maybeSingle();
+
+      const profile = profileData as any;
 
       if (profile) {
         // Use local date instead of UTC for check-in comparison
@@ -135,6 +137,7 @@ const Index = () => {
         setStreakData((prev) => ({
           ...prev,
           currentStreak: profile.streak_count || 0,
+          longestStreak: profile.longest_streak || 0,
         }));
         if (profile.display_name) setUserName(profile.display_name);
 
@@ -207,11 +210,13 @@ const Index = () => {
       // Use local date instead of UTC
       const now = new Date();
       const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-      const { data: profile } = await supabase
+      const { data: profileData } = await supabase
         .from("profiles")
-        .select("streak_count, last_check_in_date")
+        .select("streak_count, longest_streak, last_check_in_date")
         .eq("user_id", user.id)
         .maybeSingle();
+
+      const profile = profileData as any;
 
       let newStreak = 1;
       if (profile) {
@@ -229,18 +234,27 @@ const Index = () => {
           }
         }
       }
+      let newLongestStreak = profile?.longest_streak || 0;
+      if (newStreak > newLongestStreak) {
+        newLongestStreak = newStreak;
+      }
 
       const { error: updateError } = await supabase
         .from("profiles")
         .update({
           streak_count: newStreak,
+          longest_streak: newLongestStreak,
           last_check_in_date: today,
         })
         .eq("user_id", user.id);
 
       if (updateError) throw updateError;
 
-      setStreakData((prev) => ({ ...prev, currentStreak: newStreak }));
+      setStreakData((prev) => ({
+        ...prev,
+        currentStreak: newStreak,
+        longestStreak: newLongestStreak
+      }));
       streakEventBus.emit(newStreak); // sync DailyChallenge widget
       setHasCheckedIn(true);
 
