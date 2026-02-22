@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Headphones, Play, Clock, Heart, Lock, Loader2 } from "lucide-react";
+import { ArrowLeft, Headphones, Play, Pause, Clock, Heart, Lock, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/layout/MobileNav";
@@ -7,6 +7,8 @@ import { SOSButton } from "@/components/layout/SOSButton";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAudio } from "@/contexts/AudioContext";
+import { AudioTrack } from "@/types/audio";
 
 const categories = [
   { id: "all", label: "Todas" },
@@ -25,6 +27,7 @@ interface Meditation {
   category: string;
   is_free: boolean;
   audio_url: string | null;
+  thumbnail_url?: string | null;
   narrator: string | null;
 }
 
@@ -35,6 +38,7 @@ interface UserFavorite {
 const Meditations = () => {
   const navigate = useNavigate();
   const { user, isPremium } = useAuth();
+  const { play, pause, currentTrack, isPlaying } = useAudio();
   const [activeCategory, setActiveCategory] = useState("all");
   const [meditations, setMeditations] = useState<Meditation[]>([]);
   const [featuredMeditation, setFeaturedMeditation] = useState<Meditation | null>(null);
@@ -121,6 +125,35 @@ const Meditations = () => {
     return meditation.is_free || isPremium;
   };
 
+  const handlePlay = (e: React.MouseEvent, meditation: Meditation) => {
+    e.stopPropagation();
+    if (!canPlay(meditation)) {
+      navigate("/premium");
+      return;
+    }
+
+    if (currentTrack?.id === meditation.id && isPlaying) {
+      pause();
+    } else {
+      if (!meditation.audio_url) return;
+
+      const track: AudioTrack = {
+        id: meditation.id,
+        title: meditation.title,
+        description: meditation.description,
+        category: meditation.category,
+        audio_url: meditation.audio_url,
+        image_url: meditation.thumbnail_url || null,
+        duration: meditation.duration_seconds,
+        is_premium: !meditation.is_free,
+        source_table: 'meditations',
+        narrator: meditation.narrator
+      };
+
+      play(track);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
@@ -159,17 +192,19 @@ const Meditations = () => {
                 variant="glass"
                 size="sm"
                 className="mt-2"
-                onClick={() => {
-                  if (!canPlay(featuredMeditation)) {
-                    navigate("/premium");
-                  } else {
-                    // This assumes there's a playback context, for now we just log or handle playback
-                    console.log('Playing', featuredMeditation.id);
-                  }
-                }}
+                onClick={(e) => handlePlay(e, featuredMeditation)}
               >
-                <Play className="w-4 h-4 fill-current" />
-                <span>Reproducir</span>
+                {currentTrack?.id === featuredMeditation.id && isPlaying ? (
+                  <>
+                    <Pause className="w-4 h-4 fill-current mr-2" />
+                    <span>Pausar</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4 fill-current mr-2" />
+                    <span>Reproducir</span>
+                  </>
+                )}
               </Button>
             </div>
             <div className="absolute -right-8 -bottom-8 w-40 h-40 rounded-full bg-white/10 animate-pulse-soft" />
@@ -207,24 +242,36 @@ const Meditations = () => {
             {filteredMeditations.map((meditation) => (
               <button
                 key={meditation.id}
-                className="w-full bg-card rounded-2xl p-4 shadow-soft flex items-center gap-4 text-left transition-all hover:shadow-medium"
-                onClick={() => {
-                  if (!canPlay(meditation)) {
-                    navigate("/premium");
-                  }
-                }}
+                className={cn(
+                  "w-full rounded-2xl p-4 shadow-soft flex items-center gap-4 text-left transition-all hover:shadow-medium",
+                  currentTrack?.id === meditation.id ? "bg-primary/5 border border-primary/20" : "bg-card"
+                )}
+                onClick={(e) => handlePlay(e, meditation)}
               >
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-turquoise to-turquoise-light flex items-center justify-center flex-shrink-0">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-turquoise to-turquoise-light flex items-center justify-center flex-shrink-0 relative overflow-hidden group">
                   {canPlay(meditation) ? (
-                    <Play className="w-6 h-6 text-white fill-current" />
+                    currentTrack?.id === meditation.id && isPlaying ? (
+                      <Pause className="w-6 h-6 text-white fill-current drop-shadow-md z-10" />
+                    ) : (
+                      <Play className="w-6 h-6 text-white fill-current ml-1 drop-shadow-md z-10" />
+                    )
                   ) : (
-                    <Lock className="w-5 h-5 text-white" />
+                    <Lock className="w-5 h-5 text-white z-10" />
+                  )}
+
+                  {/* Playing visualizer overlay */}
+                  {currentTrack?.id === meditation.id && isPlaying && (
+                    <div className="absolute inset-0 bg-black/10 flex items-end justify-center pb-2 gap-0.5 z-0">
+                      <span className="w-1 h-3 bg-white/50 animate-pulse rounded-t" />
+                      <span className="w-1 h-5 bg-white/50 animate-pulse delay-75 rounded-t" />
+                      <span className="w-1 h-4 bg-white/50 animate-pulse delay-150 rounded-t" />
+                    </div>
                   )}
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h4 className="font-display font-semibold text-foreground truncate">
+                    <h4 className={cn("font-display font-semibold truncate", currentTrack?.id === meditation.id ? "text-primary" : "text-foreground")}>
                       {meditation.title}
                     </h4>
                     {!meditation.is_free && (
