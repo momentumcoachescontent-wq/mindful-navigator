@@ -105,7 +105,7 @@ const AdminAudio = () => {
                 duration_seconds: trackData.duration,
                 is_free: !trackData.is_premium,
                 audio_url: trackData.audio_url,
-                image_url: trackData.image_url,
+                thumbnail_url: trackData.image_url,
                 narrator: trackData.narrator || 'Ernesto',
                 is_featured: trackData.is_featured || false,
             } : {
