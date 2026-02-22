@@ -11,6 +11,7 @@ export interface AudioTrack {
     is_featured?: boolean;
     source_table?: 'audio_content' | 'meditations';
     narrator?: string | null;
+    created_at?: string;
 }
 
 export interface AudioState {

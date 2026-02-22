@@ -23,13 +23,32 @@ const Library = () => {
     const { data: tracks, isLoading } = useQuery({
         queryKey: ['audio-library'],
         queryFn: async () => {
-            const { data, error } = await supabase
-                .from('audio_content')
-                .select('*')
-                .order('created_at', { ascending: false });
+            const [audioContentResponse, meditationsResponse] = await Promise.all([
+                supabase.from('audio_content').select('*'),
+                supabase.from('meditations').select('*')
+            ]);
 
-            if (error) throw error;
-            return data as unknown as AudioTrack[];
+            if (audioContentResponse.error) throw audioContentResponse.error;
+            if (meditationsResponse.error) throw meditationsResponse.error;
+
+            const audioTracks = (audioContentResponse.data as any[]).map(t => ({
+                ...t,
+                source_table: 'audio_content'
+            })) as AudioTrack[];
+
+            const medTracks = (meditationsResponse.data as any[]).map(t => ({
+                ...t,
+                duration: t.duration_seconds,
+                is_premium: !t.is_free,
+                category: t.category || 'meditation',
+                source_table: 'meditations'
+            })) as AudioTrack[];
+
+            const combined = [...audioTracks, ...medTracks].sort(
+                (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+            );
+
+            return combined;
         }
     });
 
@@ -64,8 +83,9 @@ const Library = () => {
     };
 
     const filteredTracks = tracks?.filter(track => {
-        const matchesSearch = track.title.toLowerCase().includes(search.toLowerCase()) ||
-            track.category.toLowerCase().includes(search.toLowerCase());
+        const titleMatch = track.title ? track.title.toLowerCase().includes(search.toLowerCase()) : false;
+        const categoryMatch = track.category ? track.category.toLowerCase().includes(search.toLowerCase()) : false;
+        const matchesSearch = search === "" || titleMatch || categoryMatch;
         const matchesTab = activeTab === "all" || track.category === activeTab;
         return matchesSearch && matchesTab;
     });
