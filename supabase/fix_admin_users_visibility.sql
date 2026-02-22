@@ -8,7 +8,6 @@ ON public.profiles FOR SELECT
 TO authenticated
 USING (
   auth.uid() = user_id 
-  OR is_ranking_public = true
   OR EXISTS (SELECT 1 FROM public.profiles p2 WHERE p2.user_id = auth.uid() AND p2.is_admin = true)
 );
 
