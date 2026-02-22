@@ -196,7 +196,7 @@ const Profile = () => {
               >
                 <Avatar className="w-20 h-20 border-4 border-background shadow-xl">
                   <AvatarImage src={profile?.avatar_url || ''} />
-              <AvatarFallback className="text-2xl bg-primary/10 text-primary">
+                  <AvatarFallback className="text-2xl bg-primary/10 text-primary">
                     {profile?.display_name?.[0] || user?.email?.[0]?.toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
@@ -300,7 +300,7 @@ const Profile = () => {
         {/* Menu Items */}
         <div className="bg-card rounded-2xl shadow-soft overflow-hidden">
           {menuItems.filter(item => {
-            if (item.path === "/data") return true;
+            if (item.path === "/data") return profile?.is_admin;
             if (item.path === "/admin") return profile?.is_admin;
             return true;
           }).map((item, index, array) => (

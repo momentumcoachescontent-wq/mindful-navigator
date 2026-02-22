@@ -116,10 +116,14 @@ const DataManagement = () => {
 
   // Fetch user profile to check admin status
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isCheckingAdmin, setIsCheckingAdmin] = useState(true);
 
   useState(() => {
     async function checkAdmin() {
-      if (!user) return;
+      if (!user) {
+        setIsCheckingAdmin(false);
+        return;
+      }
       const { data } = await supabase
         .from('profiles')
         .select('is_admin')
@@ -129,6 +133,7 @@ const DataManagement = () => {
       if (data?.is_admin) {
         setIsAdmin(true);
       }
+      setIsCheckingAdmin(false);
     }
     checkAdmin();
   });
@@ -325,6 +330,31 @@ const DataManagement = () => {
               Necesitas una cuenta para gestionar tus datos
             </p>
             <Button onClick={() => navigate("/auth")}>Ir a iniciar sesión</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isCheckingAdmin) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-6 text-center">
+            <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Acceso Denegado</h2>
+            <p className="text-muted-foreground mb-4">
+              No tienes permisos de administrador para acceder a esta página.
+            </p>
+            <Button onClick={() => navigate(-1)}>Volver</Button>
           </CardContent>
         </Card>
       </div>
