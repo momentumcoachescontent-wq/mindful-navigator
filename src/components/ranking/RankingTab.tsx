@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { RankingTrendsChart } from "./RankingTrendsChart";
 
 export function RankingTab() {
   const { user } = useAuth();
@@ -89,6 +90,9 @@ export function RankingTab() {
         levelFilter={levelFilter}
         setLevelFilter={setLevelFilter}
       />
+
+      {/* Trends Chart */}
+      <RankingTrendsChart />
 
       {/* User's position card (sticky) */}
       <UserPositionCard

@@ -11,6 +11,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { AdminToolUsageChart } from "@/components/admin/AdminToolUsageChart";
+import { AdminMoodTrendChart } from "@/components/admin/AdminMoodTrendChart";
 
 interface AdminStats {
     total_users: number;
@@ -170,7 +172,13 @@ const AdminDashboard = () => {
                     </Card>
                 </div>
 
-                {/* Detailed Charts / Sections */}
+                {/* Analytics Charts */}
+                <div className="grid gap-4 md:grid-cols-2">
+                    <AdminMoodTrendChart />
+                    <AdminToolUsageChart />
+                </div>
+
+                {/* Detailed Sections / Navigation */}
                 <div className="grid gap-4 md:grid-cols-2">
 
                     <Card className="col-span-1 hover:border-primary/50 transition-colors cursor-pointer" onClick={() => navigate("/admin/users")}>
