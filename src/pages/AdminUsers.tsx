@@ -21,17 +21,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 interface UserProfile {
-    id: string; // The row UUID
-    user_id: string; // The auth user ID
+    id: string;
+    user_id: string;
     display_name: string | null;
-    email: string | null; // Often not in profiles, but we might want it. If not available, use display_name.
     avatar_url: string | null;
-    level: number;
-    xp: number;
-    streak_current: number;
-    last_interaction: string;
-    is_admin: boolean;
+    streak_count: number;
+    onboarding_completed: boolean;
     is_premium: boolean;
+    is_admin: boolean;
+    created_at: string;
+    // Enriched from user_progress
+    xp: number;
+    level: string;
 }
 
 const AdminUsers = () => {
@@ -44,27 +45,48 @@ const AdminUsers = () => {
 
     useEffect(() => {
         const fetchUsers = async () => {
-            // 1. Check Admin
             if (!user) return;
-            // Ideally we check is_admin again or trust the RLS/Layout protection
 
             try {
-                // Fetch profiles with gamification data
-                // Note: 'email' is usually in auth.users, not profiles. 
-                // We will just use display_name for now.
-                const { data, error } = await supabase
+                // Fetch profiles (columns that actually exist)
+                const { data: profiles, error: profilesError } = await supabase
                     .from('profiles')
-                    .select('*')
-                    .order('xp', { ascending: false }) // Rank by XP
-                    .limit(50); // Pagination later
+                    .select('id, user_id, display_name, avatar_url, streak_count, onboarding_completed, is_premium, is_admin, created_at')
+                    .order('created_at', { ascending: false })
+                    .limit(50);
 
-                if (error) throw error;
-                setUsers(data as any as UserProfile[]);
+                if (profilesError) throw profilesError;
+
+                // Fetch XP data from user_progress
+                const { data: progressData } = await supabase
+                    .from('user_progress')
+                    .select('user_id, total_xp, current_level');
+
+                const progressMap = new Map(
+                    (progressData || []).map(p => [p.user_id, p])
+                );
+
+                // Merge profiles with progress
+                const enriched: UserProfile[] = (profiles || []).map((p: any) => {
+                    const progress = progressMap.get(p.user_id);
+                    return {
+                        ...p,
+                        is_premium: p.is_premium || false,
+                        is_admin: p.is_admin || false,
+                        streak_count: p.streak_count || 0,
+                        xp: progress?.total_xp || 0,
+                        level: progress?.current_level || 'explorer',
+                    };
+                });
+
+                // Sort by XP descending
+                enriched.sort((a, b) => b.xp - a.xp);
+                setUsers(enriched);
             } catch (error) {
                 console.error("Error fetching users:", error);
                 toast({
                     title: "Error",
-                    description: "No se pudieron cargar los usuarios.",
+                    description: "No se pudieron cargar los usuarios. Verifica permisos de admin.",
                     variant: "destructive",
                 });
             } finally {
@@ -203,7 +225,7 @@ const AdminUsers = () => {
                                             </TableCell>
                                             <TableCell className="text-center">
                                                 <div className="flex justify-center">
-                                                    <LevelBadge level={profile.level} showLabel={false} />
+                                                    <LevelBadge level={profile.level as any} showLabel={false} />
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-center">
@@ -215,11 +237,11 @@ const AdminUsers = () => {
                                             <TableCell className="text-center">
                                                 <div className="flex items-center justify-center gap-1 text-orange-500 font-bold">
                                                     <Flame className="w-4 h-4" />
-                                                    {profile.streak_current}
+                                                    {profile.streak_count}
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-right text-muted-foreground text-xs">
-                                                {profile.last_interaction ? new Date(profile.last_interaction).toLocaleDateString() : "Nunca"}
+                                                {profile.created_at ? new Date(profile.created_at).toLocaleDateString() : "Nunca"}
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <DropdownMenu>
