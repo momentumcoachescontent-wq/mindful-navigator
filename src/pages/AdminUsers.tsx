@@ -101,10 +101,10 @@ const AdminUsers = () => {
     const handleTogglePremium = async (profile: UserProfile) => {
         try {
             const newValue = !profile.is_premium;
-            const { error } = await supabase
-                .from('profiles')
-                .update({ is_premium: newValue })
-                .eq('id', profile.id);
+            const { error } = await (supabase.rpc as any)('admin_update_profile_status', {
+                p_target_user_id: profile.id,
+                p_is_premium: newValue
+            });
 
             if (error) throw error;
 
@@ -119,10 +119,10 @@ const AdminUsers = () => {
     const handleToggleAdmin = async (profile: UserProfile) => {
         try {
             const newValue = !profile.is_admin;
-            const { error } = await supabase
-                .from('profiles')
-                .update({ is_admin: newValue })
-                .eq('id', profile.id);
+            const { error } = await (supabase.rpc as any)('admin_update_profile_status', {
+                p_target_user_id: profile.id,
+                p_is_admin: newValue
+            });
 
             if (error) throw error;
 
