@@ -24,7 +24,7 @@ export function RankingPreviewCard() {
 
   return (
     <button
-      onClick={() => navigate("/community?tab=ranking")}
+      onClick={() => navigate("/profile")}
       className="w-full bg-gradient-to-br from-amber-500/10 via-amber-400/5 to-coral/10 rounded-2xl p-4 text-left transition-all hover:scale-[1.02] active:scale-[0.98] border border-amber-500/20"
     >
       <div className="flex items-center justify-between mb-3">
