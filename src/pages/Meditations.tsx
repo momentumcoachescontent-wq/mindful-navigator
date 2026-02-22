@@ -37,6 +37,7 @@ const Meditations = () => {
   const { user, isPremium } = useAuth();
   const [activeCategory, setActiveCategory] = useState("all");
   const [meditations, setMeditations] = useState<Meditation[]>([]);
+  const [featuredMeditation, setFeaturedMeditation] = useState<Meditation | null>(null);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -49,8 +50,12 @@ const Meditations = () => {
 
       if (error) {
         console.error("Error fetching meditations:", error);
-      } else {
-        setMeditations(data || []);
+      } else if (data) {
+        setMeditations(data);
+        // Find the featured meditation. If multiple, take the first. 
+        // If none, take the first from the list.
+        const featured = data.find((m: any) => m.is_featured) || data[0];
+        setFeaturedMeditation(featured);
       }
       setIsLoading(false);
     };
@@ -85,20 +90,20 @@ const Meditations = () => {
     }
 
     const isFavorite = favorites.includes(meditationId);
-    
+
     if (isFavorite) {
       await supabase
         .from("user_favorites")
         .delete()
         .eq("user_id", user.id)
         .eq("meditation_id", meditationId);
-      
+
       setFavorites(favorites.filter((id) => id !== meditationId));
     } else {
       await supabase
         .from("user_favorites")
         .insert({ user_id: user.id, meditation_id: meditationId });
-      
+
       setFavorites([...favorites, meditationId]);
     }
   };
@@ -138,24 +143,38 @@ const Meditations = () => {
 
       <main className="container py-6 space-y-6">
         {/* Featured */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-secondary to-primary p-6">
-          <div className="relative z-10 space-y-3">
-            <span className="text-xs font-medium text-primary-foreground/70 uppercase tracking-wider">
-              Recomendado para ti
-            </span>
-            <h3 className="text-xl font-display font-bold text-primary-foreground">
-              Calma antes de una conversación difícil
-            </h3>
-            <p className="text-sm text-primary-foreground/70">
-              7 min • Prepárate mentalmente
-            </p>
-            <Button variant="glass" size="sm" className="mt-2">
-              <Play className="w-4 h-4 fill-current" />
-              <span>Reproducir</span>
-            </Button>
+        {featuredMeditation && (
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-secondary to-primary p-6">
+            <div className="relative z-10 space-y-3">
+              <span className="text-xs font-medium text-primary-foreground/70 uppercase tracking-wider">
+                Recomendado para ti
+              </span>
+              <h3 className="text-xl font-display font-bold text-primary-foreground">
+                {featuredMeditation.title}
+              </h3>
+              <p className="text-sm text-primary-foreground/70">
+                {formatDuration(featuredMeditation.duration_seconds)} • {featuredMeditation.description || 'Preparate mentalmente'}
+              </p>
+              <Button
+                variant="glass"
+                size="sm"
+                className="mt-2"
+                onClick={() => {
+                  if (!canPlay(featuredMeditation)) {
+                    navigate("/premium");
+                  } else {
+                    // This assumes there's a playback context, for now we just log or handle playback
+                    console.log('Playing', featuredMeditation.id);
+                  }
+                }}
+              >
+                <Play className="w-4 h-4 fill-current" />
+                <span>Reproducir</span>
+              </Button>
+            </div>
+            <div className="absolute -right-8 -bottom-8 w-40 h-40 rounded-full bg-white/10 animate-pulse-soft" />
           </div>
-          <div className="absolute -right-8 -bottom-8 w-40 h-40 rounded-full bg-white/10 animate-pulse-soft" />
-        </div>
+        )}
 
         {/* Categories */}
         <div className="flex gap-2 overflow-x-auto pb-2 -mx-1.5 px-1.5">
@@ -202,7 +221,7 @@ const Meditations = () => {
                     <Lock className="w-5 h-5 text-white" />
                   )}
                 </div>
-                
+
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <h4 className="font-display font-semibold text-foreground truncate">
@@ -230,13 +249,13 @@ const Meditations = () => {
                     onClick={(e) => toggleFavorite(meditation.id, e)}
                     className="p-2 hover:bg-muted rounded-lg transition-colors"
                   >
-                    <Heart 
+                    <Heart
                       className={cn(
                         "w-5 h-5 transition-colors",
-                        favorites.includes(meditation.id) 
-                          ? "text-coral fill-coral" 
+                        favorites.includes(meditation.id)
+                          ? "text-coral fill-coral"
                           : "text-muted-foreground"
-                      )} 
+                      )}
                     />
                   </button>
                 </div>

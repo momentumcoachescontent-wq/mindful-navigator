@@ -8,6 +8,7 @@ export interface AudioTrack {
     image_url: string | null;
     duration: number | null;
     is_premium: boolean;
+    is_featured?: boolean;
     source_table?: 'audio_content' | 'meditations';
     narrator?: string | null;
 }

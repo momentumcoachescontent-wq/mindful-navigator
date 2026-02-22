@@ -107,7 +107,12 @@ const AdminAudio = () => {
                 audio_url: trackData.audio_url,
                 image_url: trackData.image_url,
                 narrator: trackData.narrator || 'Ernesto',
-            } : trackData;
+                is_featured: trackData.is_featured || false,
+            } : {
+                ...trackData,
+                is_premium: trackData.is_premium,
+                is_featured: trackData.is_featured || false,
+            };
 
             if (editingTrack) {
                 // If replacing audio, we should ideally delete the old one, but for now we just update URL
@@ -218,6 +223,7 @@ const AdminAudio = () => {
             image_url: formData.get('image_url') as string,
             duration: detectedDuration || parseInt(formData.get('duration') as string) || 0,
             is_premium: formData.get('is_premium') === 'on',
+            is_featured: formData.get('is_featured') === 'on',
             narrator: formData.get('narrator') as string || 'Ernesto',
         };
         saveTrackMutation.mutate(data);
@@ -341,6 +347,10 @@ const AdminAudio = () => {
                                         <Switch id="is_premium" name="is_premium" defaultChecked={editingTrack?.is_premium ?? true} />
                                         <Label htmlFor="is_premium">Premium</Label>
                                     </div>
+                                    <div className="flex items-center space-x-2">
+                                        <Switch id="is_featured" name="is_featured" defaultChecked={editingTrack?.is_featured ?? false} />
+                                        <Label htmlFor="is_featured">Destacar (Banner)</Label>
+                                    </div>
                                 </div>
 
                                 <div className="flex justify-end gap-2 mt-4 sticky bottom-0 bg-background pt-2">
@@ -393,6 +403,9 @@ const AdminAudio = () => {
                                         <span className="text-[10px] text-yellow-600 font-bold bg-yellow-100 px-2 py-0.5 rounded-full">PREMIUM</span>
                                     ) : (
                                         <span className="text-[10px] text-green-600 bg-green-100 px-2 py-0.5 rounded-full">GRATIS</span>
+                                    )}
+                                    {track.is_featured && (
+                                        <span className="text-[10px] text-primary-foreground font-bold bg-primary ml-2 px-2 py-0.5 rounded-full">DESTACADO</span>
                                     )}
                                 </TableCell>
                                 <TableCell className="text-right space-x-1">
