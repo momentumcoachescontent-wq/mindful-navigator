@@ -10,6 +10,7 @@ export interface AudioTrack {
     is_premium: boolean;
     is_featured?: boolean;
     source_table?: 'audio_content' | 'meditations';
+    mediaType?: string;
     narrator?: string | null;
     created_at?: string;
 }

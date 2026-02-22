@@ -33,7 +33,8 @@ const Library = () => {
 
             const audioTracks = (audioContentResponse.data as any[]).map(t => ({
                 ...t,
-                source_table: 'audio_content'
+                source_table: 'audio_content',
+                mediaType: t.category
             })) as AudioTrack[];
 
             const medTracks = (meditationsResponse.data as any[]).map(t => ({
@@ -41,7 +42,8 @@ const Library = () => {
                 duration: t.duration_seconds,
                 is_premium: !t.is_free,
                 category: t.category || 'meditation',
-                source_table: 'meditations'
+                source_table: 'meditations',
+                mediaType: 'meditation'
             })) as AudioTrack[];
 
             const combined = [...audioTracks, ...medTracks].sort(
@@ -86,7 +88,7 @@ const Library = () => {
         const titleMatch = track.title ? track.title.toLowerCase().includes(search.toLowerCase()) : false;
         const categoryMatch = track.category ? track.category.toLowerCase().includes(search.toLowerCase()) : false;
         const matchesSearch = search === "" || titleMatch || categoryMatch;
-        const matchesTab = activeTab === "all" || track.category === activeTab;
+        const matchesTab = activeTab === "all" || track.mediaType === activeTab;
         return matchesSearch && matchesTab;
     });
 
@@ -136,12 +138,22 @@ const Library = () => {
                             {filteredTracks?.map((track) => (
                                 <Card key={track.id} className="hover:border-primary/50 transition-all cursor-pointer group relative overflow-hidden" onClick={() => handlePlay(track)}>
 
-                                    {/* Premium Lock Overlay */}
-                                    {track.is_premium && !isPremium && (
-                                        <div className="absolute top-2 right-2 z-10 bg-black/50 backdrop-blur-sm p-1 rounded-full text-white">
-                                            <Lock className="w-3 h-3" />
-                                        </div>
-                                    )}
+                                    {/* Premium / Free Chip */}
+                                    <div className="absolute top-2 right-2 z-10 flex gap-2">
+                                        {track.is_premium ? (
+                                            <div className={`backdrop-blur-md px-2 py-1 rounded flex items-center gap-1.5 text-[10px] font-medium border shadow ${!isPremium
+                                                    ? "bg-black/70 text-white/90 border-white/10"
+                                                    : "bg-warning/20 text-warning-foreground border-warning/30"
+                                                }`}>
+                                                {!isPremium && <Lock className="w-3 h-3" />}
+                                                <span>Premium</span>
+                                            </div>
+                                        ) : (
+                                            <div className="bg-emerald-500/20 backdrop-blur-md px-2 py-1 rounded flex items-center gap-1.5 text-[10px] font-medium text-emerald-400 border border-emerald-500/30 shadow">
+                                                <span>Gratis</span>
+                                            </div>
+                                        )}
+                                    </div>
 
                                     <CardContent className="p-4 flex items-center gap-4">
                                         <div className="relative w-16 h-16 rounded-md overflow-hidden bg-secondary flex-shrink-0">
@@ -149,10 +161,10 @@ const Library = () => {
                                                 <img src={track.image_url} alt={track.title} className="w-full h-full object-cover" />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                                                    {track.category === 'meditation' && <Sparkles className="w-6 h-6" />}
-                                                    {track.category === 'music' && <Music className="w-6 h-6" />}
-                                                    {track.category === 'guide' && <Mic className="w-6 h-6" />}
-                                                    {track.category === 'sounds' && <BookOpen className="w-6 h-6" />}
+                                                    {track.mediaType === 'meditation' && <Sparkles className="w-6 h-6" />}
+                                                    {track.mediaType === 'music' && <Music className="w-6 h-6" />}
+                                                    {track.mediaType === 'guide' && <Mic className="w-6 h-6" />}
+                                                    {track.mediaType === 'sounds' && <BookOpen className="w-6 h-6" />}
                                                 </div>
                                             )}
 
