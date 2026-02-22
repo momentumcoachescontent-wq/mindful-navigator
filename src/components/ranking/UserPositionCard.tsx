@@ -167,7 +167,12 @@ export function UserPositionCard({
       )}
 
       {/* CTA */}
-      <Button variant="ghost" size="sm" className="w-full justify-between text-primary">
+      <Button
+        variant="ghost"
+        size="sm"
+        className="w-full justify-between text-primary"
+        onClick={() => window.location.href = '/community'}
+      >
         <span>Ver retos que dan más XP</span>
         <ChevronRight className="w-4 h-4" />
       </Button>
