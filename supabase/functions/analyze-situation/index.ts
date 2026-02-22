@@ -14,7 +14,8 @@ const MIN_SITUATION_LENGTH = 10;
 
 // Rate limiting constants
 const RATE_LIMITS = {
-    FREE: { hourly: 5, daily: 20 },
+    ANON: { hourly: 1, daily: 1 },
+    FREE: { hourly: 5, daily: 4 },
     PREMIUM: { hourly: 50, daily: 200 },
 };
 
@@ -103,32 +104,32 @@ function validateAndSanitizeAIResponse(result: unknown): { valid: boolean; sanit
     const validAlertLevels = ['low', 'medium', 'high'];
     if (!validAlertLevels.includes(obj.alert_level as string)) return { valid: false, error: "Invalid alert_level" };
 
-    const summary = sanitizeString(obj.summary, 500);
+    const summary = sanitizeString(obj.summary, 5000);
     if (!summary) return { valid: false, error: "Missing summary" };
 
-    const what_to_observe = sanitizeString(obj.what_to_observe, 500);
-    const validation_message = sanitizeString(obj.validation_message, 300);
+    const what_to_observe = sanitizeString(obj.what_to_observe, 5000);
+    const validation_message = sanitizeString(obj.validation_message, 5000);
 
     const red_flags: string[] = [];
     if (Array.isArray(obj.red_flags)) {
-        obj.red_flags.slice(0, 10).forEach(f => {
-            const s = sanitizeString(f, 200);
+        obj.red_flags.slice(0, 20).forEach(f => {
+            const s = sanitizeString(f, 2000);
             if (s) red_flags.push(s);
         });
     }
 
     const recommended_tools: string[] = [];
     if (Array.isArray(obj.recommended_tools)) {
-        obj.recommended_tools.slice(0, 10).forEach(t => {
-            const s = sanitizeString(t, 100);
+        obj.recommended_tools.slice(0, 20).forEach(t => {
+            const s = sanitizeString(t, 2000);
             if (s) recommended_tools.push(s);
         });
     }
 
     const action_plan: Array<{ step: number; action: string }> = [];
     if (Array.isArray(obj.action_plan)) {
-        obj.action_plan.slice(0, 10).forEach((item: any, idx) => {
-            const action = sanitizeString(item?.action, 200);
+        obj.action_plan.slice(0, 20).forEach((item: any, idx) => {
+            const action = sanitizeString(item?.action, 5000);
             if (action) {
                 action_plan.push({
                     step: item?.step || idx + 1,
@@ -172,13 +173,37 @@ async function checkPremiumStatus(supabaseClient: SupabaseClient, userId: string
     return false;
 }
 
-async function checkRateLimits(supabaseClient: SupabaseClient, userId: string, isPremium: boolean): Promise<{ allowed: boolean; error?: string; retryAfter?: number }> {
-    const limits = isPremium ? RATE_LIMITS.PREMIUM : RATE_LIMITS.FREE;
+async function checkRateLimits(supabaseClient: SupabaseClient, isAnon: boolean, ipAddress: string, userId: string | undefined, isPremium: boolean): Promise<{ allowed: boolean; error?: string; retryAfter?: number }> {
+    const limits = isAnon ? RATE_LIMITS.ANON : (isPremium ? RATE_LIMITS.PREMIUM : RATE_LIMITS.FREE);
 
     const now = Date.now();
     const hourAgo = new Date(now - 3600000).toISOString();
     const dayAgo = new Date(now - 86400000).toISOString();
 
+    if (isAnon) {
+        // Check anon IP limits
+        const { count: anonCount, error: anonError } = await supabaseClient
+            .from('anon_ai_usage')
+            .select('*', { count: 'exact', head: true })
+            .eq('ip_address', ipAddress)
+            .gte('created_at', dayAgo);
+
+        if (anonError && anonError.code !== '42P01') {
+            // Ignore 42P01 (table doesn't exist) just in case migrations are pending
+            console.error("Anon rate limit check error:", anonError);
+            return { allowed: true };
+        }
+
+        if (anonCount !== null && anonCount >= limits.daily) {
+            return {
+                allowed: false,
+                error: "Límite de prueba anónima alcanzado. Por favor crea una cuenta gratis para seguir usando el Oráculo."
+            };
+        }
+        return { allowed: true };
+    }
+
+    // Authenticated Users Check
     // Check hourly limit
     const { count: hourlyCount, error: hourlyError } = await supabaseClient
         .from('scanner_history')
@@ -213,8 +238,8 @@ async function checkRateLimits(supabaseClient: SupabaseClient, userId: string, i
         return {
             allowed: false,
             error: isPremium
-                ? "Límite diario alcanzado."
-                : "Límite diario gratuito alcanzado."
+                ? "Límite diario premium alcanzado."
+                : "Límite diario alcanzado. Actualiza a Premium para desbloquear consultas ilimitadas."
         };
     }
 
@@ -241,25 +266,21 @@ serve(async (req) => {
         );
 
         const authHeader = req.headers.get("Authorization");
-        if (!authHeader) {
-            logStep("No authorization header");
-            return new Response(JSON.stringify({ error: "No authorization header provided" }), {
-                status: 401,
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
+        let userAuth = null;
+
+        if (authHeader) {
+            const token = authHeader.replace("Bearer ", "").trim();
+            // Don't try to parse 'anon' keys as user JWTs
+            if (token && token.length > 50) {
+                const { data: { user } } = await supabaseClient.auth.getUser(token);
+                if (user) userAuth = user;
+            }
         }
 
-        const token = authHeader.replace("Bearer ", "");
-        const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+        const isAnon = !userAuth;
+        const ipAddress = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
 
-        if (authError || !user) {
-            logStep("Invalid token", { error: authError?.message });
-            return new Response(JSON.stringify({ error: "Invalid token" }), {
-                status: 401,
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
-        }
-        logStep("User authenticated", { userId: user.id });
+        logStep("Auth resolved", { isAnon, userId: userAuth?.id, ip: ipAddress });
 
         // 1. Parse Request Body safely
         let requestBody;
@@ -275,10 +296,10 @@ serve(async (req) => {
         }
 
         // 2. Check Premium Status
-        const isPremium = await checkPremiumStatus(supabaseClient, user.id);
+        const isPremium = userAuth ? await checkPremiumStatus(supabaseClient, userAuth.id) : false;
 
         // 3. Rate Limiting
-        const rateLimitCheck = await checkRateLimits(supabaseClient, user.id, isPremium);
+        const rateLimitCheck = await checkRateLimits(supabaseClient, isAnon, ipAddress, userAuth?.id, isPremium);
 
         if (!rateLimitCheck.allowed) {
             return new Response(JSON.stringify({
@@ -396,6 +417,52 @@ Responde SOLO el mensaje de la IA, sin explicaciones ni metadatos.`;
             } catch (projectionError: any) {
                 console.error("[ANALYZE-SITUATION] Projection Error:", projectionError);
                 return new Response(JSON.stringify({ error: "Error en el radar de proyecciones.", details: projectionError.message }), {
+                    status: 500,
+                    headers: { ...corsHeaders, "Content-Type": "application/json" },
+                });
+            }
+        }
+
+        // --- MODE: VICTORY CONGRATS ---
+        if (mode === "victory_congrats") {
+            try {
+                const { situation } = requestBody;
+
+                const systemPromptVictory = `Eres un coach especializado en crecimiento empoderador y resiliencia.
+El usuario acaba de registrar una "Victoria" personal en su diario, lo cual significa que logró poner un límite, vencer un miedo, o actuar a pesar de la resistencia emocional.
+
+SITUACIÓN DEL USUARIO:
+"${situation}"
+
+TAREAS:
+1. Genera una felicitación genuina, validando su esfuerzo emocional y anclando la sensación de poder interno (1-2 oraciones).
+2. Sugiere un paso siguiente muy simple y accionable para cimentar este logro (1 oración).
+
+Responde EXCLUSIVAMENTE en formato JSON con la siguiente estructura:
+{
+  "message": "¡Increíble trabajo! Al expresar tu límite has roto un patrón antiguo de complacencia.",
+  "next_step": "Anota cómo se siente tu cuerpo ahora mismo y respira."
+}
+
+No incluyas markdown adicional (sin \`\`\`json). SOLO el objeto JSON.`;
+
+                const aiResult = await aiService.generateText(situation || "Logré algo importante hoy", systemPromptVictory, {
+                    temperature: 0.7
+                });
+
+                // Limpiar JSON si viene con comillas invertidas
+                let rawJson = aiResult.text.replace(/```json/gi, '').replace(/```/g, '').trim();
+                const parsedResult = JSON.parse(rawJson);
+
+                return new Response(JSON.stringify({
+                    response: parsedResult,
+                    provider: aiResult.provider
+                }), {
+                    headers: { ...corsHeaders, "Content-Type": "application/json" },
+                });
+            } catch (victoryError: any) {
+                console.error("[ANALYZE-SITUATION] Victory Error:", victoryError);
+                return new Response(JSON.stringify({ error: "Error generando felicitación de victoria.", details: victoryError.message }), {
                     status: 500,
                     headers: { ...corsHeaders, "Content-Type": "application/json" },
                 });
@@ -524,20 +591,29 @@ NO incluyas texto fuera del JSON.`;
                 });
             }
 
-            console.log(`Analysis successful for user ${user.id.substring(0, 8)} using provider: ${aiResult.provider}`);
+            console.log(`Analysis successful for ${isAnon ? 'anon IP' : 'user'} ${isAnon ? ipAddress : userAuth?.id?.substring(0, 8)} using provider: ${aiResult.provider}`);
 
             // 8. Save to History
-            const { error: historyError } = await supabaseClient
-                .from('scanner_history')
-                .insert({
-                    user_id: user.id,
-                    situation: validation.sanitized!,
-                    analysis: aiValidation.sanitized
-                });
+            if (!isAnon && userAuth) {
+                const { error: historyError } = await supabaseClient
+                    .from('scanner_history')
+                    .insert({
+                        user_id: userAuth.id,
+                        situation: validation.sanitized!,
+                        analysis: aiValidation.sanitized
+                    });
 
-            if (historyError) {
-                console.warn("Failed to save history:", historyError);
-                // We don't block the response for history implementation details
+                if (historyError) {
+                    console.warn("Failed to save history:", historyError);
+                }
+            } else {
+                // Record anon usage
+                const { error: usageError } = await supabaseClient
+                    .from('anon_ai_usage')
+                    .insert({ ip_address: ipAddress });
+                if (usageError) {
+                    console.warn("Failed to log anon usage:", usageError);
+                }
             }
 
             return new Response(JSON.stringify({

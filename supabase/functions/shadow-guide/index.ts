@@ -25,7 +25,6 @@ async function callAI(systemPrompt: string, userMessage: string): Promise<string
                     { role: "system", content: systemPrompt },
                     { role: "user", content: userMessage },
                 ],
-                max_tokens: 300,
                 temperature: 0.8,
             }),
         });
@@ -46,7 +45,6 @@ async function callAI(systemPrompt: string, userMessage: string): Promise<string
             },
             body: JSON.stringify({
                 model: "claude-3-haiku-20240307",
-                max_tokens: 300,
                 system: systemPrompt,
                 messages: [{ role: "user", content: userMessage }],
             }),

@@ -8,16 +8,36 @@ import { ScannerInput } from "@/components/scanner/ScannerInput";
 import ScanResult from "@/components/scanner/ScanResult";
 import { useScanner } from "@/hooks/useScanner";
 import { useAuth } from "@/contexts/AuthContext";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 
 const Scanner = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isLoading, result, analyze, saveToJournal, reset } = useScanner();
+  const { toast } = useToast();
+
   const [savedEntryId, setSavedEntryId] = useState<string | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalMessage, setAuthModalMessage] = useState("");
 
   const handleSubmit = async (text: string) => {
     setSavedEntryId(null); // Reset saved ID on new analysis
-    await analyze(text);
+    try {
+      await analyze(text);
+    } catch (err: any) {
+      const msg = err.message || "";
+      if (msg.includes("anónima") || msg.includes("gratis") || msg.includes("Premium")) {
+        setAuthModalMessage(msg);
+        setShowAuthModal(true);
+      } else {
+        toast({
+          title: "Error de conexión",
+          description: msg || "El Oráculo no pudo responder en este momento.",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   const handleSaveToJournal = async () => {
@@ -127,6 +147,36 @@ const Scanner = () => {
 
       <MobileNav />
       <SOSButton />
+
+      {/* Auth/Registration Modal */}
+      <Dialog open={showAuthModal} onOpenChange={setShowAuthModal}>
+        <DialogContent className="sm:max-w-md bg-card border-2 border-primary/20 brutal-card">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl text-foreground flex items-center gap-2">
+              <Shield className="w-5 h-5 text-primary" />
+              Límite del Oráculo
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground pt-2">
+              {authModalMessage}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 mt-4">
+            <Button
+              className="w-full brutal-btn bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={() => navigate(authModalMessage.includes("Premium") ? "/premium" : "/auth")}
+            >
+              {authModalMessage.includes("Premium") ? "Desbloquear Premium" : "Crear cuenta gratis"}
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full brutal-btn"
+              onClick={() => setShowAuthModal(false)}
+            >
+              Quizás más tarde
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

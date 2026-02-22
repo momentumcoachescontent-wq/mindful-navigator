@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Send, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MicrophoneButton } from "@/components/ui/MicrophoneButton";
 
 interface ScannerInputProps {
   onSubmit: (text: string) => void;
@@ -29,8 +30,14 @@ export function ScannerInput({ onSubmit, isLoading }: ScannerInputProps) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Habla con el Oráculo. Describe tu sombra..."
-          className="w-full min-h-[140px] p-4 pr-12 bg-card brutal-card focus:border-primary focus:ring-0 resize-none text-foreground placeholder:text-muted-foreground transition-colors"
+          className="w-full min-h-[140px] p-4 pr-12 bg-card brutal-card focus:border-primary focus:ring-0 resize-none text-foreground placeholder:text-muted-foreground transition-colors pb-14"
         />
+        <div className="absolute bottom-3 right-3">
+          <MicrophoneButton
+            onTextReceived={(newText) => setText((prev) => prev ? `${prev} ${newText}` : newText)}
+            size="sm"
+          />
+        </div>
       </div>
 
       {/* Example prompts */}

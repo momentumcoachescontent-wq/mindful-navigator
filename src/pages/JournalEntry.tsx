@@ -10,6 +10,8 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { MicrophoneButton } from "@/components/ui/MicrophoneButton";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 const tags = [
   { id: "family", label: "Familia", color: "bg-coral/20 text-coral border-coral/30" },
@@ -302,11 +304,41 @@ const JournalEntry = () => {
         toast.success("Entrada actualizada");
       } else {
         // Create new
-        const { error } = await supabase
+        const { error, data: insertedData } = await supabase
           .from("journal_entries")
-          .insert(entryData);
+          .insert(entryData)
+          .select()
+          .single();
         if (error) throw error;
         toast.success(isVictory ? "¡Victoria registrada! 🏆" : "Entrada guardada");
+
+        // --- IA Proactiva para Victorias (Fire and forget) ---
+        if (isVictory) {
+          toast("Analizando victoria...", { description: "La IA está preparando un mensaje para ti." });
+          supabase.functions.invoke("analyze-situation", {
+            body: {
+              mode: "victory_congrats",
+              situation: `${title.trim()}. ${content.trim()}`
+            }
+          }).then(async ({ data: aiData, error: aiError }) => {
+            if (aiError) {
+              console.error("AI Congrats Error:", aiError);
+              return;
+            }
+            if (aiData?.response?.message) {
+              // Reload entry to avoid overwriting changes if user opened it quickly? Not strictly needed since they navigated to /journal.
+              const newContentData = { ...contentData };
+              newContentData.text = `${newContentData.text}\n\n---\n**🧠 Coach IA:**\n${aiData.response.message}\n\n*Próximo paso sugerido:* ${aiData.response.next_step}`;
+
+              await supabase
+                .from("journal_entries")
+                .update({ content: JSON.stringify(newContentData) })
+                .eq("id", insertedData.id);
+
+              toast.success("¡Tu Coach IA te ha dejado un mensaje sobre tu victoria!");
+            }
+          });
+        }
       }
 
       navigate("/journal");
@@ -319,12 +351,55 @@ const JournalEntry = () => {
     }
   };
 
+  const [showReflectionModal, setShowReflectionModal] = useState(false);
+  const [currentReflectionTarget, setCurrentReflectionTarget] = useState<{ type: 'action' | 'tool', index: number } | null>(null);
+  const [reflectionText, setReflectionText] = useState("");
+
   const toggleAction = (index: number) => {
-    setActionPlan(prev => prev.map((item, i) => i === index ? { ...item, completed: !item.completed } : item));
+    const isCurrentlyCompleted = actionPlan[index].completed;
+    if (!isCurrentlyCompleted) {
+      setCurrentReflectionTarget({ type: 'action', index });
+      setReflectionText("");
+      setShowReflectionModal(true);
+    } else {
+      setActionPlan(prev => prev.map((item, i) => i === index ? { ...item, completed: false } : item));
+    }
   };
 
   const toggleTool = (index: number) => {
-    setTools(prev => prev.map((item, i) => i === index ? { ...item, completed: !item.completed } : item));
+    const isCurrentlyCompleted = tools[index].completed;
+    if (!isCurrentlyCompleted) {
+      setCurrentReflectionTarget({ type: 'tool', index });
+      setReflectionText("");
+      setShowReflectionModal(true);
+    } else {
+      setTools(prev => prev.map((item, i) => i === index ? { ...item, completed: false } : item));
+    }
+  };
+
+  const saveReflection = () => {
+    if (!currentReflectionTarget || !reflectionText.trim()) {
+      toast.error("Escribe una breve reflexión para continuar");
+      return;
+    }
+
+    const targetItemName = currentReflectionTarget.type === 'action'
+      ? actionPlan[currentReflectionTarget.index].action
+      : tools[currentReflectionTarget.index].name;
+
+    const reflectionToAdd = `\n\n**Reflexión sobre "${targetItemName}":**\n${reflectionText.trim()}`;
+    setContent(prev => prev + reflectionToAdd);
+
+    if (currentReflectionTarget.type === 'action') {
+      setActionPlan(prev => prev.map((item, i) => i === currentReflectionTarget.index ? { ...item, completed: true } : item));
+    } else {
+      setTools(prev => prev.map((item, i) => i === currentReflectionTarget.index ? { ...item, completed: true } : item));
+    }
+
+    setShowReflectionModal(false);
+    setCurrentReflectionTarget(null);
+    setReflectionText("");
+    toast.success("Reflexión añadida a tus notas");
   };
 
   const calculateProgress = () => {
@@ -508,16 +583,24 @@ const JournalEntry = () => {
                   : "¿Qué quieres escribir?"}
             </Label>
           </div>
-          <Textarea
-            id="content"
-            placeholder={isVictory
-              ? "Describe lo que lograste, cómo te sentiste y qué aprendiste..."
-              : "Escribe libremente sobre lo que pasó, cómo te sientes..."
-            }
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className="min-h-[150px] resize-none"
-          />
+          <div className="relative">
+            <Textarea
+              id="content"
+              placeholder={isVictory
+                ? "Describe lo que lograste, cómo te sentiste y qué aprendiste..."
+                : "Escribe libremente sobre lo que pasó, cómo te sientes..."
+              }
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="min-h-[150px] resize-none pb-14"
+            />
+            <div className="absolute bottom-3 right-3">
+              <MicrophoneButton
+                onTextReceived={(newText) => setContent((prev) => prev ? `${prev} ${newText}` : newText)}
+                size="sm"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Simulation Results (Special Handling) */}
@@ -785,7 +868,43 @@ const JournalEntry = () => {
             )}
           </div>
         )}
-      </main >
+
+        {/* Reflection Modal */}
+        <Dialog open={showReflectionModal} onOpenChange={setShowReflectionModal}>
+          <DialogContent className="sm:max-w-md bg-card border-2 border-primary/20 brutal-card">
+            <DialogHeader>
+              <DialogTitle className="font-display text-xl text-foreground">
+                Reflexión de Tarea
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground pt-2">
+                ¿Qué sentiste al realizar esto? ¿Cómo te fue? Escríbelo para marcarlo como completado.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-3 mt-4 relative">
+              <Textarea
+                placeholder="Escribe tu reflexión aquí..."
+                value={reflectionText}
+                onChange={(e) => setReflectionText(e.target.value)}
+                className="min-h-[120px] resize-none pb-12"
+              />
+              <div className="absolute right-2 bottom-2">
+                <MicrophoneButton
+                  onTextReceived={(text) => setReflectionText(prev => prev ? `${prev} ${text}` : text)}
+                  size="sm"
+                />
+              </div>
+            </div>
+            <DialogFooter className="mt-4">
+              <Button
+                className="w-full brutal-btn bg-primary text-primary-foreground hover:bg-primary/90"
+                onClick={saveReflection}
+              >
+                Guardar y Completar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </main>
     </div >
   );
 };

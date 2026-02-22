@@ -141,10 +141,11 @@
 
   html {
     font-family: var(--font-body);
+    @apply overflow-x-hidden;
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background text-foreground antialiased overflow-x-hidden;
     font-family: var(--font-body);
   }
 
@@ -250,11 +251,11 @@
 
   /* Glass morphism */
   .glass {
-    @apply bg-white/70 backdrop-blur-xl;
+    @apply bg-card/95 backdrop-blur-xl supports-[backdrop-filter]:bg-card/80;
   }
 
   .glass-dark {
-    @apply bg-secondary/80 backdrop-blur-xl;
+    @apply bg-secondary/95 backdrop-blur-xl supports-[backdrop-filter]:bg-secondary/80;
   }
 
   /* Gradient text */

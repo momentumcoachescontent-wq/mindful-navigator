@@ -77,23 +77,21 @@ const Index = () => {
     let selectedReflection = null;
 
     try {
-      console.log("Fetching reflections...");
+      console.log("Fetching random reflection...");
+      // Using an RPC function for optimized ORDER BY random() LIMIT 1 on the DB
       const { data: reflections, error } = await supabase
-        .from("daily_reflections")
-        .select("content, author");
+        .rpc("get_random_reflection" as any) as any;
 
       if (error) {
         console.warn("Supabase fetch failed, utilizing fallback.", error);
         throw error; // Trigger catch block
-      };
+      }
 
-      if (reflections && reflections.length >= 5) {
-        const randomIndex = Math.floor(Math.random() * reflections.length);
-        selectedReflection = reflections[randomIndex];
-        console.log(`Loaded reflection from DB (${reflections.length} items)`);
+      if (reflections && Array.isArray(reflections) && reflections.length > 0) {
+        selectedReflection = reflections[0];
+        console.log(`Loaded reflection from DB`);
       } else {
-        console.warn(`DB only returned ${reflections?.length || 0} items. Using fallback for variety.`);
-        // Ensure selectedReflection is null so it triggers only the fallback logic below
+        console.warn(`DB returned 0 items. Using fallback for variety.`);
         selectedReflection = null;
       }
     } catch (error) {

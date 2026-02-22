@@ -53,13 +53,8 @@ export function useScanner() {
       }
 
       if (data.error) {
-        toast({
-          title: "Error",
-          description: data.error,
-          variant: "destructive",
-        });
         setIsLoading(false);
-        return null;
+        throw new Error(data.error); // We throw it so the component can catch the exact string
       }
 
       const analysis: AnalysisResponse = data.analysis;

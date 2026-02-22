@@ -54,16 +54,20 @@ export const ToolChallenge = ({ challenge }: ToolChallengeProps) => {
 
             // 1. Save directly to journal_entries
             const journalContent = {
-                title: `Misión: ${challenge.title}`,
+                title: `Contrato: ${challenge.title}`,
                 text: response,
-                tags: [challenge.tag, "Misión Cumplida"]
+                tags: [challenge.tag, "contrato_sombra"],
+                action_plan: [
+                    { step: 1, action: "Revisar este contrato al sentir el patrón", completed: false },
+                    { step: 2, action: "Aplicar la táctica descrita en un momento de tensión", completed: false }
+                ]
             };
 
             const { error: journalError } = await supabase.from('journal_entries').insert([{
                 user_id: user.id,
                 content: JSON.stringify(journalContent),
                 entry_type: 'reflection',
-                tags: [challenge.tag, 'Misión Cumplida']
+                tags: [challenge.tag, 'contrato_sombra']
             } as never]);
 
             if (journalError) throw journalError;
