@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 export function RankingTab() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  
+
   const [period, setPeriod] = useState<RankingPeriod>("weekly");
   const [scope, setScope] = useState<RankingScope>("global");
   const [metric, setMetric] = useState<RankingMetric>("xp");
@@ -27,10 +27,10 @@ export function RankingTab() {
       if (!user) return null;
       const { data } = await supabase
         .from("profiles")
-        .select("is_ranking_private")
+        .select("is_ranking_public")
         .eq("user_id", user.id)
         .single();
-      return data;
+      return data as any;
     },
     enabled: !!user,
   });
@@ -94,7 +94,7 @@ export function RankingTab() {
       <UserPositionCard
         userRanking={currentUserRanking}
         totalXp={userProgress?.total_xp || 0}
-        isPrivate={userProfile?.is_ranking_private || false}
+        isPublic={userProfile?.is_ranking_public || false}
         onTogglePrivacy={handleTogglePrivacy}
       />
 

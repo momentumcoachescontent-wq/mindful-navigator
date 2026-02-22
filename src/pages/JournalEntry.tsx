@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { ArrowLeft, Save, Trophy, Loader2, Check, RefreshCw } from "lucide-react";
-import { MicrophoneButton } from "@/components/ui/MicrophoneButton";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -452,10 +451,6 @@ const JournalEntry = () => {
               onChange={(e) => setTitle(e.target.value)}
               className="text-lg font-display flex-1"
             />
-            <MicrophoneButton
-              onTextReceived={(text) => setTitle(prev => (prev ? prev + " " + text : text))}
-              className="shrink-0"
-            />
           </div>
         </div>
 
@@ -512,11 +507,6 @@ const JournalEntry = () => {
                   ? "Notas y reflexiones"
                   : "¿Qué quieres escribir?"}
             </Label>
-            <MicrophoneButton
-              onTextReceived={(text) => setContent(prev => (prev ? prev + " " + text : text))}
-              size="icon-sm"
-              variant="ghost"
-            />
           </div>
           <Textarea
             id="content"

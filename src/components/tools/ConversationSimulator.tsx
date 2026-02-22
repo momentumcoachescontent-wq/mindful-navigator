@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { ArrowRight, Check, RefreshCw, Save, Sparkles, MessageCircle, Loader2, Send, User, Bot, AlertCircle } from "lucide-react";
-import { MicrophoneButton } from "@/components/ui/MicrophoneButton";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -563,13 +562,6 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
           }
           className="min-h-[150px] bg-card border-border resize-none pr-12"
         />
-        <div className="absolute bottom-3 right-3">
-          <MicrophoneButton
-            onTextReceived={(text) => isCustomScenario ? setCustomScenarioText(prev => prev + " " + text) : setContext(prev => prev + " " + text)}
-            size="icon-sm"
-            variant="ghost"
-          />
-        </div>
       </div>
 
       <Button
@@ -630,13 +622,6 @@ export function ConversationSimulator({ content }: ConversationSimulatorProps) {
                 }
               }}
             />
-            <div className="absolute bottom-2 right-2">
-              <MicrophoneButton
-                onTextReceived={(text) => setCurrentInput(prev => prev + " " + text)}
-                size="icon-sm"
-                variant="ghost"
-              />
-            </div>
           </div>
           <Button
             onClick={handleUserMessage}

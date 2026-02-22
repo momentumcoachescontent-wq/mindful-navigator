@@ -126,10 +126,9 @@ const Settings = () => {
     };
 
     const handlePrivacyToggle = () => {
-        const currentIsPublic = !profile?.is_ranking_private;
+        const currentIsPublic = (profile as any)?.is_ranking_public;
         const newIsPublic = !currentIsPublic;
-        // if newIsPublic is true, is_ranking_private should be false
-        updateProfileMutation.mutate({ is_ranking_private: !newIsPublic });
+        updateProfileMutation.mutate({ is_ranking_public: newIsPublic } as any);
     };
 
     const handleAddContactSubmit = (e: React.FormEvent) => {
@@ -202,7 +201,7 @@ const Settings = () => {
 
     const renderPrivacy = () => {
         if (isLoadingProfile) return <Loader2 className="w-8 h-8 animate-spin mx-auto" />;
-        const isPublic = !profile?.is_ranking_private;
+        const isPublic = (profile as any)?.is_ranking_public;
 
         return (
             <Card>

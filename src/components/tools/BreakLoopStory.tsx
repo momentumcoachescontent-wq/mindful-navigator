@@ -29,7 +29,7 @@ const CHAPTER_NARRATIVES = {
             "El pensamiento llegó sin avisar. Primero suave, casi inofensivo. Luego otra vez. Y otra.",
             "Tu mente está atrapada en un bucle. El mismo miedo, la misma imagen, la misma pregunta sin respuesta que gira en espiral como una cinta sin fin.",
             "La lógica no sirve aquí. Intentar \"pensarlo mejor\" solo alimenta al monstruo.",
-            "Hay una sola salida: <span class=\"text-coral font-black\">interrumpir el patrón desde el cuerpo.</span>"
+            "Hay una sola salida: interrumpir el patrón desde el cuerpo."
         ],
         cta: "Iniciar Protocolo de Ruptura",
     },
@@ -274,11 +274,12 @@ export const BreakLoopStory = ({ sections, closing }: BreakLoopStoryProps) => {
                             className={cn(
                                 "text-sm leading-relaxed",
                                 i === p.paragraphs.length - 1
-                                    ? "text-foreground font-bold text-base border-l-2 border-coral pl-4"
+                                    ? "text-coral font-bold text-base border-l-2 border-coral pl-4"
                                     : "text-foreground/80 font-medium"
                             )}
-                            dangerouslySetInnerHTML={{ __html: text }}
-                        />
+                        >
+                            {text}
+                        </p>
                     ))}
                 </div>
 

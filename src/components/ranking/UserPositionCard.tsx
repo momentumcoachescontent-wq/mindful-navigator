@@ -13,7 +13,7 @@ import { toast } from "sonner";
 interface UserPositionCardProps {
   userRanking: RankedUser | null;
   totalXp: number;
-  isPrivate: boolean;
+  isPublic: boolean;
   onTogglePrivacy: () => void;
 }
 
@@ -28,7 +28,7 @@ const AVATAR_GRADIENTS = [
 export function UserPositionCard({
   userRanking,
   totalXp,
-  isPrivate,
+  isPublic,
   onTogglePrivacy
 }: UserPositionCardProps) {
   const { user } = useAuth();
@@ -44,13 +44,13 @@ export function UserPositionCard({
     try {
       const { error } = await supabase
         .from("profiles")
-        .update({ is_ranking_private: !isPrivate })
+        .update({ is_ranking_public: !isPublic } as any)
         .eq("user_id", user.id);
 
       if (error) throw error;
 
       onTogglePrivacy();
-      toast.success(isPrivate ? "Ahora apareces en el ranking" : "Modo privado activado");
+      toast.success(!isPublic ? "Ahora apareces en el ranking" : "Modo privado activado");
     } catch (error) {
       toast.error("Error al actualizar preferencia");
     } finally {
@@ -93,22 +93,22 @@ export function UserPositionCard({
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-foreground">Tu posición</h3>
         <div className="flex items-center gap-2">
-          {isPrivate ? (
+          {!isPublic ? (
             <EyeOff className="w-4 h-4 text-muted-foreground" />
           ) : (
             <Eye className="w-4 h-4 text-primary" />
           )}
           <Switch
-            checked={!isPrivate}
+            checked={isPublic}
             onCheckedChange={handleTogglePrivacy}
             disabled={isUpdating}
           />
         </div>
       </div>
 
-      {isPrivate && (
+      {!isPublic && (
         <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-2">
-          Modo privado: solo tú ves tu progreso
+          Modo privado: solo tú ves tu progreso. Activa la casilla para participar en la comunidad.
         </p>
       )}
 

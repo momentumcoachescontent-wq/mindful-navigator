@@ -116,7 +116,7 @@ export function useScanner() {
         action_plan: scanResult.actionPlan,
         ai_response: scanResult.summary,
         observations: scanResult.observations,
-      });
+      } as any);
 
       if (error) throw error;
 
