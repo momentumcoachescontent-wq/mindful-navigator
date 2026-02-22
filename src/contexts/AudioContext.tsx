@@ -1,7 +1,7 @@
-
 import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
 import { AudioTrack, AudioState } from '@/types/audio';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AudioContextType extends AudioState {
     play: (track: AudioTrack) => void;
@@ -24,6 +24,37 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const [isExpanded, setIsExpanded] = useState(false);
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const sessionStartTimeRef = useRef<number | null>(null);
+    const currentTrackRef = useRef<AudioTrack | null>(null);
+
+    // Keep currentTrackRef synced for use in unmounted/closure callbacks
+    useEffect(() => {
+        currentTrackRef.current = currentTrack;
+    }, [currentTrack]);
+
+    const recordListeningSession = () => {
+        if (!sessionStartTimeRef.current || !currentTrackRef.current) return;
+
+        const elapsedSeconds = Math.floor((Date.now() - sessionStartTimeRef.current) / 1000);
+        sessionStartTimeRef.current = null; // Reset to prevent duplicate logs
+
+        if (elapsedSeconds >= 10) {
+            const track = currentTrackRef.current;
+            supabase.auth.getUser().then(({ data: { user } }) => {
+                if (!user) return;
+
+                const meditationId = track.source_table === 'meditations' ? track.id : null;
+
+                supabase.from('meditation_logs').insert({
+                    user_id: user.id,
+                    meditation_id: meditationId,
+                    duration_seconds: elapsedSeconds
+                }).then(({ error }) => {
+                    if (error) console.error("Error logging audio session:", error);
+                });
+            });
+        }
+    };
 
     useEffect(() => {
         // Initialize audio element
@@ -41,11 +72,13 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         };
 
         const handleEnded = () => {
+            recordListeningSession();
             setIsPlaying(false);
             setProgress(0);
         };
 
         const handleError = () => {
+            recordListeningSession();
             setIsPlaying(false);
             toast.error("Error al reproducir el audio.");
         };
@@ -60,6 +93,10 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
             audio.removeEventListener('ended', handleEnded);
             audio.removeEventListener('error', handleError);
+            // Record if unmounted while playing
+            if (sessionStartTimeRef.current) {
+                recordListeningSession();
+            }
             audio.pause();
         };
     }, []);
@@ -73,6 +110,11 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             return;
         }
 
+        // Record previous track session before switching
+        if (isPlaying || sessionStartTimeRef.current) {
+            recordListeningSession();
+        }
+
         setCurrentTrack(track);
         audioRef.current.src = track.audio_url;
         audioRef.current.load();
@@ -81,6 +123,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (playPromise !== undefined) {
             playPromise
                 .then(() => {
+                    sessionStartTimeRef.current = Date.now();
                     setIsPlaying(true);
                 })
                 .catch(error => {
@@ -93,6 +136,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const pause = () => {
         if (audioRef.current) {
+            recordListeningSession();
             audioRef.current.pause();
             setIsPlaying(false);
         }
@@ -101,6 +145,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const resume = () => {
         if (audioRef.current && currentTrack) {
             audioRef.current.play().catch(console.error);
+            sessionStartTimeRef.current = Date.now();
             setIsPlaying(true);
         }
     };
@@ -124,6 +169,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const toggleExpand = () => setIsExpanded(!isExpanded);
 
     const closePlayer = () => {
+        recordListeningSession();
         pause();
         setCurrentTrack(null);
         setIsExpanded(false);

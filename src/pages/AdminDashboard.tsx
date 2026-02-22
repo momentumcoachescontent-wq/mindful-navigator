@@ -18,6 +18,7 @@ interface AdminStats {
     total_ai_scans: number;
     avg_scans_per_user: number;
     total_audio_hours: number;
+    total_audio_seconds?: number; // Added for precise hours/minutes formatting
 }
 
 const AdminDashboard = () => {
@@ -143,7 +144,11 @@ const AdminDashboard = () => {
                             <Music className="h-4 w-4 text-turquoise" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{stats?.total_audio_hours || 0}h</div>
+                            <div className="text-2xl font-bold">
+                                {stats?.total_audio_seconds
+                                    ? `${Math.floor(stats.total_audio_seconds / 3600)}h ${Math.floor((stats.total_audio_seconds % 3600) / 60)}m`
+                                    : '0h 0m'}
+                            </div>
                             <p className="text-xs text-muted-foreground">
                                 Tiempo total escuchado
                             </p>
