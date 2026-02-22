@@ -244,10 +244,10 @@ const Meditations = () => {
         {!isLoading && (
           <div className="space-y-3">
             {filteredMeditations.map((meditation) => (
-              <button
+              <div
                 key={meditation.id}
                 className={cn(
-                  "w-full rounded-2xl p-4 shadow-soft flex items-center gap-4 text-left transition-all hover:shadow-medium",
+                  "w-full rounded-2xl p-4 shadow-soft flex items-center gap-4 text-left transition-all hover:shadow-medium cursor-pointer",
                   currentTrack?.id === meditation.id ? "bg-primary/5 border border-primary/20" : "bg-card"
                 )}
                 onClick={(e) => handlePlay(e, meditation)}
@@ -295,7 +295,7 @@ const Meditations = () => {
                   </div>
                 </div>
 
-                <div className="flex flex-col items-center gap-2">
+                <div className="flex flex-col items-center gap-2" onClick={(e) => e.stopPropagation()}>
                   <button
                     onClick={(e) => toggleFavorite(meditation.id, e)}
                     className="p-2 hover:bg-muted rounded-lg transition-colors"
@@ -310,7 +310,7 @@ const Meditations = () => {
                     />
                   </button>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         )}
