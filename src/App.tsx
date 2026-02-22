@@ -22,6 +22,7 @@ import DataManagement from "./pages/DataManagement";
 import MyOrders from "./pages/MyOrders";
 import Settings from "./pages/Settings";
 import AdminDashboard from "./pages/AdminDashboard";
+import Ranking from "./pages/Ranking";
 
 
 import AdminUsers from "./pages/AdminUsers";
@@ -62,6 +63,7 @@ const App = () => (
                 <Route path="/premium" element={<Premium />} />
                 <Route path="/orders" element={<MyOrders />} />
                 <Route path="/data" element={<DataManagement />} />
+                <Route path="/ranking" element={<Ranking />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/settings/notifications" element={<Settings />} />
                 <Route path="/settings/privacy" element={<Settings />} />
