@@ -83,10 +83,8 @@ const Onboarding = () => {
     setIsLoading(true);
 
     try {
-      console.log("Attempting upsert for user:", user.id);
+      console.log("Attempting update for user profile:", user.id);
       const profileData = {
-        id: user.id,
-        user_id: user.id,
         display_name: name,
         age_range: ageRange,
         gender: gender,
@@ -100,14 +98,15 @@ const Onboarding = () => {
 
       const { data, error, status } = await supabase
         .from('profiles')
-        .upsert(profileData);
+        .update(profileData)
+        .eq('user_id', user.id);
 
       if (error) {
-        console.error("Supabase upsert error (Status " + status + "):", error);
+        console.error("Supabase update error (Status " + status + "):", error);
         throw error;
       }
 
-      console.log("Upsert response status:", status, "Data:", data);
+      console.log("Update response status:", status, "Data:", data);
       console.log("Onboarding completed successfully");
       toast.success("¡Perfil creado con éxito!");
 
