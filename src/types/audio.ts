@@ -3,11 +3,13 @@ export interface AudioTrack {
     id: string;
     title: string;
     description: string | null;
-    category: 'meditation' | 'music' | 'guide' | 'sounds';
+    category: 'meditation' | 'music' | 'guide' | 'sounds' | string;
     audio_url: string;
     image_url: string | null;
     duration: number | null;
     is_premium: boolean;
+    source_table?: 'audio_content' | 'meditations';
+    narrator?: string | null;
 }
 
 export interface AudioState {
