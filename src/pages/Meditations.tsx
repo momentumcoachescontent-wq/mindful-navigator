@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAudio } from "@/contexts/AudioContext";
 import { AudioTrack } from "@/types/audio";
+import { toast } from "sonner";
 
 const categories = [
   { id: "all", label: "Todas" },
@@ -135,7 +136,10 @@ const Meditations = () => {
     if (currentTrack?.id === meditation.id && isPlaying) {
       pause();
     } else {
-      if (!meditation.audio_url) return;
+      if (!meditation.audio_url) {
+        toast.error("Este audio aún no tiene un archivo asignado por el administrador.");
+        return;
+      }
 
       const track: AudioTrack = {
         id: meditation.id,
