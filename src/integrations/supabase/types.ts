@@ -818,6 +818,30 @@ export type Database = {
         Returns: undefined
       }
       custom_is_admin: { Args: never; Returns: boolean }
+      get_admin_journal_search: {
+        Args: { days_back?: number; search_term: string }
+        Returns: {
+          content: string
+          created_at: string
+          display_name: string
+          email: string
+          entry_id: string
+          user_id: string
+        }[]
+      }
+      get_admin_risk_radar: {
+        Args: { days_back?: number }
+        Returns: {
+          content: string
+          created_at: string
+          display_name: string
+          email: string
+          entry_id: string
+          matched_keywords: string
+          risk_level: string
+          user_id: string
+        }[]
+      }
       get_admin_semantic_cloud: {
         Args: { days_back?: number }
         Returns: {

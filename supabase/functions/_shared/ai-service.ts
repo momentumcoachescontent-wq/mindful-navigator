@@ -46,7 +46,7 @@ export class AIService {
     private async generateWithGemini(
         prompt: string,
         systemPrompt?: string,
-        config: AIConfig
+        config: AIConfig = {}
     ): Promise<AIResponse> {
         if (!this.geminiKey) {
             console.warn("Gemini Key missing, falling back to OpenAI");
@@ -123,7 +123,7 @@ export class AIService {
     private async generateWithOpenAI(
         prompt: string,
         systemPrompt?: string,
-        config: AIConfig
+        config: AIConfig = {}
     ): Promise<AIResponse> {
         if (!this.openAIKey) {
             throw new Error("Missing OPENAI_API_KEY");
