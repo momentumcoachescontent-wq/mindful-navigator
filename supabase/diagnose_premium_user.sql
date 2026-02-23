@@ -7,9 +7,10 @@ FROM auth.users
 WHERE email = 'multistan.143.general@gmail.com';
 
 -- 2. Verificar el estado exacto de su perfil público
-SELECT p.id as profile_id, p.user_id, p.email, p.display_name, p.is_premium, p.premium_until, p.is_admin
+SELECT p.id as profile_id, p.user_id, u.email, p.display_name, p.is_premium, p.premium_until, p.is_admin
 FROM public.profiles p
-WHERE p.email = 'multistan.143.general@gmail.com' 
+JOIN auth.users u ON p.user_id = u.id
+WHERE u.email = 'multistan.143.general@gmail.com' 
    OR p.user_id = '93748739-9596-49ed-b4e7-e57a040e20f8';
 
 -- Si la bandera is_premium es TRUE en la tabla profiles y el user_id coincide perfectamente
@@ -19,5 +20,5 @@ WHERE p.email = 'multistan.143.general@gmail.com'
 -- FUERZA LA ACTUALIZACIÓN SEGURA:
 UPDATE public.profiles
 SET is_premium = true,
-    premium_until = '2030-01-01 00:00:00+00'
-WHERE email = 'multistan.143.general@gmail.com';
+    premium_until = '2099-12-31 23:59:59+00'
+WHERE user_id = '93748739-9596-49ed-b4e7-e57a040e20f8';
