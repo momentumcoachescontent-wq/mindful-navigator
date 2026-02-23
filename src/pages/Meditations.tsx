@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { SOSButton } from "@/components/layout/SOSButton";
+import { SOSModal } from "@/components/sos/SOSModal";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -41,6 +42,7 @@ const Meditations = () => {
   const { user, isPremium } = useAuth();
   const { play, pause, currentTrack, isPlaying } = useAudio();
   const [activeCategory, setActiveCategory] = useState("all");
+  const [isSOSOpen, setIsSOSOpen] = useState(false);
   const [meditations, setMeditations] = useState<Meditation[]>([]);
   const [featuredMeditation, setFeaturedMeditation] = useState<Meditation | null>(null);
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -174,7 +176,7 @@ const Meditations = () => {
               Guiadas por Ernesto
             </p>
           </div>
-          <Button variant="ghost" size="icon-sm" onClick={() => navigate("/sos")} className="text-coral hover:text-coral hover:bg-coral/10">
+          <Button variant="ghost" size="icon-sm" onClick={() => setIsSOSOpen(true)} className="text-coral hover:text-coral hover:bg-coral/10">
             <Heart className="w-6 h-6 fill-current" />
           </Button>
         </div>
@@ -320,6 +322,7 @@ const Meditations = () => {
 
       <MobileNav />
       <SOSButton />
+      <SOSModal isOpen={isSOSOpen} onClose={() => setIsSOSOpen(false)} />
     </div>
   );
 };

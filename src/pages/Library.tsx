@@ -12,6 +12,8 @@ import { Play, Pause, Lock, Search, Music, Mic, BookOpen, Sparkles, Loader2, Arr
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { MobileNav } from "@/components/layout/MobileNav";
+import { SOSButton } from "@/components/layout/SOSButton";
 
 const Library = () => {
     const { play, pause, currentTrack, isPlaying } = useAudio();
@@ -142,8 +144,8 @@ const Library = () => {
                                     <div className="absolute top-2 right-2 z-10 flex gap-2">
                                         {track.is_premium ? (
                                             <div className={`backdrop-blur-md px-2 py-1 rounded flex items-center gap-1.5 text-[10px] font-medium border shadow ${!isPremium
-                                                    ? "bg-black/70 text-white/90 border-white/10"
-                                                    : "bg-warning/20 text-warning-foreground border-warning/30"
+                                                ? "bg-black/70 text-white/90 border-white/10"
+                                                : "bg-warning/20 text-warning-foreground border-warning/30"
                                                 }`}>
                                                 {!isPremium && <Lock className="w-3 h-3" />}
                                                 <span>Premium</span>
@@ -204,6 +206,9 @@ const Library = () => {
                     </TabsContent>
                 </Tabs>
             </div>
+
+            <MobileNav />
+            <SOSButton />
         </div>
     );
 };
