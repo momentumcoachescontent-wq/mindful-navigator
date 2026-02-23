@@ -12,7 +12,6 @@ import { Play, Pause, Lock, Search, Music, Mic, BookOpen, Sparkles, Loader2, Arr
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { MobileNav } from "@/components/layout/MobileNav";
 import { SOSButton } from "@/components/layout/SOSButton";
 
 const Library = () => {
@@ -269,7 +268,6 @@ const Library = () => {
                 </Tabs>
             </div>
 
-            <MobileNav />
             <SOSButton />
         </div>
     );

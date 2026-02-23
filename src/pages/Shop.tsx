@@ -5,7 +5,6 @@ import { Loader2 } from "lucide-react";
 import { ArrowLeft, ShoppingBag, BookOpen, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { MobileNav } from "@/components/layout/MobileNav";
 import { SOSButton } from "@/components/layout/SOSButton";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { PricingTier } from "@/components/shop/PricingTier";
@@ -270,7 +269,6 @@ const Shop = () => {
                 })()}
             </main>
 
-            <MobileNav />
             <SOSButton />
 
             {isCheckingOut && (

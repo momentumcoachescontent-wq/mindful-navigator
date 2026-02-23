@@ -363,14 +363,15 @@ const JournalEntry = () => {
             }
           });
         }
+
+        // Si era una entrada nueva, actualizamos la URL para que no duplique si vuelve a guardar
+        if (insertedData?.id) {
+          navigate(`/journal/${insertedData.id}`, { replace: true });
+        }
       }
 
-      if (isVictory) {
-        // Retrasamos la navegación para que pueda gozar su lluvia de confeti
-        setTimeout(() => navigate("/journal"), 5000);
-      } else {
-        navigate("/journal");
-      }
+      // Mantenemos la lluvia de confeti pero ya no expulsamos al usuario si isVictory 
+      // Si ya era una entrada existente, simplemente se queda en la vista actual
     } catch (error) {
       console.error("Error saving entry:", error);
       toast.error("Error al guardar", {

@@ -32,6 +32,7 @@ import Library from "./pages/Library";
 import NotFound from "./pages/NotFound";
 import { AudioProvider } from "@/contexts/AudioContext";
 import { AudioPlayer } from "@/components/audio/AudioPlayer";
+import { MobileNav } from "@/components/layout/MobileNav";
 
 const queryClient = new QueryClient();
 
@@ -80,6 +81,7 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <AudioPlayer />
+              <MobileNav />
             </AudioProvider>
           </AuthProvider>
         </BrowserRouter>

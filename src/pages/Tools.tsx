@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { ArrowLeft, Search, Shield, Heart, MessageSquare, Zap, Brain, Users, Sparkles, Loader2, Lock, LucideIcon, Headphones } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { MobileNav } from "@/components/layout/MobileNav";
 import { SOSButton } from "@/components/layout/SOSButton";
 import { ToolCard } from "@/components/tools/ToolCard";
 import { supabase } from "@/integrations/supabase/client";
@@ -146,7 +145,6 @@ const Tools = () => {
         )}
       </main>
 
-      <MobileNav />
       <SOSButton />
     </div>
   );

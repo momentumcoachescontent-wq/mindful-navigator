@@ -1,7 +1,6 @@
 import { ArrowLeft, User, Settings, Bell, Shield, Heart, LogOut, ChevronRight, Crown, Database, Camera, Loader2, LayoutDashboard, MapPin, Trophy, Flame, Activity, Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { MobileNav } from "@/components/layout/MobileNav";
 import { SOSButton } from "@/components/layout/SOSButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -335,7 +334,6 @@ const Profile = () => {
         </p>
       </main>
 
-      <MobileNav />
       <SOSButton />
     </div>
   );

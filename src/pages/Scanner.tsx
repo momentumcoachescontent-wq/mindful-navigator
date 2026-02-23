@@ -2,7 +2,6 @@ import { useState } from "react";
 import { ArrowLeft, Shield, Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { MobileNav } from "@/components/layout/MobileNav";
 import { SOSButton } from "@/components/layout/SOSButton";
 import { ScannerInput } from "@/components/scanner/ScannerInput";
 import ScanResult from "@/components/scanner/ScanResult";
@@ -127,6 +126,7 @@ const Scanner = () => {
               result={result}
               onSaveToJournal={handleSaveToJournal}
               onCreatePlan={handleCreatePlan}
+              isSaved={!!savedEntryId}
             />
 
             {/* Validation message */}
@@ -145,7 +145,6 @@ const Scanner = () => {
         )}
       </main>
 
-      <MobileNav />
       <SOSButton />
 
       {/* Auth/Registration Modal */}

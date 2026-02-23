@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { MobileNav } from "@/components/layout/MobileNav";
 import { SOSButton } from "@/components/layout/SOSButton";
 import { ConversationSimulator } from "@/components/tools/ConversationSimulator";
 import { RiskMap } from "@/components/tools/RiskMap";
@@ -208,7 +207,6 @@ const ToolDetail = () => {
           </Button>
         </main>
 
-        <MobileNav />
         <SOSButton />
       </div>
     );
@@ -272,7 +270,6 @@ const ToolDetail = () => {
           )}
         </main>
 
-        <MobileNav />
         <SOSButton />
       </div>
     );
@@ -556,7 +553,6 @@ const ToolDetail = () => {
         )}
       </main>
 
-      <MobileNav />
       <SOSButton />
     </div>
   );

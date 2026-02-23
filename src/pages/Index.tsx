@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { MobileNav } from "@/components/layout/MobileNav";
 import { SOSButton } from "@/components/layout/SOSButton";
 import { MoodCheckIn } from "@/components/home/MoodCheckIn";
 import { QuickActions } from "@/components/home/QuickActions";
@@ -404,7 +403,6 @@ const Index = () => {
         </section>
       </main>
 
-      <MobileNav />
       <SOSButton />
     </div>
   );

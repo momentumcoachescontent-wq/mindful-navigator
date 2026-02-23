@@ -17,6 +17,7 @@ interface ScanResultProps {
   result: ScanResultData;
   onSaveToJournal: () => void;
   onCreatePlan: () => void;
+  isSaved?: boolean;
 }
 
 const alertStyles = {
@@ -43,7 +44,7 @@ const alertStyles = {
   },
 };
 
-export default function ScanResult({ result, onSaveToJournal, onCreatePlan }: ScanResultProps) {
+export default function ScanResult({ result, onSaveToJournal, onCreatePlan, isSaved }: ScanResultProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const alertStyle = alertStyles[result.alertLevel];
   const AlertIcon = alertStyle.icon;
@@ -169,9 +170,15 @@ export default function ScanResult({ result, onSaveToJournal, onCreatePlan }: Sc
             </ol>
 
             <div className="pt-8 flex flex-col gap-4 relative z-30">
-              <Button onClick={onSaveToJournal} className="w-full brutal-btn bg-primary hover:bg-primary/90 text-primary-foreground py-6 text-lg" size="lg">
-                <BookOpen className="w-5 h-5 mr-2" /> FIJAR CONTRATO EN DIARIO
-              </Button>
+              {isSaved ? (
+                <Button onClick={onCreatePlan} className="w-full brutal-btn bg-success hover:bg-success/90 text-success-foreground py-6 text-lg" size="lg">
+                  <CheckCircle className="w-5 h-5 mr-2" /> VER REGISTRO EN EL DIARIO
+                </Button>
+              ) : (
+                <Button onClick={onSaveToJournal} className="w-full brutal-btn bg-primary hover:bg-primary/90 text-primary-foreground py-6 text-lg" size="lg">
+                  <BookOpen className="w-5 h-5 mr-2" /> FIJAR CONTRATO EN DIARIO
+                </Button>
+              )}
             </div>
           </div>
         )}

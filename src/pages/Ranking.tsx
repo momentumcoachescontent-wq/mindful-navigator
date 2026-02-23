@@ -1,7 +1,6 @@
 import { ArrowLeft, Trophy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { MobileNav } from "@/components/layout/MobileNav";
 import { SOSButton } from "@/components/layout/SOSButton";
 import { RankingTab } from "@/components/ranking/RankingTab";
 
@@ -29,7 +28,6 @@ const Ranking = () => {
                 <RankingTab />
             </main>
 
-            <MobileNav />
             <SOSButton />
         </div>
     );

@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { ArrowLeft, PenLine, Plus, Calendar, Tag, Trophy, Loader2, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { MobileNav } from "@/components/layout/MobileNav";
 import { SOSButton } from "@/components/layout/SOSButton";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -299,11 +298,11 @@ const Journal = () => {
         )}
 
         {user && !isLoading && (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredEntries.map((entry) => (
               <div
                 key={entry.id}
-                className="group relative w-full bg-card rounded-2xl p-4 shadow-soft text-left transition-all hover:shadow-medium cursor-pointer"
+                className="group relative w-full h-full bg-card rounded-2xl p-4 shadow-soft text-left transition-all hover:shadow-medium cursor-pointer"
                 onClick={() => navigate(`/journal/${entry.id}`)}
               >
                 <div className="flex items-start gap-3">
@@ -356,7 +355,6 @@ const Journal = () => {
         </Button>
       )}
 
-      <MobileNav />
       <SOSButton />
     </div>
   );
