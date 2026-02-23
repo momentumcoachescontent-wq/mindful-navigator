@@ -107,12 +107,24 @@ const Index = () => {
       selectedReflection = FALLBACK_REFLECTIONS[randomIndex];
     }
 
-    // Ensure it's not the exact same as the current one so the user sees a change
-    if (dailyReflection && selectedReflection.content === dailyReflection.content) {
-      const randomIndex = Math.floor(Math.random() * FALLBACK_REFLECTIONS.length);
-      selectedReflection = FALLBACK_REFLECTIONS[(randomIndex + 1) % FALLBACK_REFLECTIONS.length];
+    // Read last reflection from session to guarantee change across page reloads
+    const lastReflection = sessionStorage.getItem('lastReflection');
+
+    // Ensure it's not the exact same as the current or previous one
+    if (
+      (dailyReflection && selectedReflection.content === dailyReflection.content) ||
+      (lastReflection && selectedReflection.content === lastReflection)
+    ) {
+      let randomIndex = Math.floor(Math.random() * FALLBACK_REFLECTIONS.length);
+      selectedReflection = FALLBACK_REFLECTIONS[randomIndex];
+
+      // Secondary check just in case the random fallback is also the same
+      if (selectedReflection.content === (dailyReflection?.content || lastReflection)) {
+        selectedReflection = FALLBACK_REFLECTIONS[(randomIndex + 1) % FALLBACK_REFLECTIONS.length];
+      }
     }
 
+    sessionStorage.setItem('lastReflection', selectedReflection.content);
     setDailyReflection(selectedReflection);
     setTimeout(() => setIsRefreshing(false), 400); // Visual feedback pause
   };
