@@ -49,15 +49,20 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Check if user is admin
+    // Check if user is admin or has manual lifetime premium
     const { data: profile } = await supabaseClient
       .from("profiles")
-      .select("is_admin")
+      .select("is_admin, is_premium, premium_until")
       .eq("user_id", user.id)
       .single();
 
     const isAdmin = profile?.is_admin === true;
+    const isManualPremium = profile?.is_premium === true &&
+      profile?.premium_until &&
+      new Date(profile.premium_until).getFullYear() === 2099;
+
     if (isAdmin) logStep("User identified as Admin", { isAdmin });
+    if (isManualPremium) logStep("User has manual lifetime premium setup", { isManualPremium });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2024-06-20" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
@@ -65,8 +70,8 @@ serve(async (req) => {
     if (customers.data.length === 0) {
       logStep("No customer found");
 
-      if (!isAdmin) {
-        logStep("Updating unsubscribed state (User is not admin)");
+      if (!isAdmin && !isManualPremium) {
+        logStep("Updating unsubscribed state (User is not admin or manual premium)");
         // Update profile to reflect non-premium status
         await supabaseClient
           .from("profiles")
@@ -128,8 +133,8 @@ serve(async (req) => {
     } else {
       logStep("No active subscription found");
 
-      if (!isAdmin) {
-        logStep("Updating unsubscribed state (User is not admin)");
+      if (!isAdmin && !isManualPremium) {
+        logStep("Updating unsubscribed state (User is not admin or manual premium)");
         // Update profile to reflect non-premium status
         await supabaseClient
           .from("profiles")

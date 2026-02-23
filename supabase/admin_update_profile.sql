@@ -25,7 +25,15 @@ BEGIN
 
     -- 2. Update the target profile
     IF p_is_premium IS NOT NULL THEN
-        UPDATE public.profiles SET is_premium = p_is_premium WHERE id = p_target_user_id;
+        IF p_is_premium = true THEN
+            UPDATE public.profiles 
+            SET is_premium = true, premium_until = '2099-12-31 23:59:59+00' 
+            WHERE id = p_target_user_id;
+        ELSE
+            UPDATE public.profiles 
+            SET is_premium = false, premium_until = NULL 
+            WHERE id = p_target_user_id;
+        END IF;
     END IF;
 
     IF p_is_admin IS NOT NULL THEN
