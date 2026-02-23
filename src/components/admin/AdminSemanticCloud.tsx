@@ -52,14 +52,9 @@ export const AdminSemanticCloud = () => {
                             const maxFreq = words[0]?.frequency || 1;
                             const ratio = item.frequency / maxFreq;
 
-                            let sizeClass = "text-xl font-bold";
-                            let colorClass = "text-turquoise/80";
-
-                            // Destacar las 5 palabras principales (Top 5)
-                            if (i < 5) {
-                                sizeClass = "text-3xl font-black";
-                                colorClass = "text-coral drop-shadow-md";
-                            }
+                            const isTop5 = i < 5;
+                            const sizeClass = isTop5 ? "text-3xl font-black" : "text-lg font-medium";
+                            const colorClass = isTop5 ? "text-coral drop-shadow-sm" : "text-muted-foreground opacity-60";
 
                             return (
                                 <span
