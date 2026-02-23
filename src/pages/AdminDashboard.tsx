@@ -21,6 +21,8 @@ interface AdminStats {
     avg_scans_per_user: number;
     total_audio_hours: number;
     total_audio_seconds?: number; // Added for precise hours/minutes formatting
+    daily_missions_completed?: number; // Actividad Reciente / Engagement
+    daily_xp_farmed?: number;
 }
 
 const AdminDashboard = () => {
@@ -233,16 +235,27 @@ const AdminDashboard = () => {
                         </CardContent>
                     </Card>
 
-                    <Card className="col-span-1">
+                    <Card className="col-span-1 border-primary/20 bg-primary/5">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <Activity className="w-5 h-5" />
-                                Actividad Reciente
+                                <Activity className="w-5 h-5 text-primary" />
+                                Engagement de Resiliencia (Hoy)
                             </CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <div className="h-[200px] flex items-center justify-center text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
-                                Feed de actividad (Próximamente)
+                        <CardContent className="space-y-4">
+                            <div className="flex flex-col gap-1">
+                                <span className="text-sm text-muted-foreground">Misiones (Contratos) Completados</span>
+                                <div className="text-2xl font-bold font-display text-foreground flex items-center gap-2">
+                                    <Zap className="w-5 h-5 text-warning" />
+                                    {stats?.daily_missions_completed || 0}
+                                </div>
+                            </div>
+                            <div className="flex flex-col gap-1">
+                                <span className="text-sm text-muted-foreground">XP Global Cultivada</span>
+                                <div className="text-2xl font-bold font-display text-primary flex items-center gap-2">
+                                    <Activity className="w-5 h-5" />
+                                    +{stats?.daily_xp_farmed || 0} XP
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

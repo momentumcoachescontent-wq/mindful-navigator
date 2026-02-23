@@ -363,7 +363,6 @@ export function useDailyChallenge() {
     }
   }, [user, progress.totalXP]);
 
-  // Use streak rescue
   const useStreakRescue = useCallback(async () => {
     if (!user || progress.streakRescuesAvailable <= 0) return false;
 
@@ -386,6 +385,30 @@ export function useDailyChallenge() {
       return false;
     }
   }, [user, progress.streakRescuesAvailable]);
+
+  // Consume a Power Token
+  const consumeToken = useCallback(async () => {
+    if (!user || progress.powerTokens <= 0) return false;
+
+    try {
+      await supabase
+        .from('user_progress')
+        .update({
+          power_tokens: progress.powerTokens - 1,
+        })
+        .eq('user_id', user.id);
+
+      setProgress(prev => ({
+        ...prev,
+        powerTokens: prev.powerTokens - 1,
+      }));
+
+      return true;
+    } catch (error) {
+      console.error('Error consuming token:', error);
+      return false;
+    }
+  }, [user, progress.powerTokens]);
 
   // Check if mission is completed
   const isMissionCompleted = useCallback((missionId: string) => {
@@ -421,6 +444,7 @@ export function useDailyChallenge() {
     completeMission,
     saveVictory,
     useStreakRescue,
+    consumeToken,
     progressToNextLevel: progressToNextLevel(),
     reload: loadData,
   };

@@ -44,7 +44,7 @@ export function UserPositionCard({
     try {
       const { error } = await supabase
         .from("profiles")
-        .update({ is_ranking_public: !isPublic } as any)
+        .update({ is_ranking_private: isPublic } as any) // Si isPublic es true, private será false. Aquí isPublic viene con el estado actual antes de tocar el switch, así que mandamos el isPublic tal cual para invertirlo en la BD (isPublic actual = nuevo private).
         .eq("user_id", user.id);
 
       if (error) throw error;

@@ -115,7 +115,7 @@ export function useRanking(
           display_name,
           streak_count,
           is_premium,
-          is_ranking_public
+          is_ranking_private
         `);
 
       if (profilesError) throw profilesError;
@@ -162,10 +162,18 @@ export function useRanking(
       const rankedUsers: RankedUser[] = progressData
         ?.filter((p) => {
           const profile = profilesMap[p.user_id];
-          // Filter out users who haven't opted-in (is_ranking_public) (unless it's the current user)
-          if (!profile?.is_ranking_public && p.user_id !== user?.id) return false;
+
+          // REGLA 1: Si el usuario visualizado es privado (is_ranking_private = true), ocultarlo.
+          // REGLA 2: EXCEPCIÓN: Si el usuario visualizado es el propio usuario activo, mostrarlo SIEMPRE (para que él vea su propio ranking).
+          if (profile?.is_ranking_private && p.user_id !== user?.id) {
+            return false;
+          }
+
           // Filter by level if specified
-          if (levelFilter && levelFilter !== "all" && p.current_level !== levelFilter) return false;
+          if (levelFilter && levelFilter !== "all" && p.current_level !== levelFilter) {
+            return false;
+          }
+
           return true;
         })
         .map((p) => {
@@ -252,7 +260,7 @@ export function useUserRankingPosition(
         totalXp: progress.total_xp,
         streak: profile?.streak_count || 0,
         isPremium: profile?.is_premium || false,
-        isPublic: profile?.is_ranking_public || false,
+        isPublic: !(profile?.is_ranking_private ?? false),
       };
     },
     enabled: !!user,

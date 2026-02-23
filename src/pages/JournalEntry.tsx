@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Save, Trophy, Loader2, Check, RefreshCw } from "lucide-react";
+import { ArrowLeft, Save, Trophy, Loader2, Check, RefreshCw, ExternalLink } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { MicrophoneButton } from "@/components/ui/MicrophoneButton";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import Confetti from "react-confetti";
+import { useWindowSize } from "react-use";
 
 const tags = [
   { id: "family", label: "Familia", color: "bg-coral/20 text-coral border-coral/30" },
@@ -55,6 +57,8 @@ const JournalEntry = () => {
   const [isFollowUp, setIsFollowUp] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const { width, height } = useWindowSize();
   const [parentEntryId, setParentEntryId] = useState<string | null>(null);
 
   const [simulationData, setSimulationData] = useState<any>(null);
@@ -64,6 +68,16 @@ const JournalEntry = () => {
   const [actionPlan, setActionPlan] = useState<ActionStep[]>([]);
   const [tools, setTools] = useState<RecommendedTool[]>([]);
   const [isScannerEntry, setIsScannerEntry] = useState(false);
+
+  const getToolLink = (toolName: string) => {
+    const name = toolName.toLowerCase();
+    if (name.includes("escáner") || name.includes("escanear") || name.includes("somático")) return "/scanner";
+    if (name.includes("respiración") || name.includes("break") || name.includes("loop") || name.includes("box")) return "/tools/break-loop";
+    if (name.includes("medita") || name.includes("audios")) return "/meditations";
+    if (name.includes("comunidad") || name.includes("ranking") || name.includes("reto")) return "/community";
+    if (name.includes("sos") || name.includes("emergencia") || name.includes("contacto")) return "/sos";
+    return null;
+  };
 
   // Auto-Victory and Auto-Tagging Logic
   useEffect(() => {
@@ -248,10 +262,14 @@ const JournalEntry = () => {
 
     setIsSaving(true);
     try {
+      // Capitalizar Título
+      const finalTitle = title.trim() || (isVictory ? "Gran Victoria" : "Nota Personal");
+      const capitalizedTitle = finalTitle.charAt(0).toUpperCase() + finalTitle.slice(1);
+
       // Store all data in content as JSON since metadata/tags columns don't exist
       const contentData: any = {
         text: content.trim(),
-        title: title.trim(),
+        title: capitalizedTitle,
         follow_up: isFollowUp,
         parent_id: parentEntryId,
         tags: selectedTags,
@@ -263,24 +281,23 @@ const JournalEntry = () => {
         }
       };
 
-      // If we have simulation metadata, preserve it
+      // ... simulation y scanner logs (omitidos para focus) ...
       if (simulationData) {
         Object.assign(contentData, {
           ...simulationData,
           text: content.trim(),
-          title: title.trim(),
+          title: capitalizedTitle,
           tags: selectedTags,
           action_plan: actionPlan,
           recommended_tools: tools
         });
       }
 
-      // If we have scanner data, preserve it
       if (scannerData) {
         Object.assign(contentData, {
           scan_result: scannerData,
           text: content.trim(),
-          title: title.trim(),
+          title: capitalizedTitle,
           tags: selectedTags,
           action_plan: actionPlan,
           recommended_tools: tools
@@ -292,6 +309,7 @@ const JournalEntry = () => {
         content: JSON.stringify(contentData),
         entry_type: isVictory ? "victory" : "daily",
         mood_score: mood,
+        tags: selectedTags, // Faltaba mapear los tags a su columna designada.
       };
 
       if (id && id !== "new") {
@@ -310,7 +328,13 @@ const JournalEntry = () => {
           .select()
           .single();
         if (error) throw error;
-        toast.success(isVictory ? "¡Victoria registrada! 🏆" : "Entrada guardada");
+
+        if (isVictory) {
+          setShowConfetti(true);
+          toast.success("¡Gran Trabajo! Has registrado una victoria. +50 XP 🏆");
+        } else {
+          toast.success("Entrada guardada");
+        }
 
         // --- IA Proactiva para Victorias (Fire and forget) ---
         if (isVictory) {
@@ -341,7 +365,12 @@ const JournalEntry = () => {
         }
       }
 
-      navigate("/journal");
+      if (isVictory) {
+        // Retrasamos la navegación para que pueda gozar su lluvia de confeti
+        setTimeout(() => navigate("/journal"), 5000);
+      } else {
+        navigate("/journal");
+      }
     } catch (error) {
       console.error("Error saving entry:", error);
       toast.error("Error al guardar", {
@@ -351,16 +380,18 @@ const JournalEntry = () => {
     }
   };
 
-  const [showReflectionModal, setShowReflectionModal] = useState(false);
   const [currentReflectionTarget, setCurrentReflectionTarget] = useState<{ type: 'action' | 'tool', index: number } | null>(null);
   const [reflectionText, setReflectionText] = useState("");
 
   const toggleAction = (index: number) => {
     const isCurrentlyCompleted = actionPlan[index].completed;
     if (!isCurrentlyCompleted) {
-      setCurrentReflectionTarget({ type: 'action', index });
-      setReflectionText("");
-      setShowReflectionModal(true);
+      if (currentReflectionTarget?.type === 'action' && currentReflectionTarget.index === index) {
+        setCurrentReflectionTarget(null);
+      } else {
+        setCurrentReflectionTarget({ type: 'action', index });
+        setReflectionText("");
+      }
     } else {
       setActionPlan(prev => prev.map((item, i) => i === index ? { ...item, completed: false } : item));
     }
@@ -369,9 +400,12 @@ const JournalEntry = () => {
   const toggleTool = (index: number) => {
     const isCurrentlyCompleted = tools[index].completed;
     if (!isCurrentlyCompleted) {
-      setCurrentReflectionTarget({ type: 'tool', index });
-      setReflectionText("");
-      setShowReflectionModal(true);
+      if (currentReflectionTarget?.type === 'tool' && currentReflectionTarget.index === index) {
+        setCurrentReflectionTarget(null);
+      } else {
+        setCurrentReflectionTarget({ type: 'tool', index });
+        setReflectionText("");
+      }
     } else {
       setTools(prev => prev.map((item, i) => i === index ? { ...item, completed: false } : item));
     }
@@ -396,7 +430,6 @@ const JournalEntry = () => {
       setTools(prev => prev.map((item, i) => i === currentReflectionTarget.index ? { ...item, completed: true } : item));
     }
 
-    setShowReflectionModal(false);
     setCurrentReflectionTarget(null);
     setReflectionText("");
     toast.success("Reflexión añadida a tus notas");
@@ -429,7 +462,12 @@ const JournalEntry = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-24 relative overflow-x-hidden">
+      {showConfetti && (
+        <div className="fixed inset-0 z-[100] pointer-events-none">
+          <Confetti width={width} height={height} recycle={false} numberOfPieces={500} gravity={0.15} />
+        </div>
+      )}
       {/* Header */}
       <header className="sticky top-0 z-40 glass border-b border-border/50">
         <div className="container flex items-center gap-4 py-4">
@@ -810,27 +848,62 @@ const JournalEntry = () => {
               <div className="space-y-3">
                 <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Pasos a seguir</h4>
                 <div className="space-y-2">
-                  {actionPlan.map((step, index) => (
-                    <div
-                      key={index}
-                      onClick={() => toggleAction(index)}
-                      className={cn(
-                        "flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer",
-                        step.completed ? "bg-primary/5 border-primary/20" : "bg-card border-border hover:border-primary/50"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-5 h-5 rounded-md border flex items-center justify-center mt-0.5 transition-colors",
-                        step.completed ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground"
-                      )}>
-                        {step.completed && <Check className="w-3.5 h-3.5" />}
+                  {actionPlan.map((step, index) => {
+                    const isReflecting = currentReflectionTarget?.type === 'action' && currentReflectionTarget.index === index;
+
+                    return (
+                      <div key={index} className="space-y-2">
+                        <div
+                          onClick={() => toggleAction(index)}
+                          className={cn(
+                            "flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer",
+                            step.completed ? "bg-primary/5 border-primary/20" : "bg-card border-border hover:border-primary/50"
+                          )}
+                        >
+                          <div className={cn(
+                            "w-5 h-5 rounded-md border flex items-center justify-center mt-0.5 transition-colors",
+                            step.completed ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground"
+                          )}>
+                            {step.completed && <Check className="w-3.5 h-3.5" />}
+                          </div>
+                          <div className={cn("flex-1 text-sm", step.completed && "text-muted-foreground line-through")}>
+                            <span className="font-medium mr-2">{step.step}.</span>
+                            {step.action}
+                          </div>
+                        </div>
+
+                        {/* Inline Reflection block */}
+                        {isReflecting && (
+                          <div className="pl-11 pr-3 pb-3 pt-1 animate-fade-in space-y-3">
+                            <p className="text-xs text-muted-foreground">
+                              ¿Qué sentiste al realizar esto? ¿Cómo te fue? Escríbelo para marcarlo como completado.
+                            </p>
+                            <div className="relative">
+                              <Textarea
+                                placeholder="Escribe tu reflexión aquí..."
+                                value={reflectionText}
+                                onChange={(e) => setReflectionText(e.target.value)}
+                                className="min-h-[100px] resize-none pb-12 text-sm bg-card/50"
+                              />
+                              <div className="absolute right-2 bottom-2">
+                                <MicrophoneButton
+                                  onTextReceived={(text) => setReflectionText(prev => prev ? `${prev} ${text}` : text)}
+                                  size="sm"
+                                />
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
+                              className="w-full text-xs h-9"
+                              onClick={saveReflection}
+                            >
+                              Guardar y Completar
+                            </Button>
+                          </div>
+                        )}
                       </div>
-                      <div className={cn("flex-1 text-sm", step.completed && "text-muted-foreground line-through")}>
-                        <span className="font-medium mr-2">{step.step}.</span>
-                        {step.action}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -840,72 +913,87 @@ const JournalEntry = () => {
               <div className="space-y-3">
                 <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Herramientas Recomendadas</h4>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {tools.map((tool, index) => (
-                    <div
-                      key={index}
-                      onClick={() => toggleTool(index)}
-                      className={cn(
-                        "flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer",
-                        tool.completed ? "bg-primary/5 border-primary/20" : "bg-card border-border hover:border-primary/50"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-5 h-5 rounded-md border flex items-center justify-center mt-0.5 transition-colors",
-                        tool.completed ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground"
-                      )}>
-                        {tool.completed && <Check className="w-3.5 h-3.5" />}
+                  {tools.map((tool, index) => {
+                    const isReflecting = currentReflectionTarget?.type === 'tool' && currentReflectionTarget.index === index;
+
+                    return (
+                      <div key={index} className="space-y-2">
+                        <div
+                          onClick={() => toggleTool(index)}
+                          className={cn(
+                            "flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer",
+                            tool.completed ? "bg-primary/5 border-primary/20" : "bg-card border-border hover:border-primary/50"
+                          )}
+                        >
+                          <div className={cn(
+                            "w-5 h-5 rounded-md border flex items-center justify-center mt-0.5 transition-colors",
+                            tool.completed ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground"
+                          )}>
+                            {tool.completed && <Check className="w-3.5 h-3.5" />}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-start justify-between gap-2">
+                              <p className={cn("text-sm font-medium", tool.completed && "text-muted-foreground line-through")}>
+                                {tool.name}
+                              </p>
+                              {getToolLink(tool.name) && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 shrink-0 text-primary hover:text-primary hover:bg-primary/10"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(getToolLink(tool.name)!);
+                                  }}
+                                  title={`Ir a ${tool.name}`}
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                </Button>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-0.5 pr-6">{tool.reason}</p>
+                          </div>
+                        </div>
+
+                        {/* Inline Reflection block */}
+                        {isReflecting && (
+                          <div className="pl-11 pr-3 pb-3 pt-1 animate-fade-in space-y-3">
+                            <p className="text-xs text-muted-foreground">
+                              ¿Qué sentiste al usar esta herramienta? ¿Qué cambió en ti?
+                            </p>
+                            <div className="relative">
+                              <Textarea
+                                placeholder="Escribe tu reflexión aquí..."
+                                value={reflectionText}
+                                onChange={(e) => setReflectionText(e.target.value)}
+                                className="min-h-[100px] resize-none pb-12 text-sm bg-card/50"
+                              />
+                              <div className="absolute right-2 bottom-2">
+                                <MicrophoneButton
+                                  onTextReceived={(text) => setReflectionText(prev => prev ? `${prev} ${text}` : text)}
+                                  size="sm"
+                                />
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
+                              className="w-full text-xs h-9"
+                              onClick={saveReflection}
+                            >
+                              Guardar y Completar
+                            </Button>
+                          </div>
+                        )}
                       </div>
-                      <div className="flex-1">
-                        <p className={cn("text-sm font-medium", tool.completed && "text-muted-foreground line-through")}>
-                          {tool.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{tool.reason}</p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
           </div>
         )}
-
-        {/* Reflection Modal */}
-        <Dialog open={showReflectionModal} onOpenChange={setShowReflectionModal}>
-          <DialogContent className="sm:max-w-md bg-card border-2 border-primary/20 brutal-card">
-            <DialogHeader>
-              <DialogTitle className="font-display text-xl text-foreground">
-                Reflexión de Tarea
-              </DialogTitle>
-              <DialogDescription className="text-muted-foreground pt-2">
-                ¿Qué sentiste al realizar esto? ¿Cómo te fue? Escríbelo para marcarlo como completado.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex flex-col gap-3 mt-4 relative">
-              <Textarea
-                placeholder="Escribe tu reflexión aquí..."
-                value={reflectionText}
-                onChange={(e) => setReflectionText(e.target.value)}
-                className="min-h-[120px] resize-none pb-12"
-              />
-              <div className="absolute right-2 bottom-2">
-                <MicrophoneButton
-                  onTextReceived={(text) => setReflectionText(prev => prev ? `${prev} ${text}` : text)}
-                  size="sm"
-                />
-              </div>
-            </div>
-            <DialogFooter className="mt-4">
-              <Button
-                className="w-full brutal-btn bg-primary text-primary-foreground hover:bg-primary/90"
-                onClick={saveReflection}
-              >
-                Guardar y Completar
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </main>
-    </div >
+    </div>
   );
 };
 

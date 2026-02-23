@@ -28,7 +28,7 @@ export function RankingTab() {
       if (!user) return null;
       const { data } = await supabase
         .from("profiles")
-        .select("is_ranking_public")
+        .select("is_ranking_private")
         .eq("user_id", user.id)
         .single();
       return data as any;
@@ -98,7 +98,7 @@ export function RankingTab() {
       <UserPositionCard
         userRanking={currentUserRanking}
         totalXp={userProgress?.total_xp || 0}
-        isPublic={userProfile?.is_ranking_public || false}
+        isPublic={!(userProfile?.is_ranking_private ?? false)}
         onTogglePrivacy={handleTogglePrivacy}
       />
 

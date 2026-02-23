@@ -4,6 +4,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
   Flame, Clock, ChevronRight, Crown, Lock,
   Trophy, Target, Sparkles
 } from 'lucide-react';
@@ -39,10 +47,37 @@ export function DailyChallenge() {
     completeMission,
     saveVictory,
     progressToNextLevel,
+    consumeToken,
   } = useDailyChallenge();
 
   const [activeModal, setActiveModal] = useState<ActiveModal>(null);
   const [currentMission, setCurrentMission] = useState<Mission | null>(null);
+
+  // States for Shadow Contract and Unlock Premium
+  const [contractMission, setContractMission] = useState<Mission | null>(null);
+  const [unlockMission, setUnlockMission] = useState<Mission | null>(null);
+
+  // Replaced direct handleStartMission logic from UI:
+  const handleInitiate = (mission: Mission) => {
+    // 1. Premium Mission clicked by a non-premium user
+    if (mission.isPremium && !isPremium) {
+      if (progress.powerTokens > 0) {
+        setUnlockMission(mission);
+      } else {
+        navigate('/premium');
+      }
+      return;
+    }
+
+    // 2. Free Mission (Shadow Contract) clicked
+    if (!mission.isPremium) {
+      setContractMission(mission);
+      return;
+    }
+
+    // 3. Premium user clicking a Premium Mission
+    handleStartMission(mission);
+  };
 
   const handleStartMission = (mission: Mission) => {
     // Handle premium tools that redirect to their pages
@@ -178,7 +213,7 @@ export function DailyChallenge() {
               isCompleted={isMissionCompleted(mission.id)}
               isPremiumUser={isPremium}
               xpMultiplier={xpMultiplier}
-              onStart={() => handleStartMission(mission)}
+              onStart={() => handleInitiate(mission)}
             />
           ))}
 
@@ -216,7 +251,7 @@ export function DailyChallenge() {
               isCompleted={isMissionCompleted(mission.id)}
               isPremiumUser={isPremium}
               xpMultiplier={xpMultiplier}
-              onStart={() => handleStartMission(mission)}
+              onStart={() => handleInitiate(mission)}
             />
           ))}
 
@@ -236,6 +271,82 @@ export function DailyChallenge() {
 
       {/* Victory Input */}
       <VictoryInput onSave={saveVictory} />
+
+      {/* Dialog for Shadow Contract */}
+      <Dialog open={!!contractMission} onOpenChange={(open) => !open && setContractMission(null)}>
+        <DialogContent className="sm:max-w-md bg-card border-2 border-primary/20 brutal-card">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl text-foreground flex items-center gap-2">
+              <Flame className="w-5 h-5 text-coral" />
+              Firma tu Contrato de Sombra
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground pt-2">
+              Al aceptar, te comprometes verdaderamente a observar tu mente y completar esta misión antes de que acabe el día: <br />
+              <strong className="text-foreground mt-2 block">"{contractMission?.title}"</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4 flex sm:justify-between gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => setContractMission(null)}
+              className="w-full sm:w-auto"
+            >
+              Declinar
+            </Button>
+            <Button
+              className="w-full sm:w-auto brutal-btn bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={() => {
+                if (contractMission) {
+                  handleStartMission(contractMission);
+                }
+                setContractMission(null);
+              }}
+            >
+              Me Comprometo
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog for Unlock Premium with Power Token */}
+      <Dialog open={!!unlockMission} onOpenChange={(open) => !open && setUnlockMission(null)}>
+        <DialogContent className="sm:max-w-md bg-card border-2 border-amber-500/50 brutal-card">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl text-foreground flex items-center gap-2">
+              <Crown className="w-5 h-5 text-amber-500" />
+              Desbloqueo Táctico
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground pt-2">
+              ¿Quieres consumir <strong>1 Power Token</strong> para acceder temporalmente hoy al Bonus Premium: <br />
+              <strong className="text-foreground block mt-1">"{unlockMission?.title}"</strong>?
+              <br /><br />
+              <span className="text-xs">Tienes {progress.powerTokens} Power Tokens en tu inventario.</span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4 flex sm:justify-between gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => setUnlockMission(null)}
+              className="w-full sm:w-auto"
+            >
+              Cancelar
+            </Button>
+            <Button
+              className="w-full sm:w-auto brutal-btn bg-amber-500 hover:bg-amber-600 text-white"
+              onClick={async () => {
+                const consumed = await consumeToken();
+                if (consumed && unlockMission) {
+                  // Bypass standard logic since it's already "unlocked" locally for execution immediately
+                  handleStartMission(unlockMission);
+                }
+                setUnlockMission(null);
+              }}
+            >
+              Gastar 1 Token
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Mission Modals */}
       <HeroMissionModal
