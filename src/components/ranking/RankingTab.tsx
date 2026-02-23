@@ -10,6 +10,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { RankingTrendsChart } from "./RankingTrendsChart";
 import { UserHealthChart } from "./UserHealthChart";
+import { UserMoodPieChart } from "./UserMoodPieChart";
 
 export function RankingTab() {
   const { user } = useAuth();
@@ -93,9 +94,10 @@ export function RankingTab() {
       />
 
       {/* Trends & Health Charts */}
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         <RankingTrendsChart />
         <UserHealthChart />
+        <UserMoodPieChart />
       </div>
 
       {/* User's position card (sticky) */}
