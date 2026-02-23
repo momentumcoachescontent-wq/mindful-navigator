@@ -41,6 +41,6 @@ BEGIN
   WHERE fw.word != ''
   GROUP BY fw.word
   ORDER BY frequency DESC
-  LIMIT 40;
+  LIMIT 10;
 END;
 $$;

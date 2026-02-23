@@ -52,21 +52,13 @@ export const AdminSemanticCloud = () => {
                             const maxFreq = words[0]?.frequency || 1;
                             const ratio = item.frequency / maxFreq;
 
-                            let sizeClass = "text-xs";
-                            let colorClass = "text-muted-foreground";
+                            let sizeClass = "text-xl font-bold";
+                            let colorClass = "text-turquoise/80";
 
-                            if (ratio > 0.8) {
+                            // Destacar las 5 palabras principales (Top 5)
+                            if (i < 5) {
                                 sizeClass = "text-3xl font-black";
-                                colorClass = "text-primary drop-shadow-md";
-                            } else if (ratio > 0.6) {
-                                sizeClass = "text-2xl font-bold";
-                                colorClass = "text-turquoise";
-                            } else if (ratio > 0.4) {
-                                sizeClass = "text-xl font-semibold";
-                                colorClass = "text-foreground";
-                            } else if (ratio > 0.2) {
-                                sizeClass = "text-base font-medium";
-                                colorClass = "text-foreground/80";
+                                colorClass = "text-coral drop-shadow-md";
                             }
 
                             return (
