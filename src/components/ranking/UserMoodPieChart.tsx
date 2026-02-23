@@ -96,6 +96,8 @@ export function UserMoodPieChart() {
                                 borderColor: "hsl(var(--border))",
                                 borderRadius: "8px",
                             }}
+                            itemStyle={{ color: "hsl(var(--foreground))", fontWeight: "bold" }}
+                            labelStyle={{ color: "hsl(var(--muted-foreground))" }}
                         />
                         <Legend verticalAlign="bottom" height={36} iconType="circle" />
                     </PieChart>
