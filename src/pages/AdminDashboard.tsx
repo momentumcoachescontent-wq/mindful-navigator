@@ -14,6 +14,7 @@ import { Loader2 } from "lucide-react";
 import { AdminToolUsageChart } from "@/components/admin/AdminToolUsageChart";
 import { AdminMoodTrendChart } from "@/components/admin/AdminMoodTrendChart";
 import { AdminSemanticCloud } from "@/components/admin/AdminSemanticCloud";
+import { AdminRiskRadar } from "@/components/admin/AdminRiskRadar";
 
 interface AdminStats {
     total_users: number;
@@ -184,6 +185,7 @@ const AdminDashboard = () => {
                 {/* Qualitative Analysis */}
                 <div className="grid gap-4 grid-cols-1">
                     <AdminSemanticCloud />
+                    <AdminRiskRadar />
                 </div>
 
                 {/* Detailed Sections / Navigation */}
