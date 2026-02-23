@@ -10,7 +10,7 @@ import { toast } from "sonner";
 
 const features = [
   { icon: Shield, label: "Escáner IA ilimitado" },
-  { icon: Headphones, label: "Todas las meditaciones y audios" },
+  { icon: Headphones, label: "Todas las sesiones de Voz Interior y audios" },
   { icon: Users, label: "Comunidad completa: publica y comenta" },
   { icon: Download, label: "Contenido descargable offline" },
   { icon: Sparkles, label: "Biblioteca de herramientas completa" },
@@ -38,7 +38,7 @@ const Premium = () => {
   useEffect(() => {
     const success = searchParams.get("success");
     const canceled = searchParams.get("canceled");
-    
+
     if (success === "true") {
       toast.success("¡Bienvenido/a a Premium!", {
         description: "Tu suscripción se ha activado correctamente.",
@@ -59,15 +59,15 @@ const Premium = () => {
       navigate("/auth");
       return;
     }
-    
+
     setIsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: { priceId: STRIPE_PRICES[selectedPlan].priceId },
       });
-      
+
       if (error) throw error;
-      
+
       if (data?.url) {
         window.location.href = data.url;
       }
@@ -85,9 +85,9 @@ const Premium = () => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("customer-portal");
-      
+
       if (error) throw error;
-      
+
       if (data?.url) {
         window.open(data.url, "_blank");
       }
@@ -123,7 +123,7 @@ const Premium = () => {
             {isPremium ? "Eres Premium" : "Desbloquea tu potencial"}
           </h1>
           <p className="text-muted-foreground max-w-sm mx-auto">
-            {isPremium 
+            {isPremium
               ? `Tu suscripción está activa hasta ${subscriptionStatus?.subscriptionEnd ? new Date(subscriptionStatus.subscriptionEnd).toLocaleDateString("es") : "próximamente"}.`
               : "Accede a todas las herramientas para tu bienestar emocional y crecimiento personal."
             }
@@ -169,24 +169,24 @@ const Premium = () => {
                       : "border-border bg-card"
                   )}
                 >
-                {'popular' in plan && plan.popular && (
-                  <span className="absolute top-0 right-0 px-3 py-1 text-xs font-medium bg-coral text-white rounded-bl-xl">
-                    Más popular
-                  </span>
-                )}
-                <div className="flex items-center justify-between">
-                  <div className="text-left">
-                    <p className="font-display font-semibold text-foreground">
-                      {plan.label}
-                    </p>
-                    {'savings' in plan && plan.savings && (
-                      <p className="text-xs text-success font-medium mt-0.5">
-                        {plan.savings}
+                  {'popular' in plan && plan.popular && (
+                    <span className="absolute top-0 right-0 px-3 py-1 text-xs font-medium bg-coral text-white rounded-bl-xl">
+                      Más popular
+                    </span>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <div className="text-left">
+                      <p className="font-display font-semibold text-foreground">
+                        {plan.label}
                       </p>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-display font-bold text-foreground">
+                      {'savings' in plan && plan.savings && (
+                        <p className="text-xs text-success font-medium mt-0.5">
+                          {plan.savings}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-display font-bold text-foreground">
                         {plan.displayPrice}
                       </p>
                       <p className="text-xs text-muted-foreground">{plan.period}</p>
@@ -205,9 +205,9 @@ const Premium = () => {
 
             {/* CTA */}
             <div className="space-y-4">
-              <Button 
-                variant="warmth" 
-                size="xl" 
+              <Button
+                variant="warmth"
+                size="xl"
                 className="w-full"
                 onClick={handleSubscribe}
                 disabled={isLoading}
@@ -229,8 +229,8 @@ const Premium = () => {
         )}
 
         {isPremium && (
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="w-full"
             onClick={handleManageSubscription}
             disabled={isLoading}
@@ -244,8 +244,8 @@ const Premium = () => {
         )}
 
         {/* Restore purchases */}
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           className="w-full text-muted-foreground"
           onClick={checkSubscription}
         >
@@ -257,7 +257,7 @@ const Premium = () => {
           Al suscribirte aceptas nuestros{" "}
           <a href="#" className="underline">Términos de Servicio</a> y{" "}
           <a href="#" className="underline">Política de Privacidad</a>.
-          La suscripción se renueva automáticamente a menos que se cancele 
+          La suscripción se renueva automáticamente a menos que se cancele
           al menos 24 horas antes del fin del período actual.
         </p>
       </main>

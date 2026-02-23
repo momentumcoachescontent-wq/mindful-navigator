@@ -245,6 +245,23 @@ const AdminDashboard = () => {
                         </CardContent>
                     </Card>
 
+                    <Card className="col-span-1 hover:border-primary/50 transition-colors cursor-pointer" onClick={() => navigate("/admin/ai")}>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Brain className="w-5 h-5 text-primary" />
+                                Cadenas de Inteligencia Artificial
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-sm text-muted-foreground mb-4">
+                                Configura y edita los Prompts Maestros (System Prompts) del bot.
+                            </p>
+                            <div className="flex items-center text-primary text-sm font-medium">
+                                Editar Prompts <ArrowRight className="w-4 h-4 ml-1" />
+                            </div>
+                        </CardContent>
+                    </Card>
+
                     <Card className="col-span-1 border-primary/20 bg-primary/5">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">

@@ -156,7 +156,7 @@ const Shop = () => {
                                     features={product.description?.includes("Tools") ? [
                                         "Escáner de Situaciones ILIMITADO",
                                         "Simulador de Conversaciones",
-                                        "Audios & Meditaciones Exclusivas"
+                                        "Sesiones de Voz Interior Exclusivas"
                                     ] : [
                                         "Acceso básico al Diario",
                                         "3 Escáneres mensuales",

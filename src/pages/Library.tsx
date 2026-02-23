@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AudioTrack } from "@/types/audio";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { Play, Pause, Lock, Search, Music, Mic, BookOpen, Sparkles, Loader2, ArrowLeft } from "lucide-react";
+import { Play, Pause, Lock, Search, Music, Mic, BookOpen, Sparkles, Loader2, ArrowLeft, Heart } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -21,6 +21,52 @@ const Library = () => {
     const navigate = useNavigate();
     const [search, setSearch] = useState("");
     const [activeTab, setActiveTab] = useState("all");
+    const [favorites, setFavorites] = useState<string[]>([]);
+
+    useEffect(() => {
+        if (!user) return;
+
+        const fetchFavorites = async () => {
+            const { data, error } = await supabase
+                .from("user_favorites")
+                .select("meditation_id")
+                .eq("user_id", user.id);
+
+            if (error) {
+                console.error("Error fetching favorites:", error);
+            } else {
+                setFavorites(data?.map((f: any) => f.meditation_id) || []);
+            }
+        };
+
+        fetchFavorites();
+    }, [user]);
+
+    const toggleFavorite = async (meditationId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!user) {
+            navigate("/auth");
+            return;
+        }
+
+        const isFavorite = favorites.includes(meditationId);
+
+        if (isFavorite) {
+            await supabase
+                .from("user_favorites")
+                .delete()
+                .eq("user_id", user.id)
+                .eq("meditation_id", meditationId);
+
+            setFavorites(favorites.filter((id) => id !== meditationId));
+        } else {
+            await supabase
+                .from("user_favorites")
+                .insert({ user_id: user.id, meditation_id: meditationId });
+
+            setFavorites([...favorites, meditationId]);
+        }
+    };
 
     const { data: tracks, isLoading } = useQuery({
         queryKey: ['audio-library'],
@@ -106,13 +152,13 @@ const Library = () => {
                     className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
                 >
                     <ArrowLeft className="w-5 h-5" />
-                    <span className="text-sm font-medium uppercase tracking-wider">Audioteca de Poder</span>
+                    <span className="text-sm font-medium uppercase tracking-wider">Voz Interior</span>
                 </button>
 
                 {/* Header */}
                 <div className="space-y-4">
-                    <h1 className="text-3xl font-bold font-display">Audioteca de Poder</h1>
-                    <p className="text-muted-foreground">Meditaciones, guías y sonidos para tu transformación.</p>
+                    <h1 className="text-3xl font-bold font-display">Voz Interior</h1>
+                    <p className="text-muted-foreground">Escucha. Regula. Domina tu historia.</p>
 
                     <div className="relative">
                         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -185,6 +231,22 @@ const Library = () => {
                                                 {track.title}
                                             </h3>
                                             <p className="text-xs text-muted-foreground capitalize">{track.category}</p>
+                                        </div>
+
+                                        <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                                            <button
+                                                onClick={(e) => toggleFavorite(track.id, e)}
+                                                className="p-2 hover:bg-muted rounded-lg transition-colors"
+                                            >
+                                                <Heart
+                                                    className={cn(
+                                                        "w-5 h-5 transition-colors",
+                                                        favorites.includes(track.id)
+                                                            ? "text-coral fill-coral"
+                                                            : "text-muted-foreground"
+                                                    )}
+                                                />
+                                            </button>
                                         </div>
 
                                         {currentTrack?.id === track.id && isPlaying && (

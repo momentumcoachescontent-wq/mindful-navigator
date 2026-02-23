@@ -25,9 +25,9 @@ const actions = [
   },
   {
     icon: Headphones,
-    label: "Meditaciones",
+    label: "Voz Interior",
     description: "Audio guiado",
-    path: "/meditations",
+    path: "/library",
     gradient: "from-deep-blue-light to-secondary",
   },
 ];

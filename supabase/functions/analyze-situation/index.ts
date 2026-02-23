@@ -79,6 +79,19 @@ NIVELES DE ALERTA:
 
 Responde SOLO con el JSON, sin texto adicional antes o después.`;
 
+async function getSystemPrompt(supabaseClient: SupabaseClient, key: string, fallback: string): Promise<string> {
+    try {
+        const { data } = await supabaseClient
+            .from('system_prompts')
+            .select('prompt_text')
+            .eq('key_name', key)
+            .single();
+        return data?.prompt_text || fallback;
+    } catch (e) {
+        return fallback;
+    }
+}
+
 function sanitizeInput(input: string): string {
     // Remove control characters except newline and tab
     return input.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim();
@@ -322,7 +335,8 @@ serve(async (req) => {
                 const currentScenario = scenario || "Conversación difícil";
                 const currentRole = personalityDescription || "Alguien neutral";
 
-                const systemPromptRoleplay = `Actúas como una IA de simulación realista para entrenamiento de inteligencia emocional.
+                const basePromptRoleplay = await getSystemPrompt(supabaseClient, 'analyze-situation-roleplay', 'Actúas como una IA de simulación realista para entrenamiento de inteligencia emocional.');
+                const systemPromptRoleplay = `${basePromptRoleplay}
 MODO: ROLEPLAY DE ENTRENAMIENTO
 ROL: ${currentRole}
 RASGO ADICIONAL: ${extraTrait || 'Neutral'}
@@ -374,8 +388,10 @@ Responde ÚNICAMENTE como el personaje. NO añadidas explicaciones externas.`;
             try {
                 const { person, emotion, messages: chatHistory, phase } = requestBody;
 
-                const systemPromptProjection = `Eres un guía de psicología junguiana especializado en trabajo de sombra y proyección psicológica.
-Tu rol es ayudar al usuario a descubrir qué parte de sí mismo está proyectando en otra persona cuando siente una reacción emocional intensa (juicio, irritación, envidia, asco).
+                const basePromptProjection = await getSystemPrompt(supabaseClient, 'analyze-situation-projection', `Eres un guía de psicología junguiana especializado en trabajo de sombra y proyección psicológica.
+Tu rol es ayudar al usuario a descubrir qué parte de sí mismo está proyectando en otra persona cuando siente una reacción emocional intensa (juicio, irritación, envidia, asco).`);
+
+                const systemPromptProjection = `${basePromptProjection}
 
 FILOSOFÍA CENTRAL:
 - Lo que más te irrita de otro, vive en algún rincón de ti mismo que no has integrado.
@@ -428,8 +444,10 @@ Responde SOLO el mensaje de la IA, sin explicaciones ni metadatos.`;
             try {
                 const { situation } = requestBody;
 
-                const systemPromptVictory = `Eres un coach especializado en crecimiento empoderador y resiliencia.
-El usuario acaba de registrar una "Victoria" personal en su diario, lo cual significa que logró poner un límite, vencer un miedo, o actuar a pesar de la resistencia emocional.
+                const basePromptVictory = await getSystemPrompt(supabaseClient, 'analyze-situation-victory', `Eres un coach especializado en crecimiento empoderador y resiliencia.
+El usuario acaba de registrar una "Victoria" personal en su diario, lo cual significa que logró poner un límite, vencer un miedo, o actuar a pesar de la resistencia emocional.`);
+
+                const systemPromptVictory = `${basePromptVictory}
 
 SITUACIÓN DEL USUARIO:
 "${situation}"
@@ -471,8 +489,10 @@ No incluyas markdown adicional (sin \`\`\`json). SOLO el objeto JSON.`;
 
         // --- MODE: FEEDBACK ---
         if (mode === "feedback") {
-            const systemPromptFeedback = `Eres un psicólogo experto en comunicación asertiva y crecimiento post-traumático.
-ANALIZA la conversación adjunta entre un usuario y un simulador. El usuario está practicando poner límites.
+            const basePromptFeedback = await getSystemPrompt(supabaseClient, 'analyze-situation-feedback', `Eres un psicólogo experto en comunicación asertiva y crecimiento post-traumático.
+ANALIZA la conversación adjunta entre un usuario y un simulador. El usuario está practicando poner límites.`);
+
+            const systemPromptFeedback = `${basePromptFeedback}
 
 CONTEXTO: ${context}
 ESCENARIO: ${scenario}
@@ -550,10 +570,12 @@ NO incluyas texto fuera del JSON.`;
 
         // 6. Call AI Service
         try {
+            const basePromptAnalysis = await getSystemPrompt(supabaseClient, 'analyze-situation-system', systemPrompt);
+
             // For Gemini, we pass the user prompt and system prompt separately
             const aiResult = await aiService.generateText(
                 `Analiza la siguiente situación y genera el reporte JSON: \n\n${validation.sanitized}`,
-                systemPrompt,
+                basePromptAnalysis,
                 { temperature: 0.7 }
             );
 

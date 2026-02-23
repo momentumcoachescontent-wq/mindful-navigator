@@ -105,7 +105,17 @@ serve(async (req) => {
                     ? "Conecta lo que compartió con la sombra interna del usuario. Haz UNA sola pregunta que profundice la auto-observación."
                     : "Ofrece una revelación de sombra poderosa y compasiva. Nombra el patrón proyectado con claridad y sin juicio.";
 
-        const systemPrompt = `Eres un guía de psicología junguiana especializado en trabajo de sombra.
+        // 1. Fetch Dynamic Prompt
+        const { data: promptData } = await supabase
+            .from('system_prompts')
+            .select('prompt_text')
+            .eq('key_name', 'shadow-guide-system')
+            .single();
+
+        const basePrompt = promptData?.prompt_text || "Eres un guía de psicología junguiana especializado en trabajo de sombra.";
+
+        // 2. Assemble Final Prompt
+        const systemPrompt = `${basePrompt}
 
 PERSONA EN CUESTIÓN: ${person}
 EMOCIÓN DISPARADORA: ${emotion}
