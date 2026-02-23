@@ -100,7 +100,8 @@ export function AdminToolUsageChart() {
                                 backgroundColor: "hsl(var(--background))",
                                 borderColor: "hsl(var(--border))",
                                 borderRadius: "8px",
-                                fontSize: "12px"
+                                fontSize: "12px",
+                                color: "hsl(var(--foreground))"
                             }}
                             formatter={(value: number) => [`${value} usos`, "Interacciones"]}
                         />

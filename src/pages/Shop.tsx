@@ -40,7 +40,18 @@ const Shop = () => {
                 .order('order_index', { ascending: true });
 
             if (error) throw error;
-            return data as unknown as Product[];
+
+            // Deduplicate products by title to avoid UI mess if DB has duplicates
+            const uniqueProducts = [];
+            const titles = new Set();
+            for (const item of (data || [])) {
+                if (!titles.has(item.title)) {
+                    titles.add(item.title);
+                    uniqueProducts.push(item);
+                }
+            }
+
+            return uniqueProducts as unknown as Product[];
         }
     });
 

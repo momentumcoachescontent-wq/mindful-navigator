@@ -105,6 +105,12 @@ const Index = () => {
       selectedReflection = FALLBACK_REFLECTIONS[randomIndex];
     }
 
+    // Ensure it's not the exact same as the current one so the user sees a change
+    if (dailyReflection && selectedReflection.content === dailyReflection.content) {
+      const randomIndex = Math.floor(Math.random() * FALLBACK_REFLECTIONS.length);
+      selectedReflection = FALLBACK_REFLECTIONS[(randomIndex + 1) % FALLBACK_REFLECTIONS.length];
+    }
+
     setDailyReflection(selectedReflection);
   };
 
