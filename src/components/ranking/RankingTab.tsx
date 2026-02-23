@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { RankingTrendsChart } from "./RankingTrendsChart";
+import { UserHealthChart } from "./UserHealthChart";
 
 export function RankingTab() {
   const { user } = useAuth();
@@ -91,8 +92,11 @@ export function RankingTab() {
         setLevelFilter={setLevelFilter}
       />
 
-      {/* Trends Chart */}
-      <RankingTrendsChart />
+      {/* Trends & Health Charts */}
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+        <RankingTrendsChart />
+        <UserHealthChart />
+      </div>
 
       {/* User's position card (sticky) */}
       <UserPositionCard
