@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { AdminToolUsageChart } from "@/components/admin/AdminToolUsageChart";
 import { AdminMoodTrendChart } from "@/components/admin/AdminMoodTrendChart";
+import { AdminSemanticCloud } from "@/components/admin/AdminSemanticCloud";
 
 interface AdminStats {
     total_users: number;
@@ -178,6 +179,11 @@ const AdminDashboard = () => {
                 <div className="grid gap-4 md:grid-cols-2">
                     <AdminMoodTrendChart />
                     <AdminToolUsageChart />
+                </div>
+
+                {/* Qualitative Analysis */}
+                <div className="grid gap-4 grid-cols-1">
+                    <AdminSemanticCloud />
                 </div>
 
                 {/* Detailed Sections / Navigation */}
