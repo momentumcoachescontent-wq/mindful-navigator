@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      anon_ai_usage: {
+        Row: {
+          created_at: string
+          id: string
+          ip_address: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_address: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_address?: string
+        }
+        Relationships: []
+      }
       audio_content: {
         Row: {
           audio_url: string | null
@@ -23,6 +41,7 @@ export type Database = {
           duration: number
           id: string
           image_url: string | null
+          is_featured: boolean | null
           is_premium: boolean
           title: string
         }
@@ -34,6 +53,7 @@ export type Database = {
           duration?: number
           id?: string
           image_url?: string | null
+          is_featured?: boolean | null
           is_premium?: boolean
           title: string
         }
@@ -45,6 +65,7 @@ export type Database = {
           duration?: number
           id?: string
           image_url?: string | null
+          is_featured?: boolean | null
           is_premium?: boolean
           title?: string
         }
@@ -228,6 +249,7 @@ export type Database = {
           description: string | null
           duration_seconds: number
           id: string
+          is_featured: boolean | null
           is_free: boolean
           narrator: string | null
           order_index: number | null
@@ -241,6 +263,7 @@ export type Database = {
           description?: string | null
           duration_seconds?: number
           id?: string
+          is_featured?: boolean | null
           is_free?: boolean
           narrator?: string | null
           order_index?: number | null
@@ -254,6 +277,7 @@ export type Database = {
           description?: string | null
           duration_seconds?: number
           id?: string
+          is_featured?: boolean | null
           is_free?: boolean
           narrator?: string | null
           order_index?: number | null
@@ -376,6 +400,7 @@ export type Database = {
           image_url: string | null
           is_active: boolean
           is_featured: boolean
+          order_index: number | null
           price: number
           title: string
         }
@@ -389,6 +414,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           is_featured?: boolean
+          order_index?: number | null
           price?: number
           title: string
         }
@@ -402,6 +428,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           is_featured?: boolean
+          order_index?: number | null
           price?: number
           title?: string
         }
@@ -419,7 +446,9 @@ export type Database = {
           is_admin: boolean | null
           is_premium: boolean | null
           is_ranking_private: boolean | null
+          is_ranking_public: boolean | null
           last_check_in_date: string | null
+          longest_streak: number | null
           notifications_email: boolean | null
           notifications_push: boolean | null
           occupation: string | null
@@ -440,7 +469,9 @@ export type Database = {
           is_admin?: boolean | null
           is_premium?: boolean | null
           is_ranking_private?: boolean | null
+          is_ranking_public?: boolean | null
           last_check_in_date?: string | null
+          longest_streak?: number | null
           notifications_email?: boolean | null
           notifications_push?: boolean | null
           occupation?: string | null
@@ -461,7 +492,9 @@ export type Database = {
           is_admin?: boolean | null
           is_premium?: boolean | null
           is_ranking_private?: boolean | null
+          is_ranking_public?: boolean | null
           last_check_in_date?: string | null
+          longest_streak?: number | null
           notifications_email?: boolean | null
           notifications_push?: boolean | null
           occupation?: string | null
@@ -480,6 +513,7 @@ export type Database = {
           alert_level: string | null
           created_at: string
           id: string
+          observations: string | null
           recommended_tools: string[] | null
           red_flags: string[] | null
           situation_text: string
@@ -491,6 +525,7 @@ export type Database = {
           alert_level?: string | null
           created_at?: string
           id?: string
+          observations?: string | null
           recommended_tools?: string[] | null
           red_flags?: string[] | null
           situation_text: string
@@ -502,6 +537,7 @@ export type Database = {
           alert_level?: string | null
           created_at?: string
           id?: string
+          observations?: string | null
           recommended_tools?: string[] | null
           red_flags?: string[] | null
           situation_text?: string
@@ -773,7 +809,42 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_update_profile_status: {
+        Args: {
+          p_is_admin?: boolean
+          p_is_premium?: boolean
+          p_target_user_id: string
+        }
+        Returns: undefined
+      }
+      custom_is_admin: { Args: never; Returns: boolean }
+      get_admin_semantic_cloud: {
+        Args: { days_back?: number }
+        Returns: {
+          frequency: number
+          word: string
+        }[]
+      }
       get_admin_stats: { Args: never; Returns: Json }
+      get_random_reflection: {
+        Args: never
+        Returns: {
+          author: string | null
+          category: string | null
+          content: string
+          created_at: string
+          display_date: string | null
+          id: string
+          is_active: boolean
+          order_index: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "daily_reflections"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       is_user_premium: { Args: { check_user_id: string }; Returns: boolean }
     }
     Enums: {
