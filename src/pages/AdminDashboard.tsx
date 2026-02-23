@@ -15,6 +15,7 @@ import { AdminToolUsageChart } from "@/components/admin/AdminToolUsageChart";
 import { AdminMoodTrendChart } from "@/components/admin/AdminMoodTrendChart";
 import { AdminSemanticCloud } from "@/components/admin/AdminSemanticCloud";
 import { AdminRiskRadar } from "@/components/admin/AdminRiskRadar";
+import { AdminJournalSearch } from "@/components/admin/AdminJournalSearch";
 
 interface AdminStats {
     total_users: number;
@@ -186,6 +187,7 @@ const AdminDashboard = () => {
                 <div className="grid gap-4 grid-cols-1">
                     <AdminSemanticCloud />
                     <AdminRiskRadar />
+                    <AdminJournalSearch />
                 </div>
 
                 {/* Detailed Sections / Navigation */}
