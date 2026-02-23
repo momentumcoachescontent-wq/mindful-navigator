@@ -30,8 +30,8 @@ serve(async (req) => {
             cryptoProvider
         );
     } catch (err) {
-        console.error(`Webhook signature verification failed: ${err.message}`);
-        return new Response(err.message, { status: 400 });
+        console.error(`Webhook signature verification failed: ${(err as Error).message}`);
+        return new Response((err as Error).message, { status: 400 });
     }
 
     console.log(`Event received: ${event.type}`);
