@@ -31,6 +31,7 @@ const Index = () => {
     content: string;
     author: string | null;
   } | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
 
 
@@ -74,6 +75,7 @@ const Index = () => {
    * Dictionary-first approach: Tries DB, falls back to local constant.
    */
   const getRandomReflection = async () => {
+    setIsRefreshing(true);
     let selectedReflection = null;
 
     try {
@@ -112,6 +114,7 @@ const Index = () => {
     }
 
     setDailyReflection(selectedReflection);
+    setTimeout(() => setIsRefreshing(false), 400); // Visual feedback pause
   };
 
   useEffect(() => {
@@ -370,10 +373,11 @@ const Index = () => {
             <Button
               variant="ghost"
               size="icon"
+              disabled={isRefreshing}
               className="h-6 w-6 text-primary-foreground/70 hover:text-primary-foreground hover:bg-white/10"
               onClick={() => getRandomReflection()}
             >
-              <RefreshCw className="h-3 w-3" />
+              <RefreshCw className={`h-3 w-3 ${isRefreshing ? "animate-spin" : ""}`} />
               <span className="sr-only">Nueva reflexión</span>
             </Button>
           </div>

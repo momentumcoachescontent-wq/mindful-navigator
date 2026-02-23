@@ -96,14 +96,17 @@ export function AdminToolUsageChart() {
                             ))}
                         </Pie>
                         <Tooltip
-                            contentStyle={{
-                                backgroundColor: "hsl(var(--background))",
-                                borderColor: "hsl(var(--border))",
-                                borderRadius: "8px",
-                                fontSize: "12px",
-                                color: "hsl(var(--foreground))"
+                            content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                    return (
+                                        <div className="bg-background border border-border p-3 rounded-lg shadow-md text-xs text-foreground">
+                                            <p className="font-semibold mb-1 opacity-90">{payload[0].name}</p>
+                                            <p className="text-primary font-medium">{payload[0].value} usos <span className="text-muted-foreground font-normal">(Interacciones)</span></p>
+                                        </div>
+                                    );
+                                }
+                                return null;
                             }}
-                            formatter={(value: number) => [`${value} usos`, "Interacciones"]}
                         />
                         <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: "12px", paddingTop: "10px", color: "hsl(var(--foreground))" }} />
                     </PieChart>

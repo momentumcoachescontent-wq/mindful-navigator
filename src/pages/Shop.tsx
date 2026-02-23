@@ -45,8 +45,9 @@ const Shop = () => {
             const uniqueProducts = [];
             const titles = new Set();
             for (const item of (data || [])) {
-                if (!titles.has(item.title)) {
-                    titles.add(item.title);
+                const normalizedTitle = item.title.trim().toLowerCase();
+                if (!titles.has(normalizedTitle)) {
+                    titles.add(normalizedTitle);
                     uniqueProducts.push(item);
                 }
             }
