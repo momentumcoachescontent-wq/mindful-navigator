@@ -39,7 +39,7 @@ BEGIN
       END as risk_level,
       -- Extraction of matched keywords for context (simple approach)
       array_to_string(ARRAY(
-        SELECT match[1] 
+        SELECT DISTINCT match[1] 
         FROM regexp_matches(lower(j.content), '\y(suicidio|matarme|morir|ya no puedo mas|rendirme|desesperacion|quitarmela vida|acabar con todo|depresion|ansiedad|panico|vacio|soledad extrema|dolor insoportable|crisis|llorar sin parar|no tiene sentido)\y', 'g') as match
       ), ', ') as matched_keywords
     FROM public.journal_entries j

@@ -24,9 +24,9 @@ export const AdminRiskRadar = () => {
         const fetchRiskRadar = async () => {
             try {
                 // @ts-ignore
-                const { data, error } = await supabase.rpc("get_admin_risk_radar", { days_back: 15 });
+                const { data, error } = await supabase.rpc("get_admin_risk_radar" as any, { days_back: 15 });
                 if (error) throw error;
-                setEntries((data as RiskEntry[]) || []);
+                setEntries((data as unknown as RiskEntry[]) || []);
             } catch (error) {
                 console.error("Error fetching risk radar:", error);
             } finally {
@@ -65,8 +65,8 @@ export const AdminRiskRadar = () => {
                             <div
                                 key={entry.entry_id}
                                 className={`p-4 rounded-xl border ${entry.risk_level === 'Alto'
-                                        ? 'bg-destructive/10 border-destructive/30'
-                                        : 'bg-warning/10 border-warning/30'
+                                    ? 'bg-destructive/10 border-destructive/30'
+                                    : 'bg-warning/10 border-warning/30'
                                     }`}
                             >
                                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-3">
@@ -88,10 +88,6 @@ export const AdminRiskRadar = () => {
                                         <span className="text-muted-foreground mr-2">Keywords:</span>
                                         <span className="font-medium text-destructive">{entry.matched_keywords}</span>
                                     </div>
-                                </div>
-
-                                <div className="text-sm text-foreground/80 italic border-l-2 border-primary/30 pl-3">
-                                    "{entry.content.length > 200 ? entry.content.substring(0, 200) + '...' : entry.content}"
                                 </div>
                             </div>
                         ))}
