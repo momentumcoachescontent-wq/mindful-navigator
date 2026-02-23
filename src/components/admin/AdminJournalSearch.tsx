@@ -98,25 +98,27 @@ export const AdminJournalSearch = () => {
                         <div className="text-sm text-primary font-medium sticky top-0 bg-background/95 backdrop-blur-sm py-2 z-10">
                             Se encontraron {results.length} coincidencias
                         </div>
-                        {results.map((entry) => (
-                            <div key={entry.entry_id} className="p-4 rounded-xl border bg-card/50 hover:bg-card/80 transition-colors">
-                                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-3">
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className="font-semibold">{entry.display_name}</span>
-                                            <span className="text-sm text-muted-foreground">{entry.email}</span>
+                        {results.map((entry) => {
+                            const count = (entry.content.match(new RegExp(searchTerm, 'gi')) || []).length;
+                            return (
+                                <div key={entry.entry_id} className="p-4 rounded-xl border bg-card/50 hover:bg-card/80 transition-colors">
+                                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="font-semibold">{entry.display_name}</span>
+                                                <span className="text-sm text-muted-foreground">{entry.email}</span>
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">
+                                                {format(new Date(entry.created_at), "d 'de' MMMM, yyyy 'a las' HH:mm", { locale: es })}
+                                            </div>
                                         </div>
-                                        <div className="text-xs text-muted-foreground">
-                                            {format(new Date(entry.created_at), "d 'de' MMMM, yyyy 'a las' HH:mm", { locale: es })}
+                                        <div className="flex bg-primary/10 border border-primary/20 text-primary text-sm px-3 py-1.5 rounded-md items-center font-bold">
+                                            <span className="mr-1">{count}</span> {count === 1 ? 'coincidencia' : 'coincidencias'}
                                         </div>
                                     </div>
                                 </div>
-
-                                <div className="text-sm text-foreground/80 border-l-2 border-primary/30 pl-3 leading-relaxed">
-                                    {highlightContent(entry.content, searchTerm)}
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 ) : null}
 
