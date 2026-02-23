@@ -104,7 +104,7 @@ export function AdminToolUsageChart() {
                             }}
                             formatter={(value: number) => [`${value} usos`, "Interacciones"]}
                         />
-                        <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }} />
+                        <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: "12px", paddingTop: "10px", color: "hsl(var(--foreground))" }} />
                     </PieChart>
                 </ResponsiveContainer>
             </CardContent>

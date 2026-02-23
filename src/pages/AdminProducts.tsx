@@ -276,7 +276,7 @@ const AdminProducts = () => {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <span className="capitalize px-2 py-1 rounded-full bg-secondary text-xs">
+                  <span className="capitalize px-2 py-1 rounded-full bg-secondary text-secondary-foreground text-xs font-medium">
                     {product.category}
                   </span>
                 </TableCell>

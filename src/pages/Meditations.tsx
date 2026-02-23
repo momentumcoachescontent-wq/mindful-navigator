@@ -174,7 +174,9 @@ const Meditations = () => {
               Guiadas por Ernesto
             </p>
           </div>
-          <Headphones className="w-8 h-8 text-primary" />
+          <Button variant="ghost" size="icon-sm" onClick={() => navigate("/sos")} className="text-coral hover:text-coral hover:bg-coral/10">
+            <Heart className="w-6 h-6 fill-current" />
+          </Button>
         </div>
       </header>
 
@@ -280,7 +282,7 @@ const Meditations = () => {
                     </h4>
                     {!meditation.is_free && (
                       <span className="px-1.5 py-0.5 text-[9px] font-medium bg-coral/10 text-coral rounded">
-                        PRO
+                        PREMIUM
                       </span>
                     )}
                   </div>

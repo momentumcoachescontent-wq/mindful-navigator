@@ -145,7 +145,6 @@ const Settings = () => {
                 { icon: Bell, label: "Notificaciones", path: "/settings/notifications", desc: "Alertas y recordatorios" },
                 { icon: Shield, label: "Privacidad y seguridad", path: "/settings/privacy", desc: "Visibilidad y datos" },
                 { icon: Heart, label: "Contactos de confianza", path: "/settings/contacts", desc: "Red de apoyo" },
-                { icon: Moon, label: "Apariencia", path: "/settings/appearance", desc: "Tema claro u oscuro" },
             ].map((item) => (
                 <button
                     key={item.path}

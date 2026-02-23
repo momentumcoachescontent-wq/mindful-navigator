@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Package, CreditCard, AlertCircle } from "lucide-react";
+import { Loader2, Package, CreditCard, AlertCircle, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -136,9 +136,14 @@ const MyOrders = () => {
 
     return (
         <div className="container mx-auto p-6 max-w-4xl space-y-8 pb-24">
-            <div className="flex flex-col gap-2">
-                <h1 className="text-3xl font-bold tracking-tight">Mis Pedidos</h1>
-                <p className="text-muted-foreground">Gestiona tus compras y suscripciones activas.</p>
+            <div className="flex items-start gap-4">
+                <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="mt-1">
+                    <ArrowLeft className="w-5 h-5" />
+                </Button>
+                <div className="flex flex-col gap-2">
+                    <h1 className="text-3xl font-bold tracking-tight">Mis Pedidos</h1>
+                    <p className="text-muted-foreground">Gestiona tus compras y suscripciones activas.</p>
+                </div>
             </div>
 
             <Tabs defaultValue="subscriptions" className="w-full">
