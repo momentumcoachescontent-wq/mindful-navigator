@@ -1,4 +1,4 @@
--- Update get_admin_stats for Resilience Engagement metrics
+-- Update get_admin_stats for Resilience Engagement metrics (Fixed Type Mismatch)
 
 CREATE OR REPLACE FUNCTION public.get_admin_stats()
 RETURNS JSON
@@ -15,7 +15,6 @@ DECLARE
   v_is_admin BOOLEAN;
   v_daily_missions_completed INTEGER;
   v_daily_xp_farmed INTEGER;
-  v_today TEXT;
 BEGIN
   -- AUTH CHECK
   SELECT is_admin INTO v_is_admin FROM public.profiles WHERE user_id = auth.uid();
@@ -23,8 +22,6 @@ BEGIN
   IF v_is_admin IS NOT TRUE THEN
     RAISE EXCEPTION 'Access denied. Admin privileges required.';
   END IF;
-
-  v_today := to_char(CURRENT_DATE, 'YYYY-MM-DD');
 
   SELECT COUNT(*) INTO v_total_users FROM public.profiles;
   SELECT COUNT(*) INTO v_premium_users FROM public.profiles WHERE is_premium = true;
@@ -38,8 +35,9 @@ BEGIN
 
   SELECT COALESCE(SUM(duration_seconds), 0) INTO v_total_audio_seconds FROM public.meditation_logs;
 
-  SELECT COUNT(*) INTO v_daily_missions_completed FROM public.daily_missions WHERE mission_date = v_today;
-  SELECT COALESCE(SUM(xp_earned), 0) INTO v_daily_xp_farmed FROM public.daily_missions WHERE mission_date = v_today;
+  -- Use CURRENT_DATE directly to avoid DATE vs TEXT comparison errors in Postgres
+  SELECT COUNT(*) INTO v_daily_missions_completed FROM public.daily_missions WHERE mission_date = CURRENT_DATE;
+  SELECT COALESCE(SUM(xp_earned), 0) INTO v_daily_xp_farmed FROM public.daily_missions WHERE mission_date = CURRENT_DATE;
 
   RETURN json_build_object(
     'total_users', v_total_users,
