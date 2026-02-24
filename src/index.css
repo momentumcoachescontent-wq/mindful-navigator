@@ -27,40 +27,40 @@
     --stone: 220 15% 40%;
     --charcoal: 220 30% 12%;
 
-    /* Semantic tokens (Neo-Brutalist Dark Defaults) */
-    --background: 220 30% 8%;
-    --foreground: 40 30% 95%;
+    /* Semantic tokens (Light Defaults) */
+    --background: 40 30% 97%; /* cream */
+    --foreground: 220 65% 10%; /* deep-blue */
 
-    --card: 220 30% 12%;
-    --card-foreground: 40 30% 95%;
+    --card: 0 0% 100%; /* solid white */
+    --card-foreground: 220 65% 10%;
 
-    --popover: 220 30% 12%;
-    --popover-foreground: 40 30% 95%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 65% 10%;
 
-    --primary: 175 100% 45%;
-    --primary-foreground: 220 65% 10%;
+    --primary: 175 100% 35%; /* darker turquoise for contrast vs white */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 40 30% 95%;
+    --secondary: 220 15% 92%;
     --secondary-foreground: 220 65% 10%;
 
-    --muted: 220 25% 18%;
-    --muted-foreground: 220 15% 60%;
+    --muted: 220 15% 92%;
+    --muted-foreground: 220 15% 40%; /* stone */
 
     --accent: 12 100% 62%;
-    --accent-foreground: 220 65% 10%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 100% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 160 100% 45%;
-    --success-foreground: 220 65% 10%;
+    --success: 160 100% 40%;
+    --success-foreground: 0 0% 100%;
 
     --warning: 38 100% 50%;
     --warning-foreground: 220 65% 10%;
 
-    --border: 220 25% 20%;
-    --input: 220 25% 20%;
-    --ring: 175 100% 45%;
+    --border: 220 15% 85%;
+    --input: 220 15% 85%;
+    --ring: 175 100% 35%;
 
     --radius: 0rem;
     /* Sharp corners for Brutalism */
