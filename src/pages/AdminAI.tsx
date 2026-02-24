@@ -144,6 +144,22 @@ const AdminAI = () => {
                                 <p className="text-sm mt-2">Asegúrate de haber ejecutado el script SQL semilla.</p>
                             </div>
                         )}
+
+                        <div className="mt-12 p-6 rounded-2xl bg-primary/5 border border-primary/20 shadow-sm space-y-4">
+                            <div className="flex items-center gap-2">
+                                <Brain className="w-5 h-5 text-primary" />
+                                <h3 className="font-semibold text-lg">Gestión de API Keys (LLMs)</h3>
+                            </div>
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                                Por seguridad arquitectónica (Evitar filtraciones en la Base de Datos pública), las llaves de Inteligencia Artificial
+                                (<strong className="text-foreground">OPENAI_API_KEY</strong>, <strong className="text-foreground">GEMINI_API_KEY</strong>)
+                                no se guardan en tablas. Deben ser inyectadas directamente a la Bóveda del Servidor (Supabase Vault).
+                            </p>
+                            <div className="bg-background/50 p-4 rounded-lg font-mono text-xs text-muted-foreground border">
+                                <div>1. Entra a tu Dashboard de Supabase &gt; Project Settings &gt; Edge Functions &gt; Secrets</div>
+                                <div className="mt-2">2. Haz clic en "Add new secret" y agrega tus llaves oficiales.</div>
+                            </div>
+                        </div>
                     </div>
                 )}
             </main>
