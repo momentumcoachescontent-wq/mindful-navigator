@@ -278,7 +278,7 @@ const Profile = () => {
         {/* Premium CTA */}
         {!profile?.is_premium && (
           <button
-            onClick={() => navigate("/premium")}
+            onClick={() => navigate("/shop")}
             className="w-full bg-gradient-to-r from-coral to-coral-light rounded-2xl p-5 shadow-glow-coral flex items-center gap-4 text-left transition-transform hover:scale-[1.01] active:scale-[0.99]"
           >
             <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">

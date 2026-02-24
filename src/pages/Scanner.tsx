@@ -162,7 +162,7 @@ const Scanner = () => {
           <div className="flex flex-col gap-3 mt-4">
             <Button
               className="w-full brutal-btn bg-primary text-primary-foreground hover:bg-primary/90"
-              onClick={() => navigate(authModalMessage.includes("Premium") ? "/premium" : "/auth")}
+              onClick={() => navigate(authModalMessage.includes("Premium") ? "/shop" : "/auth")}
             >
               {authModalMessage.includes("Premium") ? "Desbloquear Premium" : "Crear cuenta gratis"}
             </Button>

@@ -64,7 +64,7 @@ export function DailyChallenge() {
       if (progress.powerTokens > 0) {
         setUnlockMission(mission);
       } else {
-        navigate('/premium');
+        navigate('/shop');
       }
       return;
     }
@@ -259,7 +259,7 @@ export function DailyChallenge() {
             <Button
               variant="warmth"
               className="w-full"
-              onClick={() => navigate('/premium')}
+              onClick={() => navigate('/shop')}
             >
               <Sparkles className="w-4 h-4 mr-2" />
               Desbloquear Premium

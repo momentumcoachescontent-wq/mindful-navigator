@@ -109,10 +109,16 @@ const Onboarding = () => {
       }
 
       // --- Inyección Diario Día 1 ---
+      const welcomeContentData = {
+        title: "¡Bienviendo a tu Refugio!",
+        text: `¡Bienvenido/a a tu espacio seguro, ${name}!\n\nHoy diste el primer paso hacia tu calma. Tu misión de hoy (Día 1) es configurar tu perfil y tu red de apoyo en la sección de Contactos de Confianza (S.O.S.).\n\nAquí puedes escribir todo lo que necesites, sin juicios.`
+      };
+
       const welcomeEntry = {
         user_id: user.id,
-        content: `¡Bienvenido/a a tu espacio seguro, ${name}!\n\nHoy diste el primer paso hacia tu calma. Tu misión de hoy (Día 1) es configurar tu perfil y tu red de apoyo en la sección de Contactos de Confianza (S.O.S.).\n\nAquí puedes escribir todo lo que necesites, sin juicios.`,
-        mood: "esperanzah", // Asumiendo que es un mood válido, o "neutral"
+        content: JSON.stringify(welcomeContentData),
+        mood_score: 4,
+        entry_type: "daily",
         tags: ["bienvenida", "mision-dia-1"],
       };
 
@@ -128,10 +134,16 @@ const Onboarding = () => {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
 
+      const day2ContentData = {
+        title: "Misión Día 2: Exploración Activa",
+        text: `Hoy te invitamos a revisar la "Voz Interior" o usar el Escáner para reconocer cómo te sientes.\n\nEscucha un audio o haz un ejercicio corto y anota aquí tus reflexiones.`
+      };
+
       const day2Entry = {
         user_id: user.id,
-        content: `Misión Día 2: Exploración Activa\n\nHoy te invitamos a revisar la "Voz Interior" o usar el Escáner para reconocer cómo te sientes.\n\nEscucha un audio o haz un ejercicio corto y anota aquí tus reflexiones.`,
-        mood: "aliviado", // Un mood de exploración
+        content: JSON.stringify(day2ContentData),
+        mood_score: 3,
+        entry_type: "daily",
         tags: ["mision-dia-2"],
         created_at: tomorrow.toISOString(),
       };
