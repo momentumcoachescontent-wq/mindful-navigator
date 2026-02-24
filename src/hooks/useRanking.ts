@@ -108,18 +108,22 @@ export function useRanking(
       if (progressError) throw progressError;
 
       // Fetch profiles
-      const { data: profilesData, error: profilesError } = await supabase
+      let { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
-        .select(`
-          user_id,
-          display_name,
-          streak_count,
-          is_premium,
-          is_ranking_private,
-          country
-        `);
+        .select(`*`);
 
-      if (profilesError) throw profilesError;
+      // Si hay error en profiles (ej. country no existe), logueamos pero no crasheamos. 
+      // Sin embargo, si profiles falla, el ranking no puede construirse bien.
+      if (profilesError) {
+        console.error("Error fetching profiles for ranking (posible error de schema):", profilesError);
+        // Fallback a un select sin country
+        const { data: fallbackProfiles, error: fallbackError } = await supabase
+          .from("profiles")
+          .select(`user_id, display_name, streak_count, is_premium, is_ranking_private`);
+
+        if (fallbackError) throw fallbackError;
+        profilesData = fallbackProfiles as typeof profilesData;
+      }
 
       // If scope is 'circle', fetch user connections
       let circleFriendIds: string[] = [];
