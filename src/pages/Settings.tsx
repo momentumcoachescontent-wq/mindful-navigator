@@ -145,6 +145,7 @@ const Settings = () => {
                 { icon: Bell, label: "Notificaciones", path: "/settings/notifications", desc: "Alertas y recordatorios" },
                 { icon: Shield, label: "Privacidad y seguridad", path: "/settings/privacy", desc: "Visibilidad y datos" },
                 { icon: Heart, label: "Contactos de confianza", path: "/settings/contacts", desc: "Red de apoyo" },
+                { icon: Laptop, label: "Apariencia", path: "/settings/appearance", desc: "Tema claro, oscuro o sistema" },
             ].map((item) => (
                 <button
                     key={item.path}
@@ -340,6 +341,8 @@ const Settings = () => {
             const formData = new FormData(e.currentTarget);
             updateProfileMutation.mutate({
                 display_name: formData.get('display_name'),
+                phone_number: formData.get('phone_number'),
+                country: formData.get('country'),
                 age_range: formData.get('age_range'),
                 gender: formData.get('gender'),
                 occupation: formData.get('occupation'),
@@ -362,6 +365,36 @@ const Settings = () => {
                                 defaultValue={profile?.display_name || ''}
                                 placeholder="Tu nombre"
                             />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="phone_number">Número de Teléfono</Label>
+                            <Input
+                                id="phone_number"
+                                name="phone_number"
+                                type="tel"
+                                defaultValue={profile?.phone_number || ''}
+                                placeholder="Ej. +1 234 567 890"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="country">País</Label>
+                            <Select name="country" defaultValue={profile?.country || ''}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecciona tu país" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="MX">México</SelectItem>
+                                    <SelectItem value="ES">España</SelectItem>
+                                    <SelectItem value="CO">Colombia</SelectItem>
+                                    <SelectItem value="AR">Argentina</SelectItem>
+                                    <SelectItem value="PE">Perú</SelectItem>
+                                    <SelectItem value="CL">Chile</SelectItem>
+                                    <SelectItem value="US">Estados Unidos</SelectItem>
+                                    <SelectItem value="OT">Otro</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         <div className="space-y-2">

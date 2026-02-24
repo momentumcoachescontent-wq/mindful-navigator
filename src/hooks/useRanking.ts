@@ -115,10 +115,25 @@ export function useRanking(
           display_name,
           streak_count,
           is_premium,
-          is_ranking_private
+          is_ranking_private,
+          country
         `);
 
       if (profilesError) throw profilesError;
+
+      // If scope is 'circle', fetch user connections
+      let circleFriendIds: string[] = [];
+      if (scope === "circle" && user) {
+        const { data: connections } = await supabase
+          .from("user_connections")
+          .select("friend_id")
+          .eq("user_id", user.id)
+          .eq("status", "accepted");
+
+        if (connections) {
+          circleFriendIds = connections.map(c => c.friend_id);
+        }
+      }
 
       // Fetch missions for XP in period
       let missionsQuery = supabase.from("daily_missions").select("user_id, xp_earned, mission_date");
@@ -160,8 +175,9 @@ export function useRanking(
 
       // Build ranked users
       const rankedUsers: RankedUser[] = progressData
-        ?.filter((p) => {
+        .filter((p) => {
           const profile = profilesMap[p.user_id];
+          const currentUserProfile = profilesMap[user?.id || ""];
 
           // REGLA 1: Si el usuario visualizado es privado (is_ranking_private = true), ocultarlo.
           // REGLA 2: EXCEPCIÓN: Si el usuario visualizado es el propio usuario activo, mostrarlo SIEMPRE (para que él vea su propio ranking).
@@ -172,6 +188,19 @@ export function useRanking(
           // Filter by level if specified
           if (levelFilter && levelFilter !== "all" && p.current_level !== levelFilter) {
             return false;
+          }
+
+          // Filter by scope
+          if (scope === "country") {
+            // Only show users from the same country as the current user
+            if (!currentUserProfile?.country || profile?.country !== currentUserProfile.country) {
+              return false;
+            }
+          } else if (scope === "circle") {
+            // Only show user and their accepted friends
+            if (p.user_id !== user?.id && !circleFriendIds.includes(p.user_id)) {
+              return false;
+            }
           }
 
           return true;
