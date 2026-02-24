@@ -48,15 +48,12 @@ serve(async (req) => {
             supabaseServiceKey ?? ""
         );
 
-        // 2. Fetch Stripe Config
-        const { data: config, error: configError } = await supabaseAdmin
-            .from("payment_configs")
-            .select("secret_key, is_active")
-            .eq("provider", "stripe")
-            .single();
+        // 2. Fetch Stripe Config from Environment (Vault)
+        const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
 
-        if (configError || !config?.secret_key) {
-            throw new Error("Stripe Secret Key is missing in DB");
+        if (!stripeSecretKey) {
+            console.error("[CRÍTICO] STRIPE_SECRET_KEY no encontrada en las variables de entorno.");
+            throw new Error("Stripe configuration is missing. Please contact administrator.");
         }
 
         // 3. Fetch Product (including 'interval' for subscriptions)
@@ -104,7 +101,7 @@ serve(async (req) => {
         const stripeResponse = await fetch("https://api.stripe.com/v1/checkout/sessions", {
             method: "POST",
             headers: {
-                "Authorization": `Bearer ${config.secret_key}`,
+                "Authorization": `Bearer ${stripeSecretKey}`,
                 "Content-Type": "application/x-www-form-urlencoded",
             },
             body: params.toString(),

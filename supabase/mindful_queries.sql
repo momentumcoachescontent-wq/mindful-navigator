@@ -40,3 +40,11 @@ CREATE POLICY "Users can view their own connections"
 CREATE POLICY "Users can manage their own connections"
     ON public.user_connections FOR ALL
     USING (auth.uid() = user_id);
+
+-- ========================================================================================
+-- Phase 12: Mantenimiento, Seguridad y Optimización (CRÍTICO)
+-- ========================================================================================
+
+-- 1. Eliminar columna de secretos de pago (Migración a Supabase Vault / Entorno Deno)
+-- ADVERTENCIA: Antes de ejecutar esto, asegúrate de haber configurado STRIPE_SECRET_KEY en Deno.
+ALTER TABLE public.payment_configs DROP COLUMN IF EXISTS secret_key;

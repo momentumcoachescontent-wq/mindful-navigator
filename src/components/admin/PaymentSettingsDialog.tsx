@@ -21,7 +21,6 @@ interface PaymentConfig {
     id: string;
     provider: 'stripe' | 'paypal' | 'mercadopago';
     public_key: string | null;
-    secret_key: string | null;
     is_active: boolean;
 }
 
@@ -73,7 +72,6 @@ export function PaymentSettingsDialog() {
         saveMutation.mutate({
             provider: provider as any,
             public_key: formData.get('public_key') as string,
-            secret_key: formData.get('secret_key') as string,
             is_active: formData.get('is_active') === 'on',
         });
     };
@@ -112,10 +110,6 @@ export function PaymentSettingsDialog() {
                                     <Label htmlFor="stripe_pk">Public Key (Publishable)</Label>
                                     <Input id="stripe_pk" name="public_key" defaultValue={getConfig('stripe')?.public_key || ''} placeholder="pk_test_..." />
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="stripe_sk">Secret Key</Label>
-                                    <Input id="stripe_sk" name="secret_key" type="password" defaultValue={getConfig('stripe')?.secret_key || ''} placeholder="sk_test_..." />
-                                </div>
                                 <div className="flex items-center space-x-2 pt-2">
                                     <Switch id="stripe_active" name="is_active" defaultChecked={getConfig('stripe')?.is_active} />
                                     <Label htmlFor="stripe_active">Activar Stripe como método principal</Label>
@@ -133,10 +127,6 @@ export function PaymentSettingsDialog() {
                                     <Label htmlFor="paypal_client">Client ID</Label>
                                     <Input id="paypal_client" name="public_key" defaultValue={getConfig('paypal')?.public_key || ''} placeholder="Client ID..." />
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="paypal_secret">Client Secret</Label>
-                                    <Input id="paypal_secret" name="secret_key" type="password" defaultValue={getConfig('paypal')?.secret_key || ''} placeholder="Secret..." />
-                                </div>
                                 <div className="flex items-center space-x-2 pt-2">
                                     <Switch id="paypal_active" name="is_active" defaultChecked={getConfig('paypal')?.is_active} />
                                     <Label htmlFor="paypal_active">Activar PayPal</Label>
@@ -153,10 +143,6 @@ export function PaymentSettingsDialog() {
                                 <div className="space-y-2">
                                     <Label htmlFor="mp_key">Public Key</Label>
                                     <Input id="mp_key" name="public_key" defaultValue={getConfig('mercadopago')?.public_key || ''} placeholder="TEST-..." />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="mp_token">Access Token</Label>
-                                    <Input id="mp_token" name="secret_key" type="password" defaultValue={getConfig('mercadopago')?.secret_key || ''} placeholder="TEST-..." />
                                 </div>
                                 <div className="flex items-center space-x-2 pt-2">
                                     <Switch id="mp_active" name="is_active" defaultChecked={getConfig('mercadopago')?.is_active} />

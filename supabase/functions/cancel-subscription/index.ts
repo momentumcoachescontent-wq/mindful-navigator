@@ -54,14 +54,11 @@ serve(async (req) => {
             throw new Error("Subscription not found or does not belong to user");
         }
 
-        // 4. Fetch Stripe Config
-        const { data: config, error: configError } = await supabaseAdmin
-            .from("payment_configs")
-            .select("secret_key")
-            .eq("provider", "stripe")
-            .single();
+        // 4. Fetch Stripe Config from Environment
+        const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
 
-        if (configError || !config?.secret_key) {
+        if (!stripeSecretKey) {
+            console.error("[CRÍTICO] STRIPE_SECRET_KEY no encontrada");
             throw new Error("Stripe configuration missing");
         }
 
@@ -71,7 +68,7 @@ serve(async (req) => {
         const stripeResponse = await fetch(`https://api.stripe.com/v1/subscriptions/${subscription.stripe_subscription_id}`, {
             method: "POST",
             headers: {
-                "Authorization": `Bearer ${config.secret_key}`,
+                "Authorization": `Bearer ${stripeSecretKey}`,
                 "Content-Type": "application/x-www-form-urlencoded",
             },
             body: new URLSearchParams({
