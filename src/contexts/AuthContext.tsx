@@ -125,16 +125,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [session, checkSubscription, checkDbPremium]);
 
-  // Periodic subscription check (every 5 minutes)
+  // Real-Time subscription para cambios en el Perfil (Zero Polling)
   useEffect(() => {
-    if (!session) return;
+    if (!user) return;
 
-    const interval = setInterval(() => {
-      checkSubscription();
-      checkDbPremium();
-    }, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [session, checkSubscription, checkDbPremium]);
+    // Crea un canal para escuchar updates exclusivamente en el row de este usuario
+    const profileChannel = supabase
+      .channel("public:profiles")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "profiles",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log("[AuthContext] Perfil modificado vía Realtime:", payload);
+          // Si cambian propiedades premium, revaluamos el estado en el UI
+          if (
+            payload.new.is_premium !== undefined ||
+            payload.new.premium_until !== undefined
+          ) {
+            checkDbPremium();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(profileChannel);
+    };
+  }, [user, checkDbPremium]);
 
   const signUp = async (email: string, password: string) => {
     const redirectUrl = `${window.location.origin}/`;
