@@ -60,6 +60,16 @@ serve(async (req) => {
 
         if (orderError) console.error("Error inserting order:", orderError);
 
+        // 1.5 Update Profile to premium
+        if (userId) {
+            const { error: profileError } = await supabase
+                .from("profiles")
+                .update({ is_premium: true })
+                .eq("user_id", userId);
+
+            if (profileError) console.error("Error updating profile to premium:", profileError);
+        }
+
         // 2. Create/Update Subscription (If applicable)
         if (session.mode === 'subscription' && session.subscription) {
             // Retrieve subscription details to get period end
@@ -117,6 +127,23 @@ serve(async (req) => {
             .eq("stripe_subscription_id", subscription.id);
 
         if (error) console.error("Error updating subscription status:", error);
+
+        // 3. Revoke premium if subscription is deleted
+        if (event.type === "customer.subscription.deleted") {
+            const { data: subData } = await supabase
+                .from("user_subscriptions")
+                .select("user_id")
+                .eq("stripe_subscription_id", subscription.id)
+                .single();
+
+            if (subData?.user_id) {
+                const { error: profileError } = await supabase
+                    .from("profiles")
+                    .update({ is_premium: false })
+                    .eq("user_id", subData.user_id);
+                if (profileError) console.error("Error revoking premium:", profileError);
+            }
+        }
     }
 
     return new Response(JSON.stringify({ received: true }), {

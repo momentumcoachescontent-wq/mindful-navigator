@@ -117,10 +117,11 @@ const Library = () => {
             toast.error("Contenido exclusivo para Premium", {
                 description: "Actualiza tu plan para acceder a esta meditación.",
                 action: {
-                    label: "Ver Planes",
+                    label: "Ir a Tienda",
                     onClick: () => navigate("/shop")
                 }
             });
+            navigate("/shop");
             return;
         }
 

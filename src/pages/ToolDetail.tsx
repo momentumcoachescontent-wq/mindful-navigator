@@ -177,37 +177,16 @@ const ToolDetail = () => {
 
   const isLocked = tool.is_premium && !isPremium;
 
+  useEffect(() => {
+    if (isLocked) {
+      navigate("/shop");
+    }
+  }, [isLocked, navigate]);
+
   if (isLocked) {
     return (
-      <div className="min-h-screen bg-background pb-24">
-        <header className="sticky top-0 z-40 glass border-b border-border/50">
-          <div className="container flex items-center gap-4 py-4">
-            <Button variant="ghost" size="icon-sm" onClick={() => navigate(-1)}>
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div className="flex-1">
-              <h1 className="text-lg font-display font-bold text-foreground">{tool.title}</h1>
-            </div>
-          </div>
-        </header>
-
-        <main className="container py-12 text-center space-y-6">
-          <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-coral/20 to-coral-light/20 flex items-center justify-center">
-            <Lock className="w-10 h-10 text-coral" />
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-xl font-display font-bold text-foreground">Contenido Premium</h2>
-            <p className="text-muted-foreground max-w-sm mx-auto">
-              Esta herramienta está disponible exclusivamente para miembros Premium.
-            </p>
-          </div>
-          <Button variant="warmth" onClick={() => navigate("/premium")}>
-            <Crown className="w-5 h-5" />
-            Desbloquear Premium
-          </Button>
-        </main>
-
-        <SOSButton />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }

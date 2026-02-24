@@ -52,6 +52,7 @@ const Onboarding = () => {
   const [ageRange, setAgeRange] = useState("");
   const [gender, setGender] = useState("");
   const [occupation, setOccupation] = useState("");
+  const [phone, setPhone] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleNextSlide = () => {
@@ -89,6 +90,7 @@ const Onboarding = () => {
         age_range: ageRange,
         gender: gender,
         occupation: occupation,
+        phone_number: phone || null,
         goals: selectedGoals,
         onboarding_completed: true,
         updated_at: new Date().toISOString(),
@@ -104,6 +106,42 @@ const Onboarding = () => {
       if (error) {
         console.error("Supabase update error (Status " + status + "):", error);
         throw error;
+      }
+
+      // --- Inyección Diario Día 1 ---
+      const welcomeEntry = {
+        user_id: user.id,
+        content: `¡Bienvenido/a a tu espacio seguro, ${name}!\n\nHoy diste el primer paso hacia tu calma. Tu misión de hoy (Día 1) es configurar tu perfil y tu red de apoyo en la sección de Contactos de Confianza (S.O.S.).\n\nAquí puedes escribir todo lo que necesites, sin juicios.`,
+        mood: "esperanzah", // Asumiendo que es un mood válido, o "neutral"
+        tags: ["bienvenida", "mision-dia-1"],
+      };
+
+      const { error: journalError } = await supabase
+        .from('journal_entries')
+        .insert([welcomeEntry]);
+
+      if (journalError) {
+        console.error("Error creating welcome journal entry:", journalError);
+      }
+
+      // --- Inyección Diario Día 2 ---
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const day2Entry = {
+        user_id: user.id,
+        content: `Misión Día 2: Exploración Activa\n\nHoy te invitamos a revisar la "Voz Interior" o usar el Escáner para reconocer cómo te sientes.\n\nEscucha un audio o haz un ejercicio corto y anota aquí tus reflexiones.`,
+        mood: "aliviado", // Un mood de exploración
+        tags: ["mision-dia-2"],
+        created_at: tomorrow.toISOString(),
+      };
+
+      const { error: journalError2 } = await supabase
+        .from('journal_entries')
+        .insert([day2Entry]);
+
+      if (journalError2) {
+        console.error("Error creating day 2 journal entry:", journalError2);
       }
 
       console.log("Update response status:", status, "Data:", data);
@@ -224,6 +262,17 @@ const Onboarding = () => {
                   <SelectItem value="Otro">Otro</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Teléfono móvil (Opcional)</Label>
+              <Input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+52 123 456 7890"
+                className="py-6"
+              />
             </div>
 
             <Button

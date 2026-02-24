@@ -201,12 +201,13 @@ const Settings = () => {
     const renderPrivacy = () => {
         if (isLoadingProfile) return <Loader2 className="w-8 h-8 animate-spin mx-auto" />;
         const isPublic = (profile as any)?.is_ranking_public;
+        const hideSos = (profile as any)?.hide_sos;
 
         return (
             <Card>
                 <CardHeader>
-                    <CardTitle>Privacidad</CardTitle>
-                    <CardDescription>Controla quién puede ver tu actividad.</CardDescription>
+                    <CardTitle>Privacidad y Preferencias</CardTitle>
+                    <CardDescription>Controla tu visibilidad y accesos rápidos.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="flex items-center justify-between">
@@ -217,6 +218,16 @@ const Settings = () => {
                         <Switch
                             checked={isPublic}
                             onCheckedChange={handlePrivacyToggle}
+                        />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                            <Label>Ocultar Botón S.O.S.</Label>
+                            <p className="text-xs text-muted-foreground">Oculta el botón flotante rojo (el acceso sigue disponible en herramientas)</p>
+                        </div>
+                        <Switch
+                            checked={hideSos ?? false}
+                            onCheckedChange={() => updateProfileMutation.mutate({ hide_sos: !hideSos } as any)}
                         />
                     </div>
                 </CardContent>
