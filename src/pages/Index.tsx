@@ -35,97 +35,51 @@ const Index = () => {
 
 
 
-  // Fallback content in case DB is unreachable
-  const FALLBACK_REFLECTIONS = [
-    { content: 'El miedo no es tu enemigo, es un mapa hacia tu poder oculto.', author: 'Más allá del Miedo' },
-    { content: 'La ansiedad es solo emoción contenida que pide movimiento.', author: 'Mindful Navigator' },
-    { content: 'No necesitas "arreglarte", solo necesitas observarte sin juicio.', author: 'Ernesto' },
-    { content: 'Tu oscuridad contiene la energía necesaria para tu propia iluminación.', author: 'Carl Jung' },
-    { content: 'Lo que resistes, persiste. Lo que aceptas, se transforma.', author: 'Carl Jung' },
-    { content: 'Hoy, sé el adulto que necesitabas cuando eras niño.', author: 'Inner Child' },
-    { content: 'Poner límites es un acto de amor propio, no de agresión.', author: 'Más allá del Miedo' },
-    { content: 'La incomodidad es el precio de la admisión para una vida significativa.', author: 'Susan David' },
-    { content: 'No eres tus pensamientos. Eres el cielo donde tus pensamientos son las nubes.', author: 'Eckhart Tolle' },
-    { content: 'Si te da paz, es el camino correcto. Si te da confusión, es una lección.', author: 'Anónimo' },
-    { content: 'La vulnerabilidad no es debilidad, es nuestra medida más precisa de valor.', author: 'Brené Brown' },
-    { content: 'Respira. Este momento es el único que tienes seguro.', author: 'Mindful Navigator' },
-    { content: 'Confía en la incertidumbre. Ahí es donde ocurre la magia.', author: 'Más allá del Miedo' },
-    { content: 'Perdonar no es liberar al otro, es liberarte a ti mismo del veneno.', author: 'Anónimo' },
-    { content: 'Tu cuerpo lleva la cuenta. Escucha lo que te dice tu tensión.', author: 'Bessel van der Kolk' },
-    { content: 'La disciplina es el puente entre metas y logros.', author: 'Jim Rohn' },
-    { content: 'No busques que el mundo cambie, cambia tu forma de verlo y el mundo cambiará.', author: 'Wayne Dyer' },
-    { content: 'El fracaso es solo información. No una sentencia.', author: 'Mindful Navigator' },
-    { content: 'Date permiso para descansar. No eres una máquina.', author: 'Self Care' },
-    { content: 'La felicidad no es la ausencia de problemas, es la habilidad de tratar con ellos.', author: 'Steve Maraboli' },
-    { content: 'Sé amable contigo mismo. Estás haciendo lo mejor que puedes.', author: 'Auto-compasión' },
-    { content: 'El primer paso para sanar es reconocer que te duele.', author: 'Más allá del Miedo' },
-    { content: 'No tienes que creer todo lo que piensas.', author: 'Byron Katie' },
-    { content: 'La paz viene de adentro. No la busques fuera.', author: 'Buda' },
-    { content: 'Cada vez que eliges lo difícil sobre lo fácil, ganas poder personal.', author: 'Stoicism' },
-    { content: 'Obsérvate a ti mismo como si fueras otra persona.', author: 'Distanciamiento' },
-    { content: 'El dolor es inevitable, el sufrimiento es opcional.', author: 'Haruki Murakami' },
-    { content: 'Hoy es un buen día para empezar de nuevo.', author: 'Esperanza' },
-    { content: 'Tus emociones son mensajeros, no dictadores.', author: 'Emotional Intelligence' },
-    { content: 'La libertad está al otro lado de tu miedo.', author: 'Más allá del Miedo' }
-  ];
+  // Único fallback genérico en caso de caída extrema de red
+  const GENERIC_FALLBACK = {
+    content: 'Respira. Este momento es el único que tienes seguro.',
+    author: 'Mindful Navigator'
+  };
 
   /* 
-   * Loads a random reflection.
-   * Dictionary-first approach: Tries DB, falls back to local constant.
+   * Extrae una reflexión aleatoria desde la tabla system_reflections.
    */
   const getRandomReflection = async () => {
     setIsRefreshing(true);
     let selectedReflection = null;
 
     try {
-      console.log("Fetching random reflection...");
-      // Using an RPC function for optimized ORDER BY random() LIMIT 1 on the DB
+      // Uso de RPC para ORDER BY random() LIMIT 1 optimizado
       const { data: reflections, error } = await supabase
         .rpc("get_random_reflection" as any) as any;
 
-      if (error) {
-        console.warn("Supabase fetch failed, utilizing fallback.", error);
-        throw error; // Trigger catch block
-      }
+      if (error) throw error;
 
       if (reflections && Array.isArray(reflections) && reflections.length > 0) {
         selectedReflection = reflections[0];
-        console.log(`Loaded reflection from DB`);
-      } else {
-        console.warn(`DB returned 0 items. Using fallback for variety.`);
-        selectedReflection = null;
       }
     } catch (error) {
-      console.log("Using local fallback content.");
+      console.warn("Fallo al obtener reflexión de Supabase. Usando fallback genérico.", error);
     }
 
-    // Final Fallback Logic
     if (!selectedReflection) {
-      console.log("Activating Fallback Logic (DB empty or insufficient)");
-      const randomIndex = Math.floor(Math.random() * FALLBACK_REFLECTIONS.length);
-      selectedReflection = FALLBACK_REFLECTIONS[randomIndex];
+      selectedReflection = GENERIC_FALLBACK;
     }
 
-    // Read last reflection from session to guarantee change across page reloads
+    // Evitar repetición consecutiva
     const lastReflection = sessionStorage.getItem('lastReflection');
-
-    // Ensure it's not the exact same as the current or previous one
-    if (
-      (dailyReflection && selectedReflection.content === dailyReflection.content) ||
-      (lastReflection && selectedReflection.content === lastReflection)
-    ) {
-      let randomIndex = Math.floor(Math.random() * FALLBACK_REFLECTIONS.length);
-      selectedReflection = FALLBACK_REFLECTIONS[randomIndex];
-
-      // Secondary check just in case the random fallback is also the same
-      if (selectedReflection.content === (dailyReflection?.content || lastReflection)) {
-        selectedReflection = FALLBACK_REFLECTIONS[(randomIndex + 1) % FALLBACK_REFLECTIONS.length];
-      }
+    if (selectedReflection.content === lastReflection && selectedReflection.content !== GENERIC_FALLBACK.content) {
+      try {
+        const { data: retryReflections } = await supabase.rpc("get_random_reflection" as any) as any;
+        if (retryReflections && retryReflections.length > 0 && retryReflections[0].content !== lastReflection) {
+          selectedReflection = retryReflections[0];
+        }
+      } catch (e) { }
     }
 
     sessionStorage.setItem('lastReflection', selectedReflection.content);
     setDailyReflection(selectedReflection);
-    setTimeout(() => setIsRefreshing(false), 400); // Visual feedback pause
+    setTimeout(() => setIsRefreshing(false), 400);
   };
 
   useEffect(() => {

@@ -2,23 +2,26 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Trophy, Sparkles } from 'lucide-react';
+import { Trophy, Sparkles, Globe, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 interface VictoryInputProps {
-  onSave: (text: string) => Promise<{ success: boolean }>;
+  onSave: (text: string, isPublic: boolean) => Promise<{ success: boolean }>;
 }
 
 export function VictoryInput({ onSave }: VictoryInputProps) {
   const [victoryText, setVictoryText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [isPublic, setIsPublic] = useState(false);
 
   const handleSave = async () => {
     if (!victoryText.trim() || isSaving) return;
 
     setIsSaving(true);
-    const result = await onSave(victoryText.trim());
+    const result = await onSave(victoryText.trim(), isPublic);
     setIsSaving(false);
 
     if (result.success) {
@@ -72,19 +75,44 @@ export function VictoryInput({ onSave }: VictoryInputProps) {
           className="min-h-[80px] resize-none"
           maxLength={280}
         />
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">
-            {victoryText.length}/280 caracteres
-          </span>
-          <Button
-            size="sm"
-            onClick={handleSave}
-            disabled={!victoryText.trim() || isSaving}
-            className="gap-1"
-          >
-            <Sparkles className="w-4 h-4" />
-            Guardar victoria
-          </Button>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/50">
+            <div className="flex items-center gap-2">
+              {isPublic ? (
+                <Globe className="w-4 h-4 text-primary animate-pulse" />
+              ) : (
+                <Lock className="w-4 h-4 text-muted-foreground" />
+              )}
+              <div className="flex flex-col">
+                <Label htmlFor="share-victory" className="text-sm font-medium cursor-pointer">
+                  Compartir en Comunidad
+                </Label>
+                <span className="text-[10px] text-muted-foreground">
+                  {isPublic ? "Inspirarás a otros valientes" : "Solo tú podrás ver esta victoria"}
+                </span>
+              </div>
+            </div>
+            <Switch
+              id="share-victory"
+              checked={isPublic}
+              onCheckedChange={setIsPublic}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">
+              {victoryText.length}/280 caracteres
+            </span>
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={!victoryText.trim() || isSaving}
+              className="gap-1 shadow-md hover:shadow-lg transition-all"
+            >
+              <Sparkles className="w-4 h-4" />
+              Guardar victoria
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

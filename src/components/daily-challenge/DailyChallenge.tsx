@@ -269,8 +269,12 @@ export function DailyChallenge() {
         </CardContent>
       </Card>
 
-      {/* Victory Input */}
-      <VictoryInput onSave={saveVictory} />
+      {/* Victory Input: Solo se muestra si el usuario ha completado todas las misiones gratuitas del día (Contratos de Sombra) */}
+      {allFreeDone && (
+        <div className="animate-fade-in">
+          <VictoryInput onSave={saveVictory} />
+        </div>
+      )}
 
       {/* Dialog for Shadow Contract */}
       <Dialog open={!!contractMission} onOpenChange={(open) => !open && setContractMission(null)}>

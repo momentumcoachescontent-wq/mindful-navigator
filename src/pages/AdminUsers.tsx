@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LevelBadge } from "@/components/gamification/LevelBadge";
-import { MoreHorizontal, Trash2, Star, ShieldAlert } from "lucide-react";
+import { MoreHorizontal, Trash2, Star, ShieldAlert, BookPlus } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -19,6 +19,16 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 interface UserProfile {
     id: string;
@@ -42,6 +52,10 @@ const AdminUsers = () => {
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const [isJournalModalOpen, setIsJournalModalOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+    const [journalEntry, setJournalEntry] = useState("");
+    const [isInjecting, setIsInjecting] = useState(false);
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -150,6 +164,39 @@ const AdminUsers = () => {
         } catch (error) {
             console.error(error);
             toast({ title: "Error", description: "No se pudo borrar el perfil.", variant: "destructive" });
+        }
+    };
+
+    const handleInjectJournal = async () => {
+        if (!selectedUser || !journalEntry.trim()) return;
+        setIsInjecting(true);
+
+        try {
+            const content = {
+                title: "Nota del Coach",
+                text: journalEntry,
+                tags: ["Nota Coach", "Admin"]
+            };
+
+            const { error } = await supabase
+                .from('journal_entries')
+                .insert([{
+                    user_id: selectedUser.user_id,
+                    content: JSON.stringify(content),
+                    entry_type: 'coach_note',
+                    tags: ["Nota Coach", "Admin"]
+                }]);
+
+            if (error) throw error;
+
+            toast({ title: "Diario Actualizado", description: `Se ha inyectado la nota en el diario de ${selectedUser.display_name}.` });
+            setIsJournalModalOpen(false);
+            setJournalEntry("");
+        } catch (error) {
+            console.error(error);
+            toast({ title: "Error de Inyección", description: "No se pudo insertar la nota en el diario.", variant: "destructive" });
+        } finally {
+            setIsInjecting(false);
         }
     };
 
@@ -263,6 +310,14 @@ const AdminUsers = () => {
                                                             {profile.is_admin ? "Degradar de Admin" : "Ascender a Admin"}
                                                         </DropdownMenuItem>
                                                         <DropdownMenuSeparator />
+                                                        <DropdownMenuItem onClick={() => {
+                                                            setSelectedUser(profile);
+                                                            setIsJournalModalOpen(true);
+                                                        }}>
+                                                            <BookPlus className="mr-2 h-4 w-4 text-primary" />
+                                                            Inyectar Diario
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator />
                                                         <DropdownMenuItem onClick={() => handleDeleteProfile(profile)} className="text-destructive font-bold focus:bg-destructive focus:text-destructive-foreground">
                                                             <Trash2 className="mr-2 h-4 w-4" />
                                                             La Guillotina (Borrar)
@@ -278,6 +333,39 @@ const AdminUsers = () => {
                     </CardContent>
                 </Card>
             </main>
+
+            {/* Modal de Inyección de Diario */}
+            <Dialog open={isJournalModalOpen} onOpenChange={setIsJournalModalOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Inyectar Nota al Diario</DialogTitle>
+                        <DialogDescription>
+                            Escribe una nota clínica o directriz que aparecerá directamente en el diario de {selectedUser?.display_name}.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="journal-content">Contenido de la nota</Label>
+                            <Textarea
+                                id="journal-content"
+                                placeholder="Escribe aquí tu observación o guía estratégica..."
+                                value={journalEntry}
+                                onChange={(e) => setJournalEntry(e.target.value)}
+                                className="min-h-[150px]"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setIsJournalModalOpen(false)} disabled={isInjecting}>
+                            Cancelar
+                        </Button>
+                        <Button onClick={handleInjectJournal} disabled={isInjecting || !journalEntry.trim()}>
+                            {isInjecting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <BookPlus className="w-4 h-4 mr-2" />}
+                            Inyectar Ahora
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

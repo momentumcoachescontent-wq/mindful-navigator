@@ -198,6 +198,24 @@ export function useDailyChallenge() {
         throw missionError;
       }
 
+      // Autogenerar entrada en el diario si es un Contrato Sombra (misión gratuita)
+      if (!mission.isPremium) {
+        const shadowContent = {
+          title: `Sombra Iluminada: ${mission.title}`,
+          text: `Acepté el Contrato de Sombra y completé mi misión: "${mission.description}". Un paso consciente fuera de la niebla.`,
+          tags: ["Sombra", "Contrato Completado"]
+        };
+
+        // Fuego y olvido (no bloqueamos el progreso si falla)
+        supabase.from('journal_entries').insert([{
+          user_id: user.id,
+          content: JSON.stringify(shadowContent),
+          entry_type: 'shadow',
+          tags: ['Sombra', 'Contrato Completado']
+        }] as never).then(() => { }).catch(e => console.error("Error saving shadow contract to journal:", e));
+      }
+
+
       // Update total XP
       const newTotalXP = progress.totalXP + xpEarned;
       const newLevel = getLevelFromXP(newTotalXP);
@@ -301,7 +319,7 @@ export function useDailyChallenge() {
   }, [user, achievements, progress.powerTokens]);
 
   // Save daily victory
-  const saveVictory = useCallback(async (victoryText: string) => {
+  const saveVictory = useCallback(async (victoryText: string, isPublic: boolean = false) => {
     if (!user) return { success: false, error: 'Inicia sesión para guardar' };
 
     try {
@@ -313,6 +331,7 @@ export function useDailyChallenge() {
         victory_text: victoryText,
         victory_date: today,
         xp_bonus: 10,
+        is_public: isPublic,
       }] as never);
 
       if (victoryError) {
