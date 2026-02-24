@@ -156,6 +156,12 @@ const ToolDetail = () => {
     fetchTool();
   }, [id]);
 
+  useEffect(() => {
+    if (tool && tool.is_premium && !isPremium) {
+      navigate("/shop", { replace: true });
+    }
+  }, [tool, isPremium, navigate]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -176,12 +182,6 @@ const ToolDetail = () => {
   }
 
   const isLocked = tool.is_premium && !isPremium;
-
-  useEffect(() => {
-    if (isLocked) {
-      navigate("/shop");
-    }
-  }, [isLocked, navigate]);
 
   if (isLocked) {
     return (
