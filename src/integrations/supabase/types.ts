@@ -334,7 +334,6 @@ export type Database = {
           is_active: boolean
           provider: string
           public_key: string | null
-          secret_key: string | null
           updated_at: string
         }
         Insert: {
@@ -343,7 +342,6 @@ export type Database = {
           is_active?: boolean
           provider: string
           public_key?: string | null
-          secret_key?: string | null
           updated_at?: string
         }
         Update: {
@@ -352,7 +350,6 @@ export type Database = {
           is_active?: boolean
           provider?: string
           public_key?: string | null
-          secret_key?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -438,10 +435,12 @@ export type Database = {
         Row: {
           age_range: string | null
           avatar_url: string | null
+          country: string | null
           created_at: string
           display_name: string | null
           gender: string | null
           goals: string[] | null
+          hide_sos: boolean | null
           id: string
           is_admin: boolean | null
           is_premium: boolean | null
@@ -453,6 +452,7 @@ export type Database = {
           notifications_push: boolean | null
           occupation: string | null
           onboarding_completed: boolean | null
+          phone_number: string | null
           premium_until: string | null
           streak_count: number | null
           updated_at: string
@@ -461,10 +461,12 @@ export type Database = {
         Insert: {
           age_range?: string | null
           avatar_url?: string | null
+          country?: string | null
           created_at?: string
           display_name?: string | null
           gender?: string | null
           goals?: string[] | null
+          hide_sos?: boolean | null
           id?: string
           is_admin?: boolean | null
           is_premium?: boolean | null
@@ -476,6 +478,7 @@ export type Database = {
           notifications_push?: boolean | null
           occupation?: string | null
           onboarding_completed?: boolean | null
+          phone_number?: string | null
           premium_until?: string | null
           streak_count?: number | null
           updated_at?: string
@@ -484,10 +487,12 @@ export type Database = {
         Update: {
           age_range?: string | null
           avatar_url?: string | null
+          country?: string | null
           created_at?: string
           display_name?: string | null
           gender?: string | null
           goals?: string[] | null
+          hide_sos?: boolean | null
           id?: string
           is_admin?: boolean | null
           is_premium?: boolean | null
@@ -499,6 +504,7 @@ export type Database = {
           notifications_push?: boolean | null
           occupation?: string | null
           onboarding_completed?: boolean | null
+          phone_number?: string | null
           premium_until?: string | null
           streak_count?: number | null
           updated_at?: string
@@ -602,6 +608,33 @@ export type Database = {
         }
         Relationships: []
       }
+      system_prompts: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          key_name: string
+          prompt_text: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key_name: string
+          prompt_text: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key_name?: string
+          prompt_text?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tools: {
         Row: {
           category: string
@@ -692,6 +725,30 @@ export type Database = {
           id?: string
           unlocked_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_connections: {
+        Row: {
+          created_at: string | null
+          friend_id: string | null
+          id: string
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          friend_id?: string | null
+          id?: string
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          friend_id?: string | null
+          id?: string
+          status?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
