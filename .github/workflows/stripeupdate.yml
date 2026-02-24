@@ -1,0 +1,2 @@
+supabase functions deploy create-checkout
+supabase functions deploy cancel-subscription
