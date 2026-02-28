@@ -1,4 +1,3 @@
-import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { SOSModal } from "@/components/sos/SOSModal";
@@ -34,7 +33,7 @@ export function SOSButton() {
         onClick={() => setIsOpen(true)}
         aria-label="Botón de ayuda rápida"
       >
-        <Heart className="w-6 h-6 fill-current" />
+        <span className="text-2xl leading-none select-none" role="img" aria-label="SOS">🆘</span>
       </Button>
 
       <SOSModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
