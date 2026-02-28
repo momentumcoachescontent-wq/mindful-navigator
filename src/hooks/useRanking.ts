@@ -185,8 +185,9 @@ export function useRanking(
           // GHOST FILTER 1: profile must exist
           if (!profile) return false;
 
-          // GHOST FILTER 2: user must have completed onboarding
-          if (!profile.onboarding_completed) return false;
+          // GHOST FILTER 2: exclude if onboarding explicitly set to false
+          // (null = old users who never had this field → still allow them)
+          if (profile.onboarding_completed === false) return false;
 
           // GHOST FILTER 3: user must have real activity (XP > 0 or streak > 0)
           // Always show the current user regardless of activity
@@ -207,15 +208,15 @@ export function useRanking(
 
           // Filter by scope
           if (scope === "country") {
-            // Only show users from the same country as the current user
-            if (!currentUserProfile?.country || profile?.country !== currentUserProfile.country) {
-              return false;
-            }
+            // Only apply country filter if the current user has a country set
+            const userCountry = currentUserProfile?.country;
+            if (!userCountry) return true; // no country set → show all
+            if (!profile?.country || profile.country !== userCountry) return false;
           } else if (scope === "circle") {
             // Only show user and their accepted friends
-            if (p.user_id !== user?.id && !circleFriendIds.includes(p.user_id)) {
-              return false;
-            }
+            // If the user has no friends yet, fall back to showing everyone
+            if (circleFriendIds.length === 0) return true; // no circle yet → global fallback
+            if (p.user_id !== user?.id && !circleFriendIds.includes(p.user_id)) return false;
           }
 
           return true;
