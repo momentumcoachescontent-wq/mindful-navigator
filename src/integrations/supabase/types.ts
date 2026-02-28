@@ -635,6 +635,27 @@ export type Database = {
         }
         Relationships: []
       }
+      system_reflections: {
+        Row: {
+          author: string | null
+          content: string
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          author?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          author?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       tools: {
         Row: {
           category: string
@@ -911,17 +932,13 @@ export type Database = {
         Args: never
         Returns: {
           author: string | null
-          category: string | null
           content: string
-          created_at: string
-          display_date: string | null
+          created_at: string | null
           id: string
-          is_active: boolean
-          order_index: number | null
         }[]
         SetofOptions: {
           from: "*"
-          to: "daily_reflections"
+          to: "system_reflections"
           isOneToOne: false
           isSetofReturn: true
         }
