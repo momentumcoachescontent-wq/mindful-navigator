@@ -189,7 +189,7 @@ const AdminUsers = () => {
                 .insert([{
                     user_id: selectedUser.user_id,
                     content: JSON.stringify(content),
-                    entry_type: 'coach_note',
+                    entry_type: 'reflection',  // CHECK: daily, victory, reflection, scanner_result
                     tags: ["Nota Coach", "Admin"]
                 }]);
 
@@ -232,7 +232,7 @@ const AdminUsers = () => {
                     text: broadcastMessage,
                     tags: ["Coach", "Broadcast"]
                 }),
-                entry_type: 'admin_note',
+                entry_type: 'reflection',  // CHECK: daily, victory, reflection, scanner_result
                 tags: ['Coach', 'Broadcast']
             }));
 
