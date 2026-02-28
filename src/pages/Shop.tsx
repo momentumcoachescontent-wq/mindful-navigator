@@ -306,9 +306,16 @@ const Shop = () => {
                                                     <span className="text-2xl font-bold text-primary">
                                                         {new Intl.NumberFormat('es-MX', { style: 'currency', currency: product.currency || 'MXN' }).format(product.price)}
                                                     </span>
-                                                    <Button size="lg" className="w-full sm:w-auto" onClick={() => handleProductClick(product)}>
-                                                        Reservar Ahora
-                                                    </Button>
+                                                    <div className="flex flex-col items-start gap-1 w-full sm:w-auto">
+                                                        <Button
+                                                            size="lg"
+                                                            disabled
+                                                            className="w-full sm:w-auto opacity-60 cursor-not-allowed"
+                                                        >
+                                                            Próximamente Disponible
+                                                        </Button>
+                                                        <span className="text-xs text-muted-foreground ml-1">Muy pronto, estamos preparando algo grande 🚀</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
