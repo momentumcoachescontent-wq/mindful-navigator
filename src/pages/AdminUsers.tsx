@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Search, Loader2, Shield, Trophy, Flame } from "lucide-react";
+import { ArrowLeft, Search, Loader2, Shield, Trophy, Flame, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -56,6 +56,12 @@ const AdminUsers = () => {
     const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
     const [journalEntry, setJournalEntry] = useState("");
     const [isInjecting, setIsInjecting] = useState(false);
+
+    // Broadcast state
+    const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
+    const [broadcastMessage, setBroadcastMessage] = useState("");
+    const [broadcastTitle, setBroadcastTitle] = useState("");
+    const [isBroadcasting, setIsBroadcasting] = useState(false);
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -200,6 +206,61 @@ const AdminUsers = () => {
         }
     };
 
+    // Broadcast a message to ALL users
+    const handleBroadcastJournal = async () => {
+        if (!broadcastMessage.trim()) return;
+        setIsBroadcasting(true);
+
+        try {
+            // Fetch all user_ids from profiles
+            const { data: allProfiles, error: fetchError } = await supabase
+                .from('profiles')
+                .select('user_id')
+                .not('user_id', 'is', null);
+
+            if (fetchError) throw fetchError;
+            if (!allProfiles || allProfiles.length === 0) {
+                toast({ title: "Sin usuarios", description: "No se encontraron usuarios activos.", variant: "destructive" });
+                return;
+            }
+
+            const title = broadcastTitle.trim() || "Mensaje de tu Coach";
+            const entries = allProfiles.map(p => ({
+                user_id: p.user_id,
+                content: JSON.stringify({
+                    title,
+                    text: broadcastMessage,
+                    tags: ["Coach", "Broadcast"]
+                }),
+                entry_type: 'admin_note',
+                tags: ['Coach', 'Broadcast']
+            }));
+
+            // Batch insert in chunks of 50 to avoid request size limits
+            const chunkSize = 50;
+            for (let i = 0; i < entries.length; i += chunkSize) {
+                const chunk = entries.slice(i, i + chunkSize);
+                const { error: insertError } = await supabase
+                    .from('journal_entries')
+                    .insert(chunk as never[]);
+                if (insertError) throw insertError;
+            }
+
+            toast({
+                title: "📡 Broadcast Enviado",
+                description: `Mensaje entregado a ${allProfiles.length} usuarios.`,
+            });
+            setIsBroadcastModalOpen(false);
+            setBroadcastMessage("");
+            setBroadcastTitle("");
+        } catch (error) {
+            console.error('Broadcast error:', error);
+            toast({ title: "Error en Broadcast", description: "No se pudo enviar el mensaje a todos los usuarios.", variant: "destructive" });
+        } finally {
+            setIsBroadcasting(false);
+        }
+    };
+
     const filteredUsers = users.filter(u =>
         (u.display_name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
         (u.id || "").includes(searchTerm)
@@ -227,6 +288,15 @@ const AdminUsers = () => {
                             Gestión de Usuarios
                         </h1>
                     </div>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 border-primary text-primary hover:bg-primary hover:text-white"
+                        onClick={() => setIsBroadcastModalOpen(true)}
+                    >
+                        <Radio className="w-4 h-4" />
+                        Broadcast
+                    </Button>
                 </div>
             </div>
 
@@ -366,7 +436,63 @@ const AdminUsers = () => {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Modal de Broadcast Masivo */}
+            <Dialog open={isBroadcastModalOpen} onOpenChange={setIsBroadcastModalOpen}>
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Radio className="w-5 h-5 text-primary" />
+                            Broadcast — Mensaje a Todos los Usuarios
+                        </DialogTitle>
+                        <DialogDescription>
+                            Este mensaje aparecerá en el <strong>diario personal</strong> de cada usuario registrado.
+                            Usa este poder con intención.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="broadcast-title">Título del mensaje</Label>
+                            <input
+                                id="broadcast-title"
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                placeholder="Mensaje de tu Coach"
+                                value={broadcastTitle}
+                                onChange={(e) => setBroadcastTitle(e.target.value)}
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="broadcast-content">Contenido del mensaje</Label>
+                            <Textarea
+                                id="broadcast-content"
+                                placeholder="Escribe aquí tu mensaje, guía o reflexión para toda la comunidad..."
+                                value={broadcastMessage}
+                                onChange={(e) => setBroadcastMessage(e.target.value)}
+                                className="min-h-[150px]"
+                            />
+                        </div>
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800 flex items-start gap-2">
+                            <span className="text-lg leading-none">⚠️</span>
+                            <span>Este mensaje se enviará a <strong>todos los {users.length} usuarios</strong> listados. Esta acción no se puede deshacer.</span>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setIsBroadcastModalOpen(false)} disabled={isBroadcasting}>
+                            Cancelar
+                        </Button>
+                        <Button
+                            onClick={handleBroadcastJournal}
+                            disabled={isBroadcasting || !broadcastMessage.trim()}
+                            className="gap-2"
+                        >
+                            {isBroadcasting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Radio className="w-4 h-4" />}
+                            {isBroadcasting ? "Enviando..." : `Enviar a todos (${users.length})`}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
+
     );
 };
 
