@@ -1,15 +1,14 @@
-import { Mic, MicOff, Loader2 } from 'lucide-react';
+import { Mic, MicOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { cn } from '@/lib/utils';
-import { useEffect } from 'react';
 
 interface MicrophoneButtonProps {
     onTextReceived: (text: string) => void;
     className?: string;
     size?: "default" | "sm" | "lg" | "icon" | "icon-sm";
     variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | "calm";
-    placeholder?: string; // Optional: text to show when listening
+    placeholder?: string;
 }
 
 export const MicrophoneButton = ({
@@ -24,36 +23,50 @@ export const MicrophoneButton = ({
         isSupported,
         startListening,
         stopListening,
-        transcript
     } = useSpeechRecognition({
         onResult: (text) => {
-            // We pass the final text to the parent
             onTextReceived(text);
-        }
+        },
+        continuous: true,
     });
 
-    // Optional: pass interim results if needed via another prop, 
-    // but for now we just handle final result in onResult.
-
     if (!isSupported) return null;
+
+    /**
+     * Push-to-talk behavior:
+     * - onPointerDown → start listening (works for mouse & touch)
+     * - onPointerUp / onPointerLeave → stop listening
+     *   onPointerLeave covers the case where the user drags finger off the button
+     */
+    const handlePointerDown = (e: React.PointerEvent) => {
+        e.preventDefault(); // prevent focus/blur stealing on mobile
+        startListening();
+    };
+
+    const handlePointerUp = (e: React.PointerEvent) => {
+        e.preventDefault();
+        stopListening();
+    };
 
     return (
         <Button
             type="button"
-            variant={isListening ? "destructive" : variant} // Red when listening
+            variant={isListening ? "destructive" : variant}
             size={size}
-            onClick={isListening ? stopListening : startListening}
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp}
+            onPointerLeave={handlePointerUp}
             className={cn(
-                "transition-all duration-300",
-                isListening && "animate-pulse ring-2 ring-destructive/30",
+                "transition-all duration-200 touch-none select-none",
+                isListening && "animate-pulse ring-2 ring-destructive/40 scale-110",
                 className
             )}
-            title={isListening ? "Detener dictado" : "Iniciar dictado"}
+            title={isListening ? "Suelta para detener" : "Mantén presionado para hablar"}
         >
             {isListening ? (
                 <span className="flex items-center gap-2">
                     <MicOff className="w-4 h-4" />
-                    {placeholder && <span className="text-xs animate-pulse">Escuchando...</span>}
+                    {placeholder && <span className="text-xs">Escuchando...</span>}
                 </span>
             ) : (
                 <Mic className="w-4 h-4" />

@@ -27,13 +27,13 @@ export function SOSButton() {
   return (
     <>
       <Button
-        variant="sos"
+        variant="ghost"
         size="icon-lg"
-        className="fixed bottom-24 right-4 z-50 rounded-full animate-pulse-soft"
+        className="fixed bottom-24 right-4 z-50 hover:bg-transparent"
         onClick={() => setIsOpen(true)}
-        aria-label="Botón de ayuda rápida"
+        aria-label="Botón de ayuda rápida SOS"
       >
-        <span className="text-2xl leading-none select-none" role="img" aria-label="SOS">🆘</span>
+        <span className="text-4xl leading-none select-none drop-shadow-lg" role="img" aria-label="SOS">🆘</span>
       </Button>
 
       <SOSModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
