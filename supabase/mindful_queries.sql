@@ -57,6 +57,9 @@ ALTER TABLE public.system_reflections ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Enable read access for all users" ON public.system_reflections FOR SELECT USING (true);
 
 -- Función RPC para Random Selection (usado en Index.tsx)
+-- Eliminamos primero para evitar error de cambio de tipo de retorno
+DROP FUNCTION IF EXISTS public.get_random_reflection();
+
 CREATE OR REPLACE FUNCTION get_random_reflection()
 RETURNS SETOF public.system_reflections
 LANGUAGE sql

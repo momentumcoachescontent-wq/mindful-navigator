@@ -171,6 +171,39 @@ export function useDailyChallenge() {
     return unsubscribe;
   }, []);
 
+  // Supabase Realtime: escuchar nuevas misiones completadas en tiempo real.
+  // Reemplaza parcialmente el bus de eventos para actualizaciones cross-tab
+  // y desde dispositivos externos.
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`daily_missions_realtime_${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'daily_missions',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const newMission = payload.new as { mission_id: string; xp_earned: number };
+          setCompletedToday((prev) => {
+            // Evitar duplicados si el evento llega después del update local
+            if (prev.some((m) => m.missionId === newMission.mission_id)) return prev;
+            return [...prev, { missionId: newMission.mission_id, xpEarned: newMission.xp_earned }];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+
   // Complete a mission
   const completeMission = useCallback(async (mission: Mission, metadata?: Record<string, unknown>) => {
     if (!user) return { success: false, error: 'Not logged in' };

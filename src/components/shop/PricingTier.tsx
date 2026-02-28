@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Check, Star } from "lucide-react";
+import { Check, Star, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PricingTierProps {
@@ -11,6 +11,7 @@ interface PricingTierProps {
     ctaText: string;
     ctaLink: string;
     isPopular?: boolean;
+    savingsBadge?: string;
     onSelect?: () => void;
 }
 
@@ -23,6 +24,7 @@ export function PricingTier({
     ctaText,
     ctaLink,
     isPopular,
+    savingsBadge,
     onSelect
 }: PricingTierProps) {
     return (
@@ -36,6 +38,13 @@ export function PricingTier({
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-bold shadow-lg flex items-center gap-1">
                     <Star className="w-3.5 h-3.5 fill-current" />
                     Más Popular
+                </div>
+            )}
+
+            {savingsBadge && (
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-emerald-500 text-white px-4 py-1 rounded-full text-sm font-bold shadow-lg flex items-center gap-1">
+                    <Zap className="w-3.5 h-3.5 fill-current" />
+                    {savingsBadge}
                 </div>
             )}
 

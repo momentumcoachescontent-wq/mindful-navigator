@@ -5,9 +5,9 @@ import { MoodCheckIn } from "@/components/home/MoodCheckIn";
 import { QuickActions } from "@/components/home/QuickActions";
 import { StreakCard } from "@/components/home/StreakCard";
 import { RankingPreviewCard } from "@/components/home/RankingPreviewCard";
+import { DailyGreeting } from "@/components/home/DailyGreeting";
+import { HomeReflection } from "@/components/home/HomeReflection";
 import { DailyChallenge } from "@/components/daily-challenge";
-import { Bell, LogIn, User, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -246,14 +246,8 @@ const Index = () => {
     }
   };
 
-  const greeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Buenos días";
-    if (hour < 18) return "Buenas tardes";
-    return "Buenas noches";
-  };
+  // navigate ya no se usa directamente en este nivel (delegado a componentes)
 
-  // Dynamic background based on reported mood
   const getDynamicBgClass = () => {
     if (currentMood === null) return "bg-background";
     if (currentMood <= 3) return "bg-charcoal border-x-4 border-coral/50 transition-colors duration-1000 drop-shadow-[0_0_15px_rgba(255,69,58,0.1)]"; // Low mood = dark charcoal with coral threat
@@ -265,40 +259,12 @@ const Index = () => {
     <div className={`min-h-screen pb-24 ${getDynamicBgClass()}`}>
       {/* Header */}
       <header className="sticky top-0 z-40 glass border-b border-border/50">
-        <div className="container flex items-center justify-between py-4">
-          <div>
-            <p className="text-sm text-muted-foreground">{greeting()}</p>
-            <h1 className="text-xl font-display font-bold text-foreground">
-              {userName ? `Hola, ${userName}` : "Tu Coach de Bolsillo"}
-            </h1>
-          </div>
-          <div className="flex items-center gap-2">
-            {!loading && (
-              <>
-                {user ? (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => navigate("/profile")}
-                    >
-                      <User className="w-5 h-5" />
-                    </Button>
-                  </>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate("/auth")}
-                    className="gap-2"
-                  >
-                    <LogIn className="w-4 h-4" />
-                    Entrar
-                  </Button>
-                )}
-              </>
-            )}
-          </div>
+        <div className="container py-4">
+          <DailyGreeting
+            userName={userName}
+            isLoading={loading}
+            isAuthenticated={!!user}
+          />
         </div>
       </header>
 
@@ -329,32 +295,12 @@ const Index = () => {
           <QuickActions />
         </section>
 
-        {/* Daily Tip */}
-        <section className="bg-gradient-to-br from-secondary to-primary rounded-2xl p-5 text-primary-foreground">
-          <div className="flex justify-between items-start mb-2">
-            <p className="text-xs uppercase tracking-wider opacity-70">
-              Reflexión del día
-            </p>
-            <Button
-              variant="ghost"
-              size="icon"
-              disabled={isRefreshing}
-              className="h-6 w-6 text-primary-foreground/70 hover:text-primary-foreground hover:bg-white/10"
-              onClick={() => getRandomReflection()}
-            >
-              <RefreshCw className={`h-3 w-3 ${isRefreshing ? "animate-spin" : ""}`} />
-              <span className="sr-only">Nueva reflexión</span>
-            </Button>
-          </div>
-          <p className="font-display text-lg leading-relaxed">
-            "{dailyReflection?.content || "Cargando reflexión..."}"
-          </p>
-          {dailyReflection?.author && (
-            <p className="text-sm text-right mt-2 opacity-80">
-              — {dailyReflection.author}
-            </p>
-          )}
-        </section>
+        <HomeReflection
+          content={dailyReflection?.content}
+          author={dailyReflection?.author}
+          isRefreshing={isRefreshing}
+          onRefresh={getRandomReflection}
+        />
       </main>
 
       <SOSButton />

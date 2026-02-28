@@ -113,7 +113,43 @@ const Shop = () => {
 
     const subscriptionProducts = products?.filter(p => p.category === 'subscription') || [];
     const resourcesProducts = products?.filter(p => ['ebook', 'meditation', 'pack'].includes(p.category)) || [];
-    // Mentorship handled separately as static block with coming soon
+
+    // Separar plan mensual (< $200 MXN) del plan anual (>= $200 MXN)
+    const freePlan = subscriptionProducts.find(p => p.price === 0);
+    const monthlyPlan = subscriptionProducts.find(p => p.price > 0 && p.price < 200);
+    const annualPlan = subscriptionProducts.find(p => p.price >= 200);
+
+    // Helpers para etiquetas y features
+    const getPlanFeatures = (product: Product): string[] => {
+        if (product.price === 0) return [
+            "Diario de Reflexiones (3 entradas/día)",
+            "3 Escáneres de Situaciones / mes",
+            "Comunidad de apoyo",
+            "Misiones diarias básicas"
+        ];
+        if (product.price >= 200) return [
+            "TODO lo del Plan Mensual",
+            "Escáner de Situaciones ILIMITADO",
+            "Simulador de Conversaciones",
+            "Sesiones de Voz Interior Exclusivas",
+            "Meditaciones premium desbloqueadas",
+            "Prioridad en soporte",
+            "2 MESES GRATIS vs pago mensual"
+        ];
+        return [
+            "Escáner de Situaciones ILIMITADO",
+            "Simulador de Conversaciones",
+            "Sesiones de Voz Interior Exclusivas",
+            "Meditaciones premium desbloqueadas",
+            "Acceso total al Diario",
+            "Comunidad de apoyo exclusiva"
+        ];
+    };
+
+    const getPlanCTA = (product: Product): string => {
+        if (product.price === 0) return "Tu Plan Actual";
+        return "Desbloquea tu Poder";
+    };
 
 
     return (
@@ -142,26 +178,65 @@ const Shop = () => {
                     <section>
                         <h2 className="text-xl font-display font-bold text-foreground mb-6 flex items-center gap-2">
                             <User className="w-5 h-5 text-primary" />
-                            Suscripción Premium
+                            Planes de Acceso
                         </h2>
-                        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-                            {subscriptionProducts.map(product => (
+                        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto items-end">
+                            {/* Plan Gratuito */}
+                            {freePlan && (
+                                <PricingTier
+                                    key={freePlan.id}
+                                    title="Plan Libre"
+                                    price="$0"
+                                    period="siempre"
+                                    description="Herramientas básicas para iniciar tu transformación."
+                                    features={getPlanFeatures(freePlan)}
+                                    ctaText={getPlanCTA(freePlan)}
+                                    ctaLink={freePlan.cta_link || "#"}
+                                    isPopular={false}
+                                    onSelect={() => handleProductClick(freePlan)}
+                                />
+                            )}
+                            {/* Plan Mensual */}
+                            {monthlyPlan && (
+                                <PricingTier
+                                    key={monthlyPlan.id}
+                                    title="Acceso Mensual"
+                                    price={new Intl.NumberFormat('es-MX', { style: 'currency', currency: monthlyPlan.currency || 'MXN' }).format(monthlyPlan.price)}
+                                    period="mes"
+                                    description="Desbloquea todo el arsenal de herramientas de transformación."
+                                    features={getPlanFeatures(monthlyPlan)}
+                                    ctaText={getPlanCTA(monthlyPlan)}
+                                    ctaLink={monthlyPlan.cta_link || "#"}
+                                    isPopular={monthlyPlan.is_featured}
+                                    onSelect={() => handleProductClick(monthlyPlan)}
+                                />
+                            )}
+                            {/* Plan Anual */}
+                            {annualPlan && (
+                                <PricingTier
+                                    key={annualPlan.id}
+                                    title="Acceso Anual"
+                                    price={new Intl.NumberFormat('es-MX', { style: 'currency', currency: annualPlan.currency || 'MXN' }).format(annualPlan.price)}
+                                    period="año"
+                                    description="El camino completo. Compromiso total con tu evolución."
+                                    features={getPlanFeatures(annualPlan)}
+                                    ctaText={getPlanCTA(annualPlan)}
+                                    ctaLink={annualPlan.cta_link || "#"}
+                                    isPopular={annualPlan.is_featured}
+                                    savingsBadge="2 meses GRATIS"
+                                    onSelect={() => handleProductClick(annualPlan)}
+                                />
+                            )}
+                            {/* Fallback: si solo hay 1-2 productos sin distinción mensual/anual */}
+                            {!freePlan && !monthlyPlan && !annualPlan && subscriptionProducts.map(product => (
                                 <PricingTier
                                     key={product.id}
                                     title={product.title}
                                     price={new Intl.NumberFormat('es-MX', { style: 'currency', currency: product.currency || 'MXN' }).format(product.price)}
                                     period="mes"
                                     description={product.description || ""}
-                                    features={product.description?.includes("Tools") ? [
-                                        "Escáner de Situaciones ILIMITADO",
-                                        "Simulador de Conversaciones",
-                                        "Sesiones de Voz Interior Exclusivas"
-                                    ] : [
-                                        "Acceso básico al Diario",
-                                        "3 Escáneres mensuales",
-                                        "Comunidad de apoyo"
-                                    ]}
-                                    ctaText={product.price === 0 ? "Tu Plan Actual" : "Inicia Prueba Gratis"}
+                                    features={getPlanFeatures(product)}
+                                    ctaText={getPlanCTA(product)}
                                     ctaLink={product.cta_link || "#"}
                                     isPopular={product.is_featured}
                                     onSelect={() => handleProductClick(product)}
@@ -259,9 +334,10 @@ const Shop = () => {
                                 </p>
                                 <Button
                                     size="lg"
-                                    className="bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20 mt-4 opacity-75 cursor-not-allowed"
+                                    disabled
+                                    className="bg-primary/50 text-white shadow-lg shadow-primary/10 mt-4 opacity-60 cursor-not-allowed"
                                 >
-                                    Consultar Disponibilidad
+                                    Próximamente Disponible
                                 </Button>
                             </div>
                         </section>
