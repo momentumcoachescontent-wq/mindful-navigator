@@ -15,7 +15,7 @@ export function MobileNav() {
   const navigate = useNavigate();
 
   const hiddenRoutes = ["/auth", "/onboarding"];
-  if (hiddenRoutes.includes(location.pathname) || location.pathname.startsWith("/admin")) {
+  if (hiddenRoutes.includes(location.pathname)) {
     return null;
   }
 

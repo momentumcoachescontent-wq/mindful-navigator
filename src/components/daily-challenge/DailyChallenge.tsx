@@ -205,8 +205,8 @@ export function DailyChallenge() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {/* Free missions */}
-          {todaysMissions.freeMissions.map((mission) => (
+          {/* Free missions — hidden when all done */}
+          {!allFreeDone && todaysMissions.freeMissions.map((mission) => (
             <MissionCard
               key={mission.id}
               mission={mission}
@@ -217,7 +217,7 @@ export function DailyChallenge() {
             />
           ))}
 
-          {/* Perfect day indicator */}
+          {/* Perfect day indicator — shown only when all free missions are done */}
           {allFreeDone && (
             <div className="bg-success/10 border border-success/30 rounded-xl p-4 text-center animate-fade-up">
               <div className="flex items-center justify-center gap-2 text-success mb-1">

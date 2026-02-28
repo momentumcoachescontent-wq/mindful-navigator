@@ -83,16 +83,31 @@ const Profile = () => {
   const userLevel = progress ? Math.floor(Math.sqrt(progress.total_xp) / 10) + 1 : DEFAULT_LEVEL;
   const userXP = progress?.total_xp || DEFAULT_XP;
 
-  // Mock stats
+  // Real stats from DB
   const { data: stats } = useQuery({
-    queryKey: ['user-stats'],
+    queryKey: ['user-stats', user?.id],
     queryFn: async () => {
+      if (!user?.id) return { checkins: 0, journal_entries: 0 };
+
+      // Count mood check-ins (entry_type = 'daily')
+      const { count: checkinsCount } = await supabase
+        .from('journal_entries')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('entry_type', 'daily');
+
+      // Count all journal entries
+      const { count: journalCount } = await supabase
+        .from('journal_entries')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
       return {
-        checkins: 42,
-        meditations: 15,
-        journal_entries: 28
+        checkins: checkinsCount || 0,
+        journal_entries: journalCount || 0
       };
-    }
+    },
+    enabled: !!user?.id,
   });
 
   // Upload Avatar Mutation
