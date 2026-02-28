@@ -116,10 +116,9 @@ export function useRanking(
       // Sin embargo, si profiles falla, el ranking no puede construirse bien.
       if (profilesError) {
         console.error("Error fetching profiles for ranking (posible error de schema):", profilesError);
-        // Fallback a un select sin country
         const { data: fallbackProfiles, error: fallbackError } = await supabase
           .from("profiles")
-          .select(`user_id, display_name, streak_count, is_premium, is_ranking_private`);
+          .select(`user_id, display_name, streak_count, is_premium, is_ranking_private, onboarding_completed`);
 
         if (fallbackError) throw fallbackError;
         profilesData = fallbackProfiles as typeof profilesData;
@@ -183,8 +182,20 @@ export function useRanking(
           const profile = profilesMap[p.user_id];
           const currentUserProfile = profilesMap[user?.id || ""];
 
-          // REGLA 1: Si el usuario visualizado es privado (is_ranking_private = true), ocultarlo.
-          // REGLA 2: EXCEPCIÓN: Si el usuario visualizado es el propio usuario activo, mostrarlo SIEMPRE (para que él vea su propio ranking).
+          // GHOST FILTER 1: profile must exist
+          if (!profile) return false;
+
+          // GHOST FILTER 2: user must have completed onboarding
+          if (!profile.onboarding_completed) return false;
+
+          // GHOST FILTER 3: user must have real activity (XP > 0 or streak > 0)
+          // Always show the current user regardless of activity
+          if (p.user_id !== user?.id) {
+            const hasActivity = (p.total_xp || 0) > 0 || (profile.streak_count || 0) > 0;
+            if (!hasActivity) return false;
+          }
+
+          // PRIVACY: hide users who opted out of ranking
           if (profile?.is_ranking_private && p.user_id !== user?.id) {
             return false;
           }
