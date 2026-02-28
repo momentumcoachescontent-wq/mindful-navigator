@@ -245,7 +245,7 @@ export function useDailyChallenge() {
           content: JSON.stringify(shadowContent),
           entry_type: 'shadow',
           tags: ['Sombra', 'Contrato Completado']
-        }] as never).then(() => { }).catch(e => console.error("Error saving shadow contract to journal:", e));
+        }] as never).then(({ error: journalErr }) => { if (journalErr) console.error("Error saving shadow contract to journal:", journalErr); });
       }
 
 
