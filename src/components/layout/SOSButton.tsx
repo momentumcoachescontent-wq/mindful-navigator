@@ -6,16 +6,15 @@ import { supabase } from "@/integrations/supabase/client";
 
 export function SOSButton() {
   const [isOpen, setIsOpen] = useState(false);
-  const [hideSos, setHideSos] = useState(false);
+  const [hideSos, setHideSos] = useState(true); // default: HIDDEN unless user opts-in
   const { user } = useAuth();
 
   useEffect(() => {
     if (!user) return;
     const fetchProfile = async () => {
       const { data } = await supabase.from('profiles').select('hide_sos').eq('user_id', user.id).single();
-      if (data?.hide_sos) {
-        setHideSos(true);
-      }
+      // Show SOS only when hide_sos is explicitly false (user opted-in)
+      setHideSos(data?.hide_sos !== false);
     };
     fetchProfile();
   }, [user]);
