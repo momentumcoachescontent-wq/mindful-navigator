@@ -124,17 +124,19 @@ export function useRanking(
         profilesData = fallbackProfiles as typeof profilesData;
       }
 
-      // If scope is 'circle', fetch user connections
+      // If scope is 'circle', fetch user connections (bidirectional)
       let circleFriendIds: string[] = [];
       if (scope === "circle" && user) {
         const { data: connections } = await supabase
           .from("user_connections")
-          .select("friend_id")
-          .eq("user_id", user.id)
+          .select("user_id, friend_id")
+          .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`)
           .eq("status", "accepted");
 
         if (connections) {
-          circleFriendIds = connections.map(c => c.friend_id);
+          circleFriendIds = connections.map(c =>
+            c.user_id === user.id ? c.friend_id : c.user_id
+          );
         }
       }
 
