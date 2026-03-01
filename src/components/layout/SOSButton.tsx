@@ -20,7 +20,7 @@ export function SOSButton() {
   }, [user]);
 
   if (hideSos) {
-    return <SOSModal isOpen={isOpen} onClose={() => setIsOpen(false)} />;
+    return null;
   }
 
   return (

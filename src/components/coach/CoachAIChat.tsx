@@ -117,7 +117,8 @@ export function CoachAIChat({ onRecommendation }: { onRecommendation?: (type: st
             const coachSystemNote = `MODO COACHING MADM (Más Allá del Miedo).
 Fase ${exchangeCount + 1}/5: ${exchangeCount === 0 ? 'RECEPCIÓN — escucha activa, valida emoción, haz 1 pregunta abierta' :
                     exchangeCount <= 2 ? 'EXPLORACIÓN — profundiza con 1 pregunta socrática, conecta la emoción con un patrón' :
-                        'RECOMENDACIÓN — sugiere 1 herramienta o práctica concreta del método MADM'
+                        exchangeCount === 3 ? 'RECOMENDACIÓN — sugiere 1 herramienta o práctica concreta del método MADM' :
+                            'CIERRE — Haz un breve resumen de lo aprendido, felicita al usuario y despídete con una afirmación de poder personal. ¡MANDATORIO: NO HAGAS NINGUNA PREGUNTA ESTA VEZ!'
                 }.
 Detecta el estado emocional y añade al final EXACTAMENTE: [MOOD:tranquilo|ansioso|triste|frustrado|motivado|agotado]
 Si recomiendas una acción concreta añade: [ACCIÓN:meditación|herramienta|diario]
@@ -159,6 +160,16 @@ Sé breve (2-3 oraciones), empático, directo. Habla en español informal.`;
             // Auto-save when reaching 5 exchanges (session complete)
             if (newCount >= 5) {
                 saveSession(true, moodMatch?.[1] as MoodState || detectedMood, newCount, actionMatch?.[1] || actionRecommended);
+
+                // Add an automatic journal entry to keep track of the session's conclusion
+                if (user) {
+                    await supabase.from('journal_entries').insert({
+                        user_id: user.id,
+                        title: 'Sesión con Coach MADM',
+                        content: `**Resumen del Coach:**\n${cleanResponse}\n\n*Estado final detectado: ${moodMatch?.[1] || detectedMood || 'Neutral'}*`,
+                        category: 'Personal'
+                    });
+                }
             }
 
         } catch {
