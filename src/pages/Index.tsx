@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { streakEventBus } from "@/lib/streakEventBus";
+import { useAdaptiveNudges } from "@/hooks/useAdaptiveNudges";
 
 const Index = () => {
   const [hasCheckedIn, setHasCheckedIn] = useState(false);
@@ -23,6 +24,8 @@ const Index = () => {
   });
   const [userName, setUserName] = useState("");
   const { user, loading } = useAuth();
+  useAdaptiveNudges(); // Phase 18: adaptive nudges (inactivity, streak danger, negative sentiment)
+
   const navigate = useNavigate();
   const { toast } = useToast();
 

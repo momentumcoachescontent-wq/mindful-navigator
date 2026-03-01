@@ -29,6 +29,7 @@ import AdminProducts from "./pages/AdminProducts";
 import AdminAudio from "./pages/AdminAudio";
 import AdminAI from "./pages/AdminAI";
 import Library from "./pages/Library";
+import Coach from "./pages/Coach";
 import NotFound from "./pages/NotFound";
 import { AudioProvider } from "@/contexts/AudioContext";
 import { AudioPlayer } from "@/components/audio/AudioPlayer";
@@ -65,6 +66,7 @@ const App = () => (
                 <Route path="/orders" element={<MyOrders />} />
                 <Route path="/data" element={<DataManagement />} />
                 <Route path="/ranking" element={<Ranking />} />
+                <Route path="/coach" element={<Coach />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/settings/notifications" element={<Settings />} />
                 <Route path="/settings/privacy" element={<Settings />} />
