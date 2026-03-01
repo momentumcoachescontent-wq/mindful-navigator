@@ -163,10 +163,19 @@ Sé breve (2-3 oraciones), empático, directo. Habla en español informal y usa 
 
                 // Add an automatic journal entry to keep track of the session's conclusion
                 if (user) {
+                    const today = new Date().toLocaleDateString('es-ES');
+                    const transcript = [
+                        ...messages,
+                        { role: 'user', content: text },
+                        { role: 'coach', content: cleanResponse }
+                    ]
+                        .map(m => `**${m.role === 'coach' ? 'Coach MADM' : 'Tú'}:**\n${m.content}`)
+                        .join('\n\n');
+
                     await supabase.from('journal_entries').insert({
                         user_id: user.id,
-                        title: 'Sesión con Coach MADM',
-                        content: `**Resumen del Coach:**\n${cleanResponse}\n\n*Estado final detectado: ${moodMatch?.[1] || detectedMood || 'Neutral'}*`,
+                        title: `Coach MADM (${today}) Conversaciones Honestas`,
+                        content: `### Transcripción de la Sesión\n\n${transcript}\n\n---\n\n### Diagnóstico y Seguimiento\n**Estado final detectado:** ${moodMatch?.[1] || detectedMood || 'Neutral'}\n**Acción recomendada:** ${actionMatch?.[1] || actionRecommended || 'Reflexión y Auto-observación'}`,
                         category: 'Personal'
                     });
                 }
