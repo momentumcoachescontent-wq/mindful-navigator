@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Bot, Send, Loader2, Sparkles, ChevronRight } from 'lucide-react';
+import { Bot, Send, Loader2, Sparkles, ChevronRight, BookOpen } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 interface Message {
@@ -35,6 +36,7 @@ const OPENING_QUESTIONS = [
 
 export function CoachAIChat({ onRecommendation }: { onRecommendation?: (type: string, id?: string) => void }) {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
@@ -282,21 +284,31 @@ Sé breve (2-3 oraciones), empático, directo. Habla en español informal y usa 
                 )}
 
                 {exchangeCount >= 5 && (
-                    <div className="p-3 border-t text-center">
-                        <p className="text-xs text-muted-foreground mb-2">Sesión completada · Sigue con tu práctica</p>
-                        <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => {
-                            // Save incomplete session before reset
-                            if (exchangeCount < 5) {
-                                saveSession(false, detectedMood, exchangeCount, actionRecommended);
-                            }
-                            setMessages([]);
-                            setExchangeCount(0);
-                            setDetectedMood(null);
-                            setActionRecommended(null);
-                            setShowQuickReplies(true);
-                        }}>
-                            Nueva sesión <ChevronRight className="w-3 h-3" />
-                        </Button>
+                    <div className="p-4 border-t flex flex-col items-center text-center gap-4 bg-muted/10">
+                        <div>
+                            <p className="text-sm font-medium text-foreground">Sesión Completada y Guardada</p>
+                            <p className="text-xs text-muted-foreground mt-1 max-w-[250px] mx-auto">
+                                El resumen de esta sesión y tus aprendizajes clave han sido agregados a tu Diario para seguimiento.
+                            </p>
+                        </div>
+                        <div className="flex w-full gap-2 px-2">
+                            <Button size="sm" variant="default" className="flex-1 gap-1" onClick={() => navigate('/journal')}>
+                                <BookOpen className="w-3.5 h-3.5" /> Ver en Diario
+                            </Button>
+                            <Button size="sm" variant="outline" className="flex-1 gap-1" onClick={() => {
+                                // Save incomplete session before reset if somehow triggered early
+                                if (exchangeCount < 5) {
+                                    saveSession(false, detectedMood, exchangeCount, actionRecommended);
+                                }
+                                setMessages([]);
+                                setExchangeCount(0);
+                                setDetectedMood(null);
+                                setActionRecommended(null);
+                                setShowQuickReplies(true);
+                            }}>
+                                Nueva sesión <ChevronRight className="w-3.5 h-3.5" />
+                            </Button>
+                        </div>
                     </div>
                 )}
             </CardContent>
