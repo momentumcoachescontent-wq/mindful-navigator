@@ -71,6 +71,36 @@ export type Database = {
         }
         Relationships: []
       }
+      coach_sessions: {
+        Row: {
+          action_recommended: string | null
+          completed: boolean | null
+          created_at: string | null
+          exchanges_count: number | null
+          id: string
+          mood_detected: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_recommended?: string | null
+          completed?: boolean | null
+          created_at?: string | null
+          exchanges_count?: number | null
+          id?: string
+          mood_detected?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_recommended?: string | null
+          completed?: boolean | null
+          created_at?: string | null
+          exchanges_count?: number | null
+          id?: string
+          mood_detected?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       daily_missions: {
         Row: {
           completed_at: string
@@ -206,6 +236,59 @@ export type Database = {
         }
         Relationships: []
       }
+      league_members: {
+        Row: {
+          id: string
+          joined_at: string | null
+          league_id: string | null
+          user_id: string | null
+          xp_earned: number | null
+        }
+        Insert: {
+          id?: string
+          joined_at?: string | null
+          league_id?: string | null
+          user_id?: string | null
+          xp_earned?: number | null
+        }
+        Update: {
+          id?: string
+          joined_at?: string | null
+          league_id?: string | null
+          user_id?: string | null
+          xp_earned?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "league_members_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leagues: {
+        Row: {
+          created_at: string | null
+          id: string
+          tier: string | null
+          week_start: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          tier?: string | null
+          week_start: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          tier?: string | null
+          week_start?: string
+        }
+        Relationships: []
+      }
       meditation_logs: {
         Row: {
           completed: boolean | null
@@ -283,6 +366,30 @@ export type Database = {
           order_index?: number | null
           thumbnail_url?: string | null
           title?: string
+        }
+        Relationships: []
+      }
+      nudge_events: {
+        Row: {
+          action_taken: boolean | null
+          created_at: string | null
+          id: string
+          nudge_type: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_taken?: boolean | null
+          created_at?: string | null
+          id?: string
+          nudge_type?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_taken?: boolean | null
+          created_at?: string | null
+          id?: string
+          nudge_type?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -808,33 +915,42 @@ export type Database = {
           current_level: string
           id: string
           power_tokens: number
+          shield_used_at: string | null
           streak_rescues_available: number
           streak_rescues_used: number
           total_xp: number
           updated_at: string
           user_id: string
+          wager_active: boolean | null
+          wager_amount: number | null
         }
         Insert: {
           created_at?: string
           current_level?: string
           id?: string
           power_tokens?: number
+          shield_used_at?: string | null
           streak_rescues_available?: number
           streak_rescues_used?: number
           total_xp?: number
           updated_at?: string
           user_id: string
+          wager_active?: boolean | null
+          wager_amount?: number | null
         }
         Update: {
           created_at?: string
           current_level?: string
           id?: string
           power_tokens?: number
+          shield_used_at?: string | null
           streak_rescues_available?: number
           streak_rescues_used?: number
           total_xp?: number
           updated_at?: string
           user_id?: string
+          wager_active?: boolean | null
+          wager_amount?: number | null
         }
         Relationships: []
       }
