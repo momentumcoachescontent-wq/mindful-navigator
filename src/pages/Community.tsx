@@ -2,7 +2,9 @@ import { ArrowLeft, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { SOSButton } from "@/components/layout/SOSButton";
-import { FeedTab } from "@/components/community";
+import { FeedTab } from "@/components/community/FeedTab";
+import { VictoriesTab } from "@/components/community/VictoriesTab";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Community = () => {
   const navigate = useNavigate();
@@ -25,7 +27,20 @@ const Community = () => {
       </header>
 
       <main className="container py-6">
-        <FeedTab />
+        <Tabs defaultValue="feed" className="w-full">
+          <TabsList className="w-full mb-6">
+            <TabsTrigger value="feed" className="flex-1">Comunidad</TabsTrigger>
+            <TabsTrigger value="victories" className="flex-1">Victorias</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="feed" className="mt-0">
+            <FeedTab />
+          </TabsContent>
+
+          <TabsContent value="victories" className="mt-0">
+            <VictoriesTab />
+          </TabsContent>
+        </Tabs>
       </main>
 
       <SOSButton />
