@@ -38,13 +38,7 @@ export default function Coach() {
                 </div>
 
                 {/* Coach Chat */}
-                <CoachAIChat
-                    onRecommendation={(type) => {
-                        if (type === 'meditación') navigate('/meditations');
-                        else if (type === 'herramienta') navigate('/tools');
-                        else if (type === 'diario') navigate('/journal');
-                    }}
-                />
+                <CoachAIChat />
 
                 {/* Contextual Recommendations */}
                 <ContextualRecommendations />

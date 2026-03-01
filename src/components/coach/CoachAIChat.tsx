@@ -172,11 +172,23 @@ Sé breve (2-3 oraciones), empático, directo. Habla en español informal y usa 
                         .map(m => `**${m.role === 'coach' ? 'Coach MADM' : 'Tú'}:**\n${m.content}`)
                         .join('\n\n');
 
+                    const recommendedAction = actionMatch?.[1] || actionRecommended;
+                    const finalMood = moodMatch?.[1] || detectedMood || 'Neutral';
+
+                    // Format correctly as stringified JSON for the entry's content column
+                    const contentData = {
+                        title: `Coach MADM (${today}) Conversaciones Honestas`,
+                        text: `### Transcripción de la Sesión\n\n${transcript}\n\n---\n\n### Diagnóstico\n**Estado final detectado:** ${finalMood}`,
+                        action_plan: recommendedAction ? [{ step: 1, action: `Practicar hoy: ${recommendedAction}`, completed: false }] : [],
+                        tags: ['Personal'],
+                        follow_up: true
+                    };
+
                     await supabase.from('journal_entries').insert({
                         user_id: user.id,
-                        title: `Coach MADM (${today}) Conversaciones Honestas`,
-                        content: `### Transcripción de la Sesión\n\n${transcript}\n\n---\n\n### Diagnóstico y Seguimiento\n**Estado final detectado:** ${moodMatch?.[1] || detectedMood || 'Neutral'}\n**Acción recomendada:** ${actionMatch?.[1] || actionRecommended || 'Reflexión y Auto-observación'}`,
-                        category: 'Personal'
+                        content: JSON.stringify(contentData),
+                        entry_type: "coach_session",
+                        tags: ['Personal']
                     });
                 }
             }
