@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { AdminFollowUpTasks } from "@/components/admin/AdminFollowUpTasks";
 
 interface SystemPrompt {
     id: string;
@@ -210,6 +211,11 @@ const AdminAI = () => {
                             </div>
                         </div>
                     )}
+
+                    {/* Follow-up tasks */}
+                    <div className="border-t pt-4">
+                        <AdminFollowUpTasks />
+                    </div>
                 </div>
 
                 <div className="space-y-2">
