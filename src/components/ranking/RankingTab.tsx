@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { RankingTrendsChart } from "./RankingTrendsChart";
 import { UserHealthChart } from "./UserHealthChart";
 import { UserMoodPieChart } from "./UserMoodPieChart";
+import { PendingConnectionRequests } from "./PendingConnectionRequests";
 
 export function RankingTab() {
   const { user } = useAuth();
@@ -107,6 +108,9 @@ export function RankingTab() {
         isPublic={!(userProfile?.is_ranking_private ?? false)}
         onTogglePrivacy={handleTogglePrivacy}
       />
+
+      {/* Pending circle requests */}
+      <PendingConnectionRequests />
 
       {/* Podium - Top 3 */}
       <RankingPodium topThree={topThree} />

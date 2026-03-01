@@ -3,6 +3,8 @@ import { cn } from "@/lib/utils";
 import { RankedUser, getLevelName, RankingMetric } from "@/hooks/useRanking";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
+import { useConnectionStatuses } from "@/hooks/useConnections";
+import { ConnectButton } from "./ConnectButton";
 
 interface RankingListProps {
   users: RankedUser[];
@@ -19,6 +21,7 @@ const AVATAR_GRADIENTS = [
 
 export function RankingList({ users, metric }: RankingListProps) {
   const { user } = useAuth();
+  const { data: connectionStatuses = {} } = useConnectionStatuses();
   const listUsers = users.slice(3); // Skip top 3, they're in podium
 
   if (listUsers.length === 0) {
@@ -34,6 +37,7 @@ export function RankingList({ users, metric }: RankingListProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
         {listUsers.map((rankedUser) => {
           const isCurrentUser = rankedUser.userId === user?.id;
+          const connStatus = connectionStatuses[rankedUser.userId] ?? 'none';
 
           return (
             <div
@@ -98,13 +102,19 @@ export function RankingList({ users, metric }: RankingListProps) {
                 </div>
               </div>
 
-              {/* XP */}
-              <div className="text-right">
+              {/* XP + Connect Button */}
+              <div className="flex flex-col items-end gap-1">
                 <span className="text-sm font-semibold text-primary">
                   {metric === "xp" && `${rankedUser.xp} XP`}
                   {metric === "streak" && `${rankedUser.streak} días`}
-                  {metric === "victories" && `${rankedUser.victoriesCount} victorias`}
+                  {metric === "victories" && `${rankedUser.victoriesCount} v.`}
                 </span>
+                {!isCurrentUser && (
+                  <ConnectButton
+                    targetUserId={rankedUser.userId}
+                    status={connStatus}
+                  />
+                )}
               </div>
             </div>
           );
