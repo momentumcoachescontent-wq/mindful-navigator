@@ -37,6 +37,14 @@ const actions = [
     path: "/community",
     gradient: "from-violet-500 to-purple-600",
   },
+  {
+    icon: Users,
+    label: "C. Sombras",
+    description: "Próximamente...",
+    path: "#",
+    gradient: "from-zinc-800 to-zinc-950",
+    disabled: true,
+  },
 ];
 
 export function QuickActions() {
@@ -47,8 +55,9 @@ export function QuickActions() {
       {actions.map((action) => (
         <button
           key={action.path}
-          onClick={() => navigate(action.path)}
-          className="group relative overflow-hidden brutal-card p-5 text-left"
+          onClick={() => !action.disabled && navigate(action.path)}
+          disabled={action.disabled}
+          className={`group relative overflow-hidden brutal-card p-5 text-left ${action.disabled ? 'opacity-70 cursor-not-allowed' : ''}`}
         >
           {/* Gradient background */}
           <div
@@ -57,14 +66,14 @@ export function QuickActions() {
 
           {/* Content */}
           <div className="relative z-10 space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+            <div className={`w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center ${action.disabled ? 'grayscale' : ''}`}>
               <action.icon className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h4 className="font-display font-semibold text-white">
+              <h4 className="font-display font-semibold text-white leading-tight">
                 {action.label}
               </h4>
-              <p className="text-xs text-white/70">{action.description}</p>
+              <p className="text-[10px] text-white/70 mt-1">{action.description}</p>
             </div>
           </div>
         </button>

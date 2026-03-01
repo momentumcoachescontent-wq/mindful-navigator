@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { streakEventBus } from "@/lib/streakEventBus";
+import { xpEventBus } from "@/lib/xpEventBus";
 import { useAdaptiveNudges } from "@/hooks/useAdaptiveNudges";
 
 const Index = () => {
@@ -224,6 +225,26 @@ const Index = () => {
         .eq("user_id", user.id);
 
       if (updateError) throw updateError;
+
+      // Check-in XP Bonus
+      try {
+        const { data: progressData } = await supabase
+          .from("user_progress")
+          .select("total_xp")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (progressData) {
+          const newXP = (progressData.total_xp || 0) + 5;
+          await supabase
+            .from("user_progress")
+            .update({ total_xp: newXP })
+            .eq("user_id", user.id);
+          xpEventBus.emit(5);
+        }
+      } catch (xpErr) {
+        console.error("Error adding check-in XP:", xpErr);
+      }
 
       setStreakData((prev) => ({
         ...prev,

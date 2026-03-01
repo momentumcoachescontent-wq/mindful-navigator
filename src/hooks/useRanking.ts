@@ -11,6 +11,7 @@ export interface RankedUser {
   userId: string;
   alias: string;
   avatarId: number;
+  avatarUrl?: string | null;
   level: string;
   xp: number;
   streak: number;
@@ -231,6 +232,7 @@ export function useRanking(
             userId: p.user_id,
             alias: profile?.display_name || generateAlias(p.user_id),
             avatarId: Math.abs(p.user_id.charCodeAt(0) % 10),
+            avatarUrl: profile?.avatar_url || null,
             level: p.current_level,
             xp: periodXp,
             streak: profile?.streak_count || 0,

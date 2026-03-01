@@ -22,7 +22,7 @@ const AVATAR_GRADIENTS = [
 export function RankingList({ users, metric }: RankingListProps) {
   const { user } = useAuth();
   const { data: connectionStatuses = {} } = useConnectionStatuses();
-  const listUsers = users.slice(3); // Skip top 3, they're in podium
+  const listUsers = users; // Show all users
 
   if (listUsers.length === 0) {
     return null;
@@ -63,14 +63,18 @@ export function RankingList({ users, metric }: RankingListProps) {
 
               {/* Avatar */}
               <div className="relative">
-                <div
-                  className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-primary-foreground bg-gradient-to-br",
-                    AVATAR_GRADIENTS[rankedUser.avatarId % AVATAR_GRADIENTS.length]
-                  )}
-                >
-                  {rankedUser.alias[0]}
-                </div>
+                {rankedUser.avatarUrl ? (
+                  <img src={rankedUser.avatarUrl} alt={rankedUser.alias} className="w-10 h-10 rounded-full object-cover" />
+                ) : (
+                  <div
+                    className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-primary-foreground bg-gradient-to-br",
+                      AVATAR_GRADIENTS[rankedUser.avatarId % AVATAR_GRADIENTS.length]
+                    )}
+                  >
+                    {rankedUser.alias[0]}
+                  </div>
+                )}
                 {rankedUser.isPremium && (
                   <div className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center">
                     <Sparkles className="w-2.5 h-2.5 text-white" />

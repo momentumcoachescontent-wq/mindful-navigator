@@ -79,6 +79,7 @@ const AdminProducts = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['shop-products'] });
       setIsOpen(false);
       setEditingProduct(null);
       toast.success(editingProduct ? "Producto actualizado" : "Producto creado");
@@ -99,6 +100,7 @@ const AdminProducts = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['shop-products'] });
       toast.success("Estado actualizado");
     },
     onError: (error) => toast.error(`Error: ${error.message}`)
@@ -112,6 +114,7 @@ const AdminProducts = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['shop-products'] });
       toast.success("Producto eliminado");
     },
     onError: (error) => toast.error(`Error: ${error.message}`)

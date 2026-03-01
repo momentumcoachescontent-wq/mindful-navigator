@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useRanking, RankingPeriod, RankingScope, RankingMetric } from "@/hooks/useRanking";
 import { RankingFilters } from "./RankingFilters";
-import { RankingPodium } from "./RankingPodium";
 import { RankingList } from "./RankingList";
 import { UserPositionCard } from "./UserPositionCard";
 import { useAuth } from "@/contexts/AuthContext";
@@ -115,9 +114,6 @@ export function RankingTab() {
 
       {/* Weekly League */}
       <WeeklyLeagueCard />
-
-      {/* Podium - Top 3 */}
-      <RankingPodium topThree={topThree} />
 
       {/* Full list */}
       <RankingList users={ranking || []} metric={metric} />
