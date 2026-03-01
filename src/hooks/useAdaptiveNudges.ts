@@ -65,11 +65,16 @@ export function useAdaptiveNudges() {
             // Only nudge after 18:00 if no mission today
             if (diffHours > 20 && hour >= 18) {
                 sessionStorage.setItem(nudgeKey, '1');
+                // Track nudge shown
+                supabase.from('nudge_events').insert([{ user_id: user.id, nudge_type: 'streak_danger', action_taken: false }] as never).then(() => { });
                 toast.warning(`🔥 Tu racha de ${activityData.streak} días está en peligro`, {
                     description: 'Completa una misión antes de medianoche',
                     action: {
                         label: 'Ir ahora',
-                        onClick: () => navigate('/'),
+                        onClick: () => {
+                            supabase.from('nudge_events').update({ action_taken: true } as never).eq('user_id', user.id).eq('nudge_type', 'streak_danger').order('created_at', { ascending: false }).limit(1).then(() => { });
+                            navigate('/');
+                        },
                     },
                     duration: 8000,
                 });
@@ -84,11 +89,16 @@ export function useAdaptiveNudges() {
             if (diffDays >= INACTIVITY_DAYS) {
                 sessionStorage.setItem(nudgeKey, '1');
                 const dayWord = Math.floor(diffDays) === 1 ? 'día' : 'días';
+                // Track nudge shown
+                supabase.from('nudge_events').insert([{ user_id: user.id, nudge_type: 'inactivity', action_taken: false }] as never).then(() => { });
                 toast.info(`Han pasado ${Math.floor(diffDays)} ${dayWord} sin practicar`, {
                     description: '¿Cómo estás? El Coach está aquí para ti',
                     action: {
                         label: 'Hablar con Coach',
-                        onClick: () => navigate('/coach'),
+                        onClick: () => {
+                            supabase.from('nudge_events').update({ action_taken: true } as never).eq('user_id', user.id).eq('nudge_type', 'inactivity').order('created_at', { ascending: false }).limit(1).then(() => { });
+                            navigate('/coach');
+                        },
                     },
                     duration: 8000,
                 });
@@ -104,11 +114,16 @@ export function useAdaptiveNudges() {
 
         if (negativeCount >= 3) {
             sessionStorage.setItem(nudgeKey, '1');
+            // Track nudge shown
+            supabase.from('nudge_events').insert([{ user_id: user.id, nudge_type: 'negative_sentiment', action_taken: false }] as never).then(() => { });
             toast.info('Tu diario muestra algo que merece atención', {
                 description: 'Tienes una meditación recomendada para ti',
                 action: {
                     label: 'Ver recomendación',
-                    onClick: () => navigate('/coach'),
+                    onClick: () => {
+                        supabase.from('nudge_events').update({ action_taken: true } as never).eq('user_id', user.id).eq('nudge_type', 'negative_sentiment').order('created_at', { ascending: false }).limit(1).then(() => { });
+                        navigate('/coach');
+                    },
                 },
                 duration: 6000,
             });

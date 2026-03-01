@@ -41,7 +41,22 @@ export function CoachAIChat({ onRecommendation }: { onRecommendation?: (type: st
     const [detectedMood, setDetectedMood] = useState<MoodState | null>(null);
     const [exchangeCount, setExchangeCount] = useState(0);
     const [showQuickReplies, setShowQuickReplies] = useState(true);
+    const [actionRecommended, setActionRecommended] = useState<string | null>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
+
+    // Save session to DB
+    async function saveSession(completed: boolean, finalMood: MoodState | null, exchanges: number, action: string | null) {
+        if (!user) return;
+        try {
+            await supabase.from('coach_sessions').insert([{
+                user_id: user.id,
+                mood_detected: finalMood,
+                exchanges_count: exchanges,
+                action_recommended: action,
+                completed,
+            }] as never);
+        } catch { /* silent fail — tracking is non-critical */ }
+    }
 
     // Opening question (rotates daily)
     const openingQ = OPENING_QUESTIONS[new Date().getDay() % OPENING_QUESTIONS.length];
@@ -119,10 +134,17 @@ Sé breve (2-3 oraciones), empático y directo. Habla en español informal.`;
 
             if (actionMatch && onRecommendation) {
                 onRecommendation(actionMatch[1]);
+                setActionRecommended(actionMatch[1]);
             }
 
+            const newCount = exchangeCount + 1;
             setMessages(prev => [...prev, { role: 'coach', content: cleanResponse }]);
             setExchangeCount(prev => prev + 1);
+
+            // Auto-save when reaching 5 exchanges (session complete)
+            if (newCount >= 5) {
+                saveSession(true, moodMatch?.[1] as MoodState || detectedMood, newCount, actionMatch?.[1] || actionRecommended);
+            }
 
         } catch {
             setMessages(prev => [...prev, {
@@ -239,9 +261,14 @@ Sé breve (2-3 oraciones), empático y directo. Habla en español informal.`;
                     <div className="p-3 border-t text-center">
                         <p className="text-xs text-muted-foreground mb-2">Sesión completada · Sigue con tu práctica</p>
                         <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => {
+                            // Save incomplete session before reset
+                            if (exchangeCount < 5) {
+                                saveSession(false, detectedMood, exchangeCount, actionRecommended);
+                            }
                             setMessages([]);
                             setExchangeCount(0);
                             setDetectedMood(null);
+                            setActionRecommended(null);
                             setShowQuickReplies(true);
                         }}>
                             Nueva sesión <ChevronRight className="w-3 h-3" />
