@@ -1,4 +1,4 @@
-import { Search, BookOpen, Headphones, PenLine } from "lucide-react";
+import { Search, BookOpen, Headphones, PenLine, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const actions = [
@@ -30,13 +30,20 @@ const actions = [
     path: "/library",
     gradient: "from-deep-blue-light to-secondary",
   },
+  {
+    icon: Users,
+    label: "Comunidad",
+    description: "Victorias y conexiones",
+    path: "/community",
+    gradient: "from-violet-500 to-purple-600",
+  },
 ];
 
 export function QuickActions() {
   const navigate = useNavigate();
 
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-3 gap-3">
       {actions.map((action) => (
         <button
           key={action.path}
