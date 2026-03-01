@@ -383,6 +383,45 @@ Responde ÚNICAMENTE como el personaje. NO añadidas explicaciones externas.`;
             }
         }
 
+        // --- MODE: COACH (MADM Conversational Coach) ---
+        if (mode === "coach") {
+            try {
+                const { messages: chatHistory, coachTheme } = requestBody;
+
+                const basePromptCoach = await getSystemPrompt(supabaseClient, 'analyze-situation-coach', `Eres un Coach de Psicología Aplicada del método MADM (Más Allá del Miedo).`);
+
+                // We inject the dynamic phase instructions sent by the frontend
+                const systemPromptCoach = `${basePromptCoach}
+${coachTheme || 'Brinda un coaching directo y breve usando psicología aplicada.'}
+
+HISTORIAL DE CONVERSACIÓN:
+${chatHistory ? JSON.stringify(chatHistory) : "Inicio de diálogo"}
+
+Responde SOLO con el mensaje del coach, sin texto adicional antes o después.`;
+
+                const userMessage = chatHistory && chatHistory.length > 0
+                    ? chatHistory[chatHistory.length - 1].content
+                    : "Necesito ayuda.";
+
+                const aiResult = await aiService.generateText(userMessage, systemPromptCoach, {
+                    temperature: 0.7
+                });
+
+                return new Response(JSON.stringify({
+                    response: aiResult.text,
+                    provider: aiResult.provider
+                }), {
+                    headers: { ...corsHeaders, "Content-Type": "application/json" },
+                });
+            } catch (coachError: any) {
+                console.error("[ANALYZE-SITUATION] Coach Error:", coachError);
+                return new Response(JSON.stringify({ error: "Error en el Coach AI.", details: coachError.message }), {
+                    status: 500,
+                    headers: { ...corsHeaders, "Content-Type": "application/json" },
+                });
+            }
+        }
+
         // --- MODE: PROJECTION (Radar de Proyecciones — Shadow Work AI) ---
         if (mode === "projection") {
             try {

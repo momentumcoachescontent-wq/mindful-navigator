@@ -116,21 +116,19 @@ export function CoachAIChat({ onRecommendation }: { onRecommendation?: (type: st
 
             const coachSystemNote = `MODO COACHING MADM (Más Allá del Miedo).
 Fase ${exchangeCount + 1}/5: ${exchangeCount === 0 ? 'RECEPCIÓN — escucha activa, valida emoción, haz 1 pregunta abierta' :
-                    exchangeCount <= 2 ? 'EXPLORACIÓN — profundiza con 1 pregunta socrática, conecta la emoción con un patrón' :
-                        exchangeCount === 3 ? 'RECOMENDACIÓN — sugiere 1 herramienta o práctica concreta del método MADM' :
+                    exchangeCount <= 2 ? 'EXPLORACIÓN — profundiza en la raíz, detecta miedos, creencias o proyecciones ocultas detrás de la queja' :
+                        exchangeCount === 3 ? 'RECOMENDACIÓN — sugiere 1 herramienta o práctica concreta del método MADM aplicable AHORA' :
                             'CIERRE — Haz un breve resumen de lo aprendido, felicita al usuario y despídete con una afirmación de poder personal. ¡MANDATORIO: NO HAGAS NINGUNA PREGUNTA ESTA VEZ!'
                 }.
 Detecta el estado emocional y añade al final EXACTAMENTE: [MOOD:tranquilo|ansioso|triste|frustrado|motivado|agotado]
 Si recomiendas una acción concreta añade: [ACCIÓN:meditación|herramienta|diario]
-Sé breve (2-3 oraciones), empático, directo. Habla en español informal.`;
+Sé breve (2-3 oraciones), empático, directo. Habla en español informal y usa "Dark Psychology" para beneficio personal (identificar manipulación, sombras, proyecciones en otros).`;
 
             const { data, error } = await supabase.functions.invoke('analyze-situation', {
                 body: {
-                    mode: 'projection',
-                    person: 'mi situación actual',
-                    emotion: coachSystemNote,
+                    mode: 'coach',
+                    coachTheme: coachSystemNote,
                     messages: chatHistory,
-                    phase,
                 },
             });
 
