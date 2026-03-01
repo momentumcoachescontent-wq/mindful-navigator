@@ -183,13 +183,18 @@ Sé breve (2-3 oraciones), empático, directo. Habla en español informal y usa 
                         tags: ['Personal'],
                         follow_up: true
                     };
-
-                    await supabase.from('journal_entries').insert({
+                    const { error: dbError } = await supabase.from('journal_entries').insert({
                         user_id: user.id,
                         content: JSON.stringify(contentData),
-                        entry_type: "coach_session",
-                        tags: ['Personal']
+                        entry_type: "reflection",
+                        tags: ['self']
                     });
+
+                    if (dbError) {
+                        console.error("Coach session save error:", dbError);
+                    } else {
+                        console.log("Coach session saved successfully!");
+                    }
                 }
             }
 
