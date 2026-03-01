@@ -1,32 +1,45 @@
 import { cn } from "@/lib/utils";
+import { LEVELS } from "@/lib/daily-challenge-config";
 
 interface XPBarProps {
     currentXP: number;
-    level: number;
+    levelName: string;
     className?: string;
 }
 
-export const XPBar = ({ currentXP, level, className }: XPBarProps) => {
-    // Calculate thresholds based on the formula: Level = floor(sqrt(XP) / 10) + 1
-    // Inverse: XP = ((Level - 1) * 10)^2
+export const XPBar = ({ currentXP, levelName, className }: XPBarProps) => {
+    const levelIndex = Math.max(0, LEVELS.findIndex(l => l.name === levelName));
+    const levelData = LEVELS[levelIndex] || LEVELS[0];
 
-    const currentLevelBaseXP = Math.pow((level - 1) * 10, 2);
-    const nextLevelBaseXP = Math.pow((level) * 10, 2);
+    let xpInCurrentLevel = 0;
+    let xpRequiredForNextLevel = 1;
+    let nextLevelBaseXP = 0;
 
-    const xpInCurrentLevel = currentXP - currentLevelBaseXP;
-    const xpRequiredForNextLevel = nextLevelBaseXP - currentLevelBaseXP;
+    if (levelData.maxXP === Infinity) {
+        xpInCurrentLevel = currentXP - levelData.minXP;
+        xpRequiredForNextLevel = 1000; // Arbitrary for infinite level
+        nextLevelBaseXP = levelData.minXP;
+    } else {
+        xpInCurrentLevel = currentXP - levelData.minXP;
+        xpRequiredForNextLevel = levelData.maxXP - levelData.minXP + 1;
+        nextLevelBaseXP = levelData.maxXP + 1;
+    }
 
-    const progress = Math.min(100, Math.max(0, (xpInCurrentLevel / xpRequiredForNextLevel) * 100));
+    const progress = levelData.maxXP === Infinity ? 100 : Math.min(100, Math.max(0, (xpInCurrentLevel / xpRequiredForNextLevel) * 100));
+    const nextLimitStr = levelData.maxXP === Infinity ? "MAX" : `${nextLevelBaseXP - currentXP} XP`;
 
     return (
         <div className={cn("w-full space-y-1.5", className)}>
             <div className="flex justify-between text-xs text-muted-foreground">
                 <span>XP {currentXP}</span>
-                <span>Sif. Nivel: {nextLevelBaseXP - currentXP} XP</span>
+                <span>Sif. Nivel: {nextLimitStr}</span>
             </div>
             <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
                 <div
-                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500 ease-out"
+                    className={cn(
+                        "h-full bg-gradient-to-r transition-all duration-500 ease-out",
+                        levelData.maxXP === Infinity ? "from-amber-400 to-yellow-500" : "from-emerald-500 to-teal-400"
+                    )}
                     style={{ width: `${progress}%` }}
                 />
             </div>

@@ -107,6 +107,7 @@ export function RankingTab() {
         totalXp={userProgress?.total_xp || 0}
         isPublic={!(userProfile?.is_ranking_private ?? false)}
         onTogglePrivacy={handleTogglePrivacy}
+        period={period}
       />
 
       {/* Pending circle requests */}

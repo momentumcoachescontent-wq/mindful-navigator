@@ -1,5 +1,6 @@
 import { ArrowLeft, User, Settings, Bell, Shield, Heart, LogOut, ChevronRight, Crown, Database, Camera, Loader2, LayoutDashboard, MapPin, Trophy, Flame, Activity, Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { getLevelFromXP, LEVELS } from "@/lib/daily-challenge-config";
 import { Button } from "@/components/ui/button";
 import { SOSButton } from "@/components/layout/SOSButton";
 import { useAuth } from "@/contexts/AuthContext";
@@ -30,7 +31,6 @@ interface ProfileData {
 }
 
 // Derived fields from user_progress
-const DEFAULT_LEVEL = 1;
 const DEFAULT_XP = 0;
 
 const menuItems = [
@@ -80,8 +80,9 @@ const Profile = () => {
     enabled: !!user,
   });
 
-  const userLevel = progress ? Math.floor(Math.sqrt(progress.total_xp) / 10) + 1 : DEFAULT_LEVEL;
   const userXP = progress?.total_xp || DEFAULT_XP;
+  const userLevelData = getLevelFromXP(userXP);
+  const userLevelName = userLevelData.name;
 
   // Real stats from DB
   const { data: stats } = useQuery({
@@ -217,7 +218,7 @@ const Profile = () => {
 
                 {/* Level Badge Overlay */}
                 <div className="absolute -bottom-2 -right-2 bg-background rounded-full p-1 shadow-sm pointer-events-none">
-                  <LevelBadge level={userLevel} showLabel={false} className="scale-75" />
+                  <LevelBadge levelName={userLevelName} showLabel={false} className="scale-75" />
                 </div>
 
                 {/* Upload Overlay */}
@@ -241,7 +242,7 @@ const Profile = () => {
               <div className="flex items-center gap-2 mt-2">
                 <Badge variant="secondary" className="text-xs gap-1 px-2 py-0.5">
                   <Trophy className="w-3 h-3 text-amber-500" />
-                  Nivel {userLevel}
+                  Nivel {LEVELS.findIndex(l => l.name === userLevelName) + 1}
                 </Badge>
                 {(profile?.streak_count || 0) > 0 && (
                   <Badge variant="outline" className="text-xs gap-1 border-orange-500/30 bg-orange-500/5 text-orange-600 px-2 py-0.5">
@@ -259,16 +260,16 @@ const Profile = () => {
           <CardContent className="pt-6 pb-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <LevelBadge level={userLevel} />
+                <LevelBadge levelName={userLevelName} />
               </div>
               <div className="text-right">
                 <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Siguiente Hito</p>
                 <p className="text-sm font-semibold text-primary">
-                  {((Math.floor(Math.sqrt(userXP) / 10) + 1) * 10) ** 2 - userXP} XP para subir
+                  {userLevelData.maxXP === Infinity ? "Nivel Máximo" : `${userLevelData.maxXP - userXP + 1} XP para subir`}
                 </p>
               </div>
             </div>
-            <XPBar currentXP={userXP} level={userLevel} />
+            <XPBar currentXP={userXP} levelName={userLevelName} />
           </CardContent>
         </Card>
 

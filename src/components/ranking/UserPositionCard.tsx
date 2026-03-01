@@ -15,6 +15,7 @@ interface UserPositionCardProps {
   totalXp: number;
   isPublic: boolean;
   onTogglePrivacy: () => void;
+  period?: string;
 }
 
 const AVATAR_GRADIENTS = [
@@ -29,7 +30,8 @@ export function UserPositionCard({
   userRanking,
   totalXp,
   isPublic,
-  onTogglePrivacy
+  onTogglePrivacy,
+  period = "weekly"
 }: UserPositionCardProps) {
   const { user } = useAuth();
   const [isUpdating, setIsUpdating] = useState(false);
@@ -141,7 +143,9 @@ export function UserPositionCard({
             </Badge>
           </div>
           <div className="flex items-center gap-3 mt-1 text-sm">
-            <span className="text-primary font-medium">{userRanking.xp} XP</span>
+            <span className="text-primary font-medium">
+              {userRanking.xp} XP {period === "weekly" ? "(Semanal)" : period === "monthly" ? "(Mensual)" : "Totales"}
+            </span>
             <span className="flex items-center gap-0.5 text-coral">
               <Flame className="w-3 h-3" />
               {userRanking.streak}
