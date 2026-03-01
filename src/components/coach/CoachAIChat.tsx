@@ -99,29 +99,44 @@ export function CoachAIChat({ onRecommendation }: { onRecommendation?: (type: st
 
         try {
             const journalContext = recentJournal?.map(e => e.content).join(' | ') || '';
-            const history = messages.map(m => `${m.role === 'user' ? 'Usuario' : 'Coach'}: ${m.content}`).join('\n');
 
-            const systemPrompt = `Eres un Coach de Psicología Aplicada del método MADM (Más Allá del Miedo). 
-Tu rol es hacer coaching conversacional breve (máximo 5 intercambios).
-Fase actual: ${exchangeCount === 0 ? 'RECEPCIÓN — escucha activa, valida emoción' : exchangeCount <= 2 ? 'EXPLORACIÓN — pregunta una cosa concreta' : 'RECOMENDACIÓN — sugiere 1 herramienta o meditación específica del método MADM'}.
-Contexto del diario reciente del usuario: "${journalContext}".
-Conversación previa: ${history || 'ninguna'}.
-Detecta el estado emocional: ${MOOD_STATES.join(', ')}.
-Al final de tu respuesta, si detectas el estado emocional, añade exactamente: [MOOD:estado]
-Si recomiendas una acción concreta, añade: [ACCIÓN:meditación|herramienta|diario]
-Sé breve (2-3 oraciones), empático y directo. Habla en español informal.`;
+            // Build chat history in the format projection mode expects
+            const chatHistory = [
+                ...(exchangeCount === 0 && journalContext ? [{
+                    role: 'system',
+                    content: `Contexto del diario reciente del usuario: "${journalContext}". Adapta tu coaching a este trasfondo.`
+                }] : []),
+                ...messages.map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content })),
+                { role: 'user', content: text },
+            ];
+
+            const phase = exchangeCount === 0 ? 'discovery'
+                : exchangeCount <= 2 ? 'reflection'
+                    : 'integration';
+
+            const coachSystemNote = `MODO COACHING MADM (Más Allá del Miedo).
+Fase ${exchangeCount + 1}/5: ${exchangeCount === 0 ? 'RECEPCIÓN — escucha activa, valida emoción, haz 1 pregunta abierta' :
+                    exchangeCount <= 2 ? 'EXPLORACIÓN — profundiza con 1 pregunta socrática, conecta la emoción con un patrón' :
+                        'RECOMENDACIÓN — sugiere 1 herramienta o práctica concreta del método MADM'
+                }.
+Detecta el estado emocional y añade al final EXACTAMENTE: [MOOD:tranquilo|ansioso|triste|frustrado|motivado|agotado]
+Si recomiendas una acción concreta añade: [ACCIÓN:meditación|herramienta|diario]
+Sé breve (2-3 oraciones), empático, directo. Habla en español informal.`;
 
             const { data, error } = await supabase.functions.invoke('analyze-situation', {
                 body: {
-                    situation: text,
-                    context: systemPrompt,
-                    mode: 'coach',
+                    mode: 'projection',
+                    person: 'mi situación actual',
+                    emotion: coachSystemNote,
+                    messages: chatHistory,
+                    phase,
                 },
             });
 
             if (error) throw error;
 
-            const rawResponse: string = data?.analysis || data?.response || data?.text || 'Gracias por compartir. ¿Qué más está pasando?';
+            const rawResponse: string = data?.response || data?.analysis || 'Gracias por compartir. ¿Qué más está pasando?';
+
 
             // Parse mood and action tags
             const moodMatch = rawResponse.match(/\[MOOD:(\w+)\]/);
