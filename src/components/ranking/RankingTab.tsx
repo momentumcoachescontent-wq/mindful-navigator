@@ -12,6 +12,7 @@ import { RankingTrendsChart } from "./RankingTrendsChart";
 import { UserHealthChart } from "./UserHealthChart";
 import { UserMoodPieChart } from "./UserMoodPieChart";
 import { PendingConnectionRequests } from "./PendingConnectionRequests";
+import { WeeklyLeagueCard } from "./WeeklyLeagueCard";
 
 export function RankingTab() {
   const { user } = useAuth();
@@ -111,6 +112,9 @@ export function RankingTab() {
 
       {/* Pending circle requests */}
       <PendingConnectionRequests />
+
+      {/* Weekly League */}
+      <WeeklyLeagueCard />
 
       {/* Podium - Top 3 */}
       <RankingPodium topThree={topThree} />
